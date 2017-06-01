@@ -24,6 +24,7 @@ isosx = 'darwin' in _plat
 iswindows = hasattr(sys, 'getwindowsversion')
 is_travis = os.environ.get('TRAVIS') == 'true'
 Env = namedtuple('Env', 'cc cflags ldflags linker debug cc_name cc_ver')
+PKGCONFIG = os.environ.get('PKGCONFIG_EXE', 'pkg-config')
 
 
 def safe_makedirs(path):
@@ -48,6 +49,17 @@ if iswindows:
         ldflags = []
         return Env(cc, cflags, ldflags, 'link.exe', debug, cc_name, ccver)
 else:
+
+    def pkg_config(pkg, *args):
+        return list(
+            filter(
+                None,
+                shlex.split(
+                    subprocess.check_output([PKGCONFIG, pkg] + list(args))
+                    .decode('utf-8')
+                )
+            )
+        )
 
     def cc_version():
         cc = os.environ.get('CC', 'gcc')
@@ -97,7 +109,8 @@ else:
                                                           if debug else 'N'),
                       stack_protector, missing_braces, '-march=native'
                       if native_optimizations else ''))
-        cflags = shlex.split(cflags) + shlex.split(
+        libxml_cflags = pkg_config('libxml-2.0', '--cflags')
+        cflags = shlex.split(cflags) + libxml_cflags + shlex.split(
             sysconfig.get_config_var('CCSHARED'))
         ldflags = os.environ.get('OVERRIDE_LDFLAGS',
                                  '-Wall ' + ' '.join(sanitize_args) +
@@ -173,13 +186,16 @@ def build_obj(src, env, headers):
 
 def build(args):
     objects, debug_objects = [], []
-    for sdir in ('gumbo',):
+    debug_env = init_env(debug=True, sanitize=True)
+    release_env = init_env()
+    for sdir in ('src', 'gumbo'):
         sources, headers = find_c_files(sdir)
+        if sdir == 'src':
+            headers += ('gumbo/gumbo.h',)
         if not iswindows:
-            env = init_env(debug=True, sanitize=True)
-            debug_objects.extend(build_obj(c, env, headers) for c in sources)
-        env = init_env()
-        objects.extend(build_obj(c, env, headers) for c in sources)
+            debug_objects.extend(
+                build_obj(c, debug_env, headers) for c in sources)
+        objects.extend(build_obj(c, release_env, headers) for c in sources)
 
 
 def main():
