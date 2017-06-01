@@ -79,7 +79,7 @@ static const uint8_t utf8d[] = {
   12,36,12,12,12,12,12,12,12,12,12,12, 
 };
 
-uint32_t static inline decode(uint32_t* state, uint32_t* codep, uint32_t byte) {
+static inline uint32_t decode(uint32_t* state, uint32_t* codep, uint32_t byte) {
   uint32_t type = utf8d[byte];
 
   *codep = (*state != UTF8_ACCEPT) ?
@@ -240,7 +240,7 @@ bool utf8iterator_maybe_consume_match(
       !strncmp(iter->_start, prefix, length) :
       !strncasecmp(iter->_start, prefix, length));
   if (matched) {
-    for (int i = 0; i < length; ++i) {
+    for (unsigned int i = 0; i < length; ++i) {
       utf8iterator_next(iter);
     }
     return true;

@@ -25,6 +25,7 @@
 
 #include "gumbo.h"
 #include "parser.h"
+#define AVOID_UNUSED_VARIABLE_WARNING(i) (void)(i)
 
 // TODO(jdtang): This should be elsewhere, but there's no .c file for
 // SourcePositions and yet the constant needs some linkage, so this is as good
@@ -57,5 +58,7 @@ void gumbo_debug(const char* format, ...) {
   vprintf(format, args);
   va_end(args);
   fflush(stdout);
+#else
+AVOID_UNUSED_VARIABLE_WARNING(format);
 #endif
 }

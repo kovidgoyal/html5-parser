@@ -27,8 +27,6 @@
 #include "util.h"
 #include "vector.h"
 
-static const size_t kMessageBufferSize = 256;
-
 // Prints a formatted message to a StringBuffer.  This automatically resizes the
 // StringBuffer as necessary to fit the message.  Returns the number of bytes
 // written.
@@ -75,7 +73,7 @@ static int print_message(GumboStringBuffer* output, const char* format, ...) {
 
 static void print_tag_stack(const GumboParserError* error, GumboStringBuffer* output) {
   print_message(output, "  Currently open tags: ");
-  for (int i = 0; i < error->tag_stack.length; ++i) {
+  for (unsigned int i = 0; i < error->tag_stack.length; ++i) {
     if (i) {
       print_message(output, ", ");
     }
@@ -150,16 +148,15 @@ static const char* find_last_newline(
 // Finds the next newline in the original source buffer from a given byte
 // location.  Returns a character pointer to that newline, or a pointer to the
 // terminating null byte if this is the last line.
-static const char* find_next_newline(
-    const char* original_text, const char* error_location) {
+static const char* find_next_newline(const char* error_location) {
   const char* c = error_location;
   for (; *c && *c != '\n'; ++c);
   return c;
 }
 
 GumboError* gumbo_add_error(GumboParser* parser) {
-  int max_errors = parser->_options->max_errors;
-  if (max_errors >= 0 && parser->_output->errors.length >= max_errors) {
+  unsigned int max_errors = parser->_options->max_errors;
+  if (parser->_options->max_errors >= 0 && parser->_output->errors.length >= max_errors) {
     return NULL;
   }
   GumboError* error = gumbo_malloc(sizeof(GumboError));
@@ -233,7 +230,7 @@ void gumbo_caret_diagnostic_to_string(const GumboError* error,
   const char* line_start =
       find_last_newline(source_text, error->original_text);
   const char* line_end =
-      find_next_newline(source_text, error->original_text);
+      find_next_newline(error->original_text);
   GumboStringPiece original_line;
   original_line.data = line_start;
   original_line.length = line_end - line_start;
@@ -274,7 +271,7 @@ void gumbo_init_errors(GumboParser* parser) {
 }
 
 void gumbo_destroy_errors(GumboParser* parser) {
-  for (int i = 0; i < parser->_output->errors.length; ++i) {
+  for (unsigned int i = 0; i < parser->_output->errors.length; ++i) {
     gumbo_error_destroy(parser->_output->errors.data[i]);
   }
   gumbo_vector_destroy(&parser->_output->errors);

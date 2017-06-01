@@ -2476,11 +2476,13 @@ static bool consume_named_ref(
   const char* te = 0;
   const char *ts, *start;
   int cs, act;
+  bool matched;
 
   %% write init;
   // Avoid unused variable warnings.
   (void) act;
   (void) ts;
+  (void) matched;
 
   start = p;
   %% write exec;
@@ -2490,7 +2492,7 @@ static bool consume_named_ref(
     char last_char = *(te - 1);
     int len = te - start;
     if (last_char == ';') {
-      bool matched = utf8iterator_maybe_consume_match(input, start, len, true);
+      matched = utf8iterator_maybe_consume_match(input, start, len, true);
       assert(matched);
       return true;
     } else if (is_in_attribute && (*te == '=' || isalnum(*te))) {
@@ -2504,7 +2506,7 @@ static bool consume_named_ref(
       bad_ref.data = start;
       add_named_reference_error(
           parser, input, GUMBO_ERR_NAMED_CHAR_REF_WITHOUT_SEMICOLON, bad_ref);
-      bool matched = utf8iterator_maybe_consume_match(input, start, len, true);
+      matched = utf8iterator_maybe_consume_match(input, start, len, true);
       assert(matched);
       return false;
     }

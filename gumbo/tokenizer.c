@@ -62,6 +62,8 @@
 #include "util.h"
 #include "vector.h"
 
+#define AVOID_UNUSED_VARIABLE_WARNING(i) (void)(i)
+
 // Compared against _script_data_buffer to determine if we're in double-escaped
 // script mode.
 const GumboStringPiece kScriptTag = { "script", 6 };
@@ -367,7 +369,7 @@ static bool temporary_buffer_equals(
   // TODO(jdtang): See if the extra strlen is a performance problem, and replace
   // it with an explicit sizeof(literal) if necessary.  I don't think it will
   // be, as this is only used in a couple of rare states.
-  int text_len = strlen(text);
+  size_t text_len = strlen(text);
   return text_len == buffer->length &&
       memcmp(buffer->data, text, text_len) == 0;
 }
@@ -512,6 +514,8 @@ static void emit_doctype(GumboParser* parser, GumboToken* output) {
 static void mark_tag_state_as_empty(GumboTagState* tag_state) {
 #ifndef NDEBUG
   tag_state->_attributes = kGumboEmptyVector;
+#else
+  AVOID_UNUSED_VARIABLE_WARNING(tag_state);
 #endif
 }
 
@@ -535,7 +539,7 @@ static StateResult emit_current_tag(GumboParser* parser, GumboToken* output) {
     // token, but it's still initialized as normal, so it must be manually
     // deallocated.  There may also be attributes to destroy, in certain broken
     // cases like </div</th> (the "th" is an attribute there).
-    for (int i = 0; i < tag_state->_attributes.length; ++i) {
+    for (unsigned int i = 0; i < tag_state->_attributes.length; ++i) {
       gumbo_destroy_attribute(tag_state->_attributes.data[i]);
     }
     gumbo_free(tag_state->_attributes.data);
@@ -558,7 +562,7 @@ static StateResult emit_current_tag(GumboParser* parser, GumboToken* output) {
 // avoid a memory leak.
 static void abandon_current_tag(GumboParser* parser) {
   GumboTagState* tag_state = &parser->_tokenizer_state->_tag_state;
-  for (int i = 0; i < tag_state->_attributes.length; ++i) {
+  for (unsigned int i = 0; i < tag_state->_attributes.length; ++i) {
     gumbo_destroy_attribute(tag_state->_attributes.data[i]);
   }
   gumbo_free(tag_state->_attributes.data);
@@ -572,7 +576,7 @@ static void abandon_current_tag(GumboParser* parser) {
 // error occurred, RETURN_SUCCESS otherwise.
 static StateResult emit_char_ref(
     GumboParser* parser, int additional_allowed_char,
-    bool is_in_attribute, GumboToken* output) {
+    GumboToken* output) {
   GumboTokenizerState* tokenizer = parser->_tokenizer_state;
   OneOrTwoCodepoints char_ref;
   bool status = consume_char_ref(
@@ -747,7 +751,7 @@ static void finish_tag_name(GumboParser* parser) {
 }
 
 // Adds an ERR_DUPLICATE_ATTR parse error to the parser's error struct.
-static void add_duplicate_attr_error(GumboParser* parser, const char* attr_name,
+static void add_duplicate_attr_error(GumboParser* parser, 
                                      int original_index, int new_index) {
   GumboError* error = gumbo_add_error(parser);
   if (!error) {
@@ -778,14 +782,14 @@ static bool finish_attribute_name(GumboParser* parser) {
   assert(tag_state->_attributes.capacity);
 
   GumboVector* /* GumboAttribute* */ attributes = &tag_state->_attributes;
-  for (int i = 0; i < attributes->length; ++i) {
+  for (unsigned int i = 0; i < attributes->length; ++i) {
     GumboAttribute* attr = attributes->data[i];
     if (strlen(attr->name) == tag_state->_buffer.length &&
         memcmp(attr->name, tag_state->_buffer.data,
                tag_state->_buffer.length) == 0) {
       // Identical attribute; bail.
       add_duplicate_attr_error(
-          parser, attr->name, i, attributes->length);
+          parser, i, attributes->length);
       tag_state->_drop_next_attr_value = true;
       return false;
     }
@@ -910,8 +914,10 @@ static StateResult handle_data_state(
 static StateResult handle_char_ref_in_data_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
+  AVOID_UNUSED_VARIABLE_WARNING(c); 
   gumbo_tokenizer_set_state(parser, GUMBO_LEX_DATA);
-  return emit_char_ref(parser, ' ', false, output);
+  return emit_char_ref(parser, ' ', output);
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete5/tokenization.html#rcdata-state
@@ -941,14 +947,17 @@ static StateResult handle_rcdata_state(
 static StateResult handle_char_ref_in_rcdata_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
+  AVOID_UNUSED_VARIABLE_WARNING(c); 
   gumbo_tokenizer_set_state(parser, GUMBO_LEX_RCDATA);
-  return emit_char_ref(parser, ' ', false, output);
+  return emit_char_ref(parser, ' ', output);
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete5/tokenization.html#rawtext-state
 static StateResult handle_rawtext_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '<':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_RAWTEXT_LT);
@@ -968,6 +977,7 @@ static StateResult handle_rawtext_state(
 static StateResult handle_script_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '<':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_SCRIPT_LT);
@@ -987,6 +997,7 @@ static StateResult handle_script_state(
 static StateResult handle_plaintext_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '\0':
       return emit_replacement_char(parser, output);
@@ -1001,6 +1012,7 @@ static StateResult handle_plaintext_state(
 static StateResult handle_tag_open_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   assert(temporary_buffer_equals(parser, "<"));
   switch (c) {
     case '!':
@@ -1035,6 +1047,7 @@ static StateResult handle_tag_open_state(
 static StateResult handle_end_tag_open_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   assert(temporary_buffer_equals(parser, "</"));
   switch (c) {
     case '>':
@@ -1063,6 +1076,7 @@ static StateResult handle_end_tag_open_state(
 static StateResult handle_tag_name_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '\t':
     case '\n':
@@ -1114,6 +1128,7 @@ static StateResult handle_rcdata_lt_state(
 static StateResult handle_rcdata_end_tag_open_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   assert(temporary_buffer_equals(parser, "</"));
   if (gumbo_isalpha(c)) {
     gumbo_tokenizer_set_state(parser, GUMBO_LEX_RCDATA_END_TAG_NAME);
@@ -1131,7 +1146,11 @@ static StateResult handle_rcdata_end_tag_open_state(
 static StateResult handle_rcdata_end_tag_name_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+#ifndef NDEBUG
   assert(tokenizer->_temporary_buffer.length >= 2);
+#else
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer);
+#endif
   if (gumbo_isalpha(c)) {
     append_char_to_tag_buffer(parser, gumbo_tolower(c), true);
     append_char_to_temporary_buffer(parser, c);
@@ -1180,6 +1199,7 @@ static StateResult handle_rawtext_lt_state(
 static StateResult handle_rawtext_end_tag_open_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   assert(temporary_buffer_equals(parser, "</"));
   if (gumbo_isalpha(c)) {
     gumbo_tokenizer_set_state(parser, GUMBO_LEX_RAWTEXT_END_TAG_NAME);
@@ -1252,6 +1272,7 @@ static StateResult handle_script_lt_state(
 static StateResult handle_script_end_tag_open_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   assert(temporary_buffer_equals(parser, "</"));
   if (gumbo_isalpha(c)) {
     gumbo_tokenizer_set_state(parser, GUMBO_LEX_SCRIPT_END_TAG_NAME);
@@ -1268,7 +1289,11 @@ static StateResult handle_script_end_tag_open_state(
 static StateResult handle_script_end_tag_name_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+#ifndef NDEBUG
   assert(tokenizer->_temporary_buffer.length >= 2);
+#else
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer);
+#endif
   if (gumbo_isalpha(c)) {
     append_char_to_tag_buffer(parser, gumbo_tolower(c), true);
     append_char_to_temporary_buffer(parser, c);
@@ -1329,6 +1354,7 @@ static StateResult handle_script_escaped_start_dash_state(
 static StateResult handle_script_escaped_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '-':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_SCRIPT_ESCAPED_DASH);
@@ -1352,6 +1378,7 @@ static StateResult handle_script_escaped_state(
 static StateResult handle_script_escaped_dash_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '-':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_SCRIPT_ESCAPED_DASH_DASH);
@@ -1378,6 +1405,7 @@ static StateResult handle_script_escaped_dash_state(
 static StateResult handle_script_escaped_dash_dash_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '-':
       return emit_current_char(parser, output);
@@ -1428,6 +1456,7 @@ static StateResult handle_script_escaped_lt_state(
 static StateResult handle_script_escaped_end_tag_open_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   assert(temporary_buffer_equals(parser, "</"));
   if (gumbo_isalpha(c)) {
     gumbo_tokenizer_set_state(parser, GUMBO_LEX_SCRIPT_ESCAPED_END_TAG_NAME);
@@ -1444,7 +1473,11 @@ static StateResult handle_script_escaped_end_tag_open_state(
 static StateResult handle_script_escaped_end_tag_name_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+#ifndef NDEBUG
   assert(tokenizer->_temporary_buffer.length >= 2);
+#else
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer);
+#endif
   if (gumbo_isalpha(c)) {
     append_char_to_tag_buffer(parser, gumbo_tolower(c), true);
     append_char_to_temporary_buffer(parser, c);
@@ -1505,6 +1538,7 @@ static StateResult handle_script_double_escaped_start_state(
 static StateResult handle_script_double_escaped_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '-':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_SCRIPT_DOUBLE_ESCAPED_DASH);
@@ -1527,6 +1561,7 @@ static StateResult handle_script_double_escaped_state(
 static StateResult handle_script_double_escaped_dash_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '-':
       gumbo_tokenizer_set_state(
@@ -1552,6 +1587,7 @@ static StateResult handle_script_double_escaped_dash_state(
 static StateResult handle_script_double_escaped_dash_dash_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '-':
       return emit_current_char(parser, output);
@@ -1623,6 +1659,7 @@ static StateResult handle_script_double_escaped_end_state(
 static StateResult handle_before_attr_name_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '\t':
     case '\n':
@@ -1662,6 +1699,7 @@ static StateResult handle_before_attr_name_state(
 static StateResult handle_attr_name_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '\t':
     case '\n':
@@ -1706,6 +1744,7 @@ static StateResult handle_attr_name_state(
 static StateResult handle_after_attr_name_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer); 
   switch (c) {
     case '\t':
     case '\n':
@@ -1797,6 +1836,7 @@ static StateResult handle_before_attr_value_state(
 static StateResult handle_attr_value_double_quoted_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(output); 
   switch (c) {
     case '"':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_AFTER_ATTR_VALUE_QUOTED);
@@ -1826,6 +1866,7 @@ static StateResult handle_attr_value_double_quoted_state(
 static StateResult handle_attr_value_single_quoted_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(output); 
   switch (c) {
     case '\'':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_AFTER_ATTR_VALUE_QUOTED);
@@ -1899,6 +1940,7 @@ static StateResult handle_attr_value_unquoted_state(
 static StateResult handle_char_ref_in_attr_value_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(output); AVOID_UNUSED_VARIABLE_WARNING(c);
   OneOrTwoCodepoints char_ref;
   int allowed_char;
   bool is_unquoted = false;
@@ -2012,6 +2054,7 @@ static StateResult handle_bogus_comment_state(
 static StateResult handle_markup_declaration_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(output); AVOID_UNUSED_VARIABLE_WARNING(c);
   if (utf8iterator_maybe_consume_match(
       &tokenizer->_input, "--", sizeof("--") - 1, true)) {
     gumbo_tokenizer_set_state(parser, GUMBO_LEX_COMMENT_START);
@@ -2048,6 +2091,7 @@ static StateResult handle_markup_declaration_state(
 static StateResult handle_comment_start_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer);
   switch (c) {
     case '-':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_COMMENT_START_DASH);
@@ -2078,6 +2122,7 @@ static StateResult handle_comment_start_state(
 static StateResult handle_comment_start_dash_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer);
   switch (c) {
     case '-':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_COMMENT_END);
@@ -2110,6 +2155,7 @@ static StateResult handle_comment_start_dash_state(
 static StateResult handle_comment_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer);
   switch (c) {
     case '-':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_COMMENT_END_DASH);
@@ -2133,6 +2179,7 @@ static StateResult handle_comment_state(
 static StateResult handle_comment_end_dash_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer);
   switch (c) {
     case '-':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_COMMENT_END);
@@ -2160,6 +2207,7 @@ static StateResult handle_comment_end_dash_state(
 static StateResult handle_comment_end_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer);
   switch (c) {
     case '>':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_DATA);
@@ -2198,6 +2246,8 @@ static StateResult handle_comment_end_state(
 static StateResult handle_comment_end_bang_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer);
+
   switch (c) {
     case '-':
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_COMMENT_END_DASH);
@@ -2790,6 +2840,7 @@ static StateResult handle_after_doctype_system_id_state(
 static StateResult handle_bogus_doctype_state(
     GumboParser* parser, GumboTokenizerState* tokenizer,
     int c, GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer);
   if (c == '>' || c == -1) {
     gumbo_tokenizer_set_state(parser, GUMBO_LEX_DATA);
     emit_doctype(parser, output);
@@ -2955,7 +3006,7 @@ void gumbo_token_destroy(GumboToken* token) {
       gumbo_free((void*) token->v.doc_type.system_identifier);
       return;
     case GUMBO_TOKEN_START_TAG:
-      for (int i = 0; i < token->v.start_tag.attributes.length; ++i) {
+      for (unsigned int i = 0; i < token->v.start_tag.attributes.length; ++i) {
         GumboAttribute* attr = token->v.start_tag.attributes.data[i];
         if (attr) {
           // May have been nulled out if this token was merged with another.

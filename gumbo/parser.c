@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <limits.h>
 
 #include "attribute.h"
 #include "error.h"
@@ -433,7 +434,7 @@ static bool attribute_matches_case_sensitive(
 static bool all_attributes_match(
     const GumboVector* attr1, const GumboVector* attr2) {
   int num_unmatched_attr2_elements = attr2->length;
-  for (int i = 0; i < attr1->length; ++i) {
+  for (unsigned int i = 0; i < attr1->length; ++i) {
     const GumboAttribute* attr = attr1->data[i];
     if (attribute_matches_case_sensitive(attr2, attr->name, attr->value)) {
       --num_unmatched_attr2_elements;
@@ -676,7 +677,7 @@ static GumboError* parser_add_parse_error(GumboParser* parser, const GumboToken*
   extra_data->parser_state = state->_insertion_mode;
   gumbo_vector_init(state->_open_elements.length,
                    &extra_data->tag_stack);
-  for (int i = 0; i < state->_open_elements.length; ++i) {
+  for (unsigned int i = 0; i < state->_open_elements.length; ++i) {
     const GumboNode* node = state->_open_elements.data[i];
     assert(node->type == GUMBO_NODE_ELEMENT || node->type == GUMBO_NODE_TEMPLATE);
     gumbo_vector_add((void*) node->v.element.tag,
@@ -797,7 +798,7 @@ InsertionLocation get_appropriate_insertion_location(GumboParser* parser, GumboN
   int last_template_index = -1;
   int last_table_index = -1;
   GumboVector* open_elements = &parser->_parser_state->_open_elements;
-  for (int i = 0; i < open_elements->length; ++i) {
+  for (unsigned int i = 0; i < open_elements->length; ++i) {
     if (node_html_tag_is(open_elements->data[i], GUMBO_TAG_TEMPLATE)) {
       last_template_index = i;
     }
@@ -830,7 +831,7 @@ InsertionLocation get_appropriate_insertion_location(GumboParser* parser, GumboN
 // "index_within_parent" fields appropriately.
 static void append_node(GumboNode* parent, GumboNode* node) {
   assert(node->parent == NULL);
-  assert(node->index_within_parent == -1);
+  assert(node->index_within_parent == UINT_MAX);
   GumboVector* children;
   if (parent->type == GUMBO_NODE_ELEMENT || parent->type == GUMBO_NODE_TEMPLATE) {
     children = &parent->v.element.children;
@@ -849,7 +850,7 @@ static void append_node(GumboNode* parent, GumboNode* node) {
 // If the index of the location is -1, this calls append_node.
 static void insert_node(GumboNode* node, InsertionLocation location) {
   assert(node->parent == NULL);
-  assert(node->index_within_parent == -1);
+  assert(node->index_within_parent == UINT_MAX);
   GumboNode* parent = location.target;
   int index = location.index;
   if (index != -1) {
@@ -865,12 +866,12 @@ static void insert_node(GumboNode* node, InsertionLocation location) {
     }
 
     assert(index >= 0);
-    assert(index < children->length);
+    assert((unsigned int)index < children->length);
     node->parent = parent;
     node->index_within_parent = index;
     gumbo_vector_insert_at((void*) node, index, children);
     assert(node->index_within_parent < children->length);
-    for (int i = index + 1; i < children->length; ++i) {
+    for (unsigned int i = index + 1; i < children->length; ++i) {
       GumboNode* sibling = children->data[i];
       sibling->index_within_parent = i;
       assert(sibling->index_within_parent < children->length);
@@ -1005,7 +1006,7 @@ static GumboNode* create_element(GumboParser *parser, GumboTag tag) {
 }
 
 // Constructs an element from the given start tag token.
-static GumboNode* create_element_from_token(GumboParser *parser,
+static GumboNode* create_element_from_token(
     GumboToken* token, GumboNamespaceEnum tag_namespace) {
   assert(token->type == GUMBO_TOKEN_START_TAG);
   GumboTokenStartTag* start_tag = &token->v.start_tag;
@@ -1064,7 +1065,7 @@ static void insert_element(GumboParser* parser, GumboNode* node,
 static GumboNode* insert_element_from_token(
     GumboParser* parser, GumboToken* token) {
   GumboNode* element =
-      create_element_from_token(parser, token, GUMBO_NAMESPACE_HTML);
+      create_element_from_token(token, GUMBO_NAMESPACE_HTML);
   insert_element(parser, element, false);
   gumbo_debug("Inserting <%s> element (@%x) from token.\n",
              gumbo_normalized_tagname(element->v.element.tag), element);
@@ -1089,7 +1090,7 @@ static GumboNode* insert_element_of_tag_type(
 static GumboNode* insert_foreign_element(
     GumboParser* parser, GumboToken* token, GumboNamespaceEnum tag_namespace) {
   assert(token->type == GUMBO_TOKEN_START_TAG);
-  GumboNode* element = create_element_from_token(parser, token, tag_namespace);
+  GumboNode* element = create_element_from_token(token, tag_namespace);
   insert_element(parser, element, false);
   if (token_has_attribute(token, "xmlns") &&
       !attribute_matches_case_sensitive(
@@ -1214,7 +1215,7 @@ static void add_formatting_element(GumboParser* parser, const GumboNode* node) {
 
 static bool is_open_element(GumboParser* parser, const GumboNode* node) {
   GumboVector* open_elements = &parser->_parser_state->_open_elements;
-  for (int i = 0; i < open_elements->length; ++i) {
+  for (unsigned int i = 0; i < open_elements->length; ++i) {
     if (open_elements->data[i] == node) {
       return true;
     }
@@ -1240,7 +1241,7 @@ GumboNode* clone_node(const GumboNode* node, GumboParseFlags reason) {
 
   const GumboVector* old_attributes = &node->v.element.attributes;
   gumbo_vector_init(old_attributes->length, &element->attributes);
-  for (int i = 0; i < old_attributes->length; ++i) {
+  for (unsigned int i = 0; i < old_attributes->length; ++i) {
     const GumboAttribute* old_attr = old_attributes->data[i];
     GumboAttribute* attr = gumbo_malloc(sizeof(GumboAttribute));
     *attr = *old_attr;
@@ -1286,11 +1287,11 @@ static void reconstruct_active_formatting_elements(GumboParser* parser) {
   gumbo_debug("Reconstructing elements from %d on %s parent.\n", i,
               gumbo_normalized_tagname(
                   get_current_node(parser)->v.element.tag));
-  for(; i < elements->length; ++i) {
+  for(unsigned int c=i; c < elements->length; ++c) {
     // Step 7 & 8.
     assert(elements->length > 0);
-    assert(i < elements->length);
-    element = elements->data[i];
+    assert(c < elements->length);
+    element = elements->data[c];
     assert(element != &kActiveFormattingScopeMarker);
     GumboNode* clone = clone_node(
         element, GUMBO_INSERTION_RECONSTRUCTED_FORMATTING_ELEMENT);
@@ -1300,9 +1301,9 @@ static void reconstruct_active_formatting_elements(GumboParser* parser) {
     gumbo_vector_add((void*) clone, &parser->_parser_state->_open_elements);
 
     // Step 10.
-    elements->data[i] = clone;
+    elements->data[c] = clone;
     gumbo_debug("Reconstructed %s element at %d.\n",
-               gumbo_normalized_tagname(clone->v.element.tag), i);
+               gumbo_normalized_tagname(clone->v.element.tag), c);
   }
 }
 
@@ -1625,7 +1626,7 @@ static void merge_attributes(GumboToken* token, GumboNode* node) {
   const GumboVector* token_attr = &token->v.start_tag.attributes;
   GumboVector* node_attr = &node->v.element.attributes;
 
-  for (int i = 0; i < token_attr->length; ++i) {
+  for (unsigned int i = 0; i < token_attr->length; ++i) {
     GumboAttribute* attr = token_attr->data[i];
     if (!gumbo_get_attribute(node_attr, attr->name)) {
       // Ownership of the attribute is transferred by this gumbo_vector_add,
@@ -1649,7 +1650,7 @@ static void merge_attributes(GumboToken* token, GumboNode* node) {
 }
 
 const char* gumbo_normalize_svg_tagname(const GumboStringPiece* tag) {
-  for (int i = 0;
+  for (unsigned int i = 0;
        i < sizeof(kSvgTagReplacements) / sizeof(ReplacementEntry); ++i) {
     const ReplacementEntry* entry = &kSvgTagReplacements[i];
     if (gumbo_string_equals_ignore_case(tag, &entry->from)) {
@@ -1665,7 +1666,7 @@ const char* gumbo_normalize_svg_tagname(const GumboStringPiece* tag) {
 static void adjust_foreign_attributes(GumboToken* token) {
   assert(token->type == GUMBO_TOKEN_START_TAG);
   const GumboVector* attributes = &token->v.start_tag.attributes;
-  for (int i = 0;
+  for (unsigned int i = 0;
        i < sizeof(kForeignAttributeReplacements) /
        sizeof(NamespacedAttributeReplacement); ++i) {
     const NamespacedAttributeReplacement* entry =
@@ -1686,7 +1687,7 @@ static void adjust_foreign_attributes(GumboToken* token) {
 static void adjust_svg_attributes(GumboToken* token) {
   assert(token->type == GUMBO_TOKEN_START_TAG);
   const GumboVector* attributes = &token->v.start_tag.attributes;
-  for (int i = 0;
+  for (unsigned int i = 0;
        i < sizeof(kSvgAttributeReplacements) / sizeof(ReplacementEntry); ++i) {
     const ReplacementEntry* entry = &kSvgAttributeReplacements[i];
     GumboAttribute* attr = gumbo_get_attribute(attributes, entry->from.data);
@@ -1761,7 +1762,7 @@ static void remove_from_parent(GumboNode* node) {
   gumbo_vector_remove_at(index, children);
   node->parent = NULL;
   node->index_within_parent = -1;
-  for (int i = index; i < children->length; ++i) {
+  for (unsigned int i = index; i < children->length; ++i) {
     GumboNode* child = children->data[i];
     child->index_within_parent = i;
   }
@@ -1836,7 +1837,7 @@ static bool adoption_agency_algorithm(GumboParser* parser, GumboToken* token, Gu
 
     // Step 9 & 10
     GumboNode* furthest_block = NULL;
-    for (int j = formatting_node_in_open_elements;
+    for (unsigned int j = formatting_node_in_open_elements;
          j < state->_open_elements.length; ++j) {
       assert(j > 0);
       GumboNode* current = state->_open_elements.data[j];
@@ -1893,7 +1894,7 @@ static bool adoption_agency_algorithm(GumboParser* parser, GumboToken* token, Gu
       }
       saved_node_index = --node_index;
       assert(node_index > 0);
-      assert(node_index < state->_open_elements.capacity);
+      assert((unsigned int)node_index < state->_open_elements.capacity);
       node = state->_open_elements.data[node_index];
       assert(node->parent);
       if (node == formatting_node) {
@@ -1932,7 +1933,7 @@ static bool adoption_agency_algorithm(GumboParser* parser, GumboToken* token, Gu
       if (last_node == furthest_block) {
         bookmark = formatting_index + 1;
         gumbo_debug("Bookmark moved to %d.\n", bookmark);
-        assert(bookmark <= state->_active_formatting_elements.length);
+        assert(UINT_MAX + bookmark <= state->_active_formatting_elements.length);
       }
       // Step 13.9.
       last_node->parse_flags |= GUMBO_INSERTION_ADOPTION_AGENCY_MOVED;
@@ -1968,7 +1969,7 @@ static bool adoption_agency_algorithm(GumboParser* parser, GumboToken* token, Gu
     furthest_block->v.element.children = temp;
 
     temp = new_formatting_node->v.element.children;
-    for (int i = 0; i < temp.length; ++i) {
+    for (unsigned int i = 0; i < temp.length; ++i) {
       GumboNode* child = temp.data[i];
       child->parent = new_formatting_node;
     }
@@ -1991,7 +1992,7 @@ static bool adoption_agency_algorithm(GumboParser* parser, GumboToken* token, Gu
     }
     gumbo_vector_remove_at(formatting_node_index, &state->_active_formatting_elements);
     assert(bookmark >= 0);
-    assert(bookmark <= state->_active_formatting_elements.length);
+    assert((unsigned int)bookmark <= state->_active_formatting_elements.length);
     gumbo_vector_insert_at(new_formatting_node, bookmark,
                            &state->_active_formatting_elements);
 
@@ -2000,7 +2001,7 @@ static bool adoption_agency_algorithm(GumboParser* parser, GumboToken* token, Gu
     int insert_at = gumbo_vector_index_of(
                                           &state->_open_elements, furthest_block) + 1;
     assert(insert_at >= 0);
-    assert(insert_at <= state->_open_elements.length);
+    assert((unsigned int)insert_at <= state->_open_elements.length);
     gumbo_vector_insert_at(new_formatting_node, insert_at, &state->_open_elements);
   } // Step 20.
   return true;
@@ -2331,7 +2332,7 @@ static void free_node(GumboNode* node) {
     case GUMBO_NODE_DOCUMENT:
       {
         GumboDocument* doc = &node->v.document;
-        for (int i = 0; i < doc->children.length; ++i) {
+        for (unsigned int i = 0; i < doc->children.length; ++i) {
           free_node(doc->children.data[i]);
         }
         gumbo_free((void*) doc->children.data);
@@ -2342,10 +2343,10 @@ static void free_node(GumboNode* node) {
       break;
     case GUMBO_NODE_TEMPLATE:
     case GUMBO_NODE_ELEMENT:
-      for (int i = 0; i < node->v.element.attributes.length; ++i) {
+      for (unsigned int i = 0; i < node->v.element.attributes.length; ++i) {
         gumbo_destroy_attribute(node->v.element.attributes.data[i]);
       }
-      for (int i = 0; i < node->v.element.children.length; ++i) {
+      for (unsigned int i = 0; i < node->v.element.children.length; ++i) {
         free_node(node->v.element.children.data[i]);
       }
       gumbo_free(node->v.element.attributes.data);
@@ -2438,7 +2439,7 @@ static bool handle_in_body(GumboParser* parser, GumboToken* token) {
     // Remove the body node.  We may want to factor this out into a generic
     // helper, but right now this is the only code that needs to do this.
     GumboVector* children = &parser->_output->root->v.element.children;
-    for (int i = 0; i < children->length; ++i) {
+    for (unsigned int i = 0; i < children->length; ++i) {
       if (children->data[i] == body_node) {
         gumbo_vector_remove_at(i, children);
         break;
@@ -2451,7 +2452,7 @@ static bool handle_in_body(GumboParser* parser, GumboToken* token) {
     set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_FRAMESET);
     return true;
   } else if (token->type == GUMBO_TOKEN_EOF) {
-    for (int i = 0; i < state->_open_elements.length; ++i) {
+    for (unsigned int i = 0; i < state->_open_elements.length; ++i) {
       if (!node_tag_in_set(state->_open_elements.data[i], (gumbo_tagset) { TAG(DD),
               TAG(DT), TAG(LI), TAG(P), TAG(TBODY), TAG(TD), TAG(TFOOT), TAG(TH),
               TAG(THEAD), TAG(TR), TAG(BODY), TAG(HTML) } )) {
@@ -2469,7 +2470,7 @@ static bool handle_in_body(GumboParser* parser, GumboToken* token) {
       return false;
     }
     bool success = true;
-    for (int i = 0; i < state->_open_elements.length; ++i) {
+    for (unsigned int i = 0; i < state->_open_elements.length; ++i) {
       if (!node_tag_in_set(state->_open_elements.data[i], (gumbo_tagset) {
             TAG(DD), TAG(DT), TAG(LI), TAG(OPTGROUP), TAG(OPTION), TAG(P),
             TAG(RB), TAG(RP), TAG(RT), TAG(RTC), TAG(TBODY), TAG(TD),
@@ -2826,7 +2827,7 @@ static bool handle_in_body(GumboParser* parser, GumboToken* token) {
 
     GumboNode* input = insert_element_of_tag_type(
         parser, GUMBO_TAG_INPUT, GUMBO_INSERTION_FROM_ISINDEX);
-    for (int i = 0; i < token_attrs->length; ++i) {
+    for (unsigned int i = 0; i < token_attrs->length; ++i) {
       GumboAttribute* attr = token_attrs->data[i];
       if (attr != prompt_attr && attr != action_attr && attr != name_attr) {
         gumbo_vector_add(attr, &input->v.element.attributes);
@@ -3157,7 +3158,7 @@ static bool handle_in_table_text(GumboParser* parser, GumboToken* token) {
     // Note that TextNodeBuffer may contain UTF-8 characters, but the presence
     // of any one byte that is not whitespace means we flip the flag, so this
     // loop is still valid.
-    for (int i = 0; i < buffer->length; ++i) {
+    for (unsigned int i = 0; i < buffer->length; ++i) {
       if (!isspace((unsigned char)buffer->data[i]) || buffer->data[i] == '\v') {
         state->_foster_parent_insertions = true;
         reconstruct_active_formatting_elements(parser);
@@ -4196,7 +4197,7 @@ GumboOutput* gumbo_parse_fragment(
 
 void gumbo_destroy_output(GumboOutput* output) {
   free_node(output->document);
-  for (int i = 0; i < output->errors.length; ++i) {
+  for (unsigned int i = 0; i < output->errors.length; ++i) {
     gumbo_error_destroy(output->errors.data[i]);
   }
   gumbo_vector_destroy(&output->errors);

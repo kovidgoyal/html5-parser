@@ -13978,9 +13978,10 @@ static bool consume_named_ref(
   const char* te = 0;
   const char *ts, *start;
   int cs, act;
+  bool matched;
 
   
-#line 13984 "char_ref.c"
+#line 13985 "char_ref.c"
 	{
 	cs = char_ref_start;
 	ts = 0;
@@ -13988,14 +13989,15 @@ static bool consume_named_ref(
 	act = 0;
 	}
 
-#line 2481 "char_ref.rl"
+#line 2482 "char_ref.rl"
   // Avoid unused variable warnings.
   (void) act;
   (void) ts;
+  (void) matched;
 
   start = p;
   
-#line 13999 "char_ref.c"
+#line 14001 "char_ref.c"
 	{
 	int _slen;
 	int _trans;
@@ -14017,7 +14019,7 @@ _resume:
 #line 1 "NONE"
 	{ts = p;}
 	break;
-#line 14021 "char_ref.c"
+#line 14023 "char_ref.c"
 		}
 	}
 
@@ -23000,7 +23002,7 @@ _eof_trans:
 #line 2273 "char_ref.rl"
 	{{p = ((te))-1;}{ output->first = 0xd7; {p++; goto _out; } }}
 	break;
-#line 23004 "char_ref.c"
+#line 23006 "char_ref.c"
 		}
 	}
 
@@ -23013,7 +23015,7 @@ _again:
 #line 1 "NONE"
 	{ts = 0;}
 	break;
-#line 23017 "char_ref.c"
+#line 23019 "char_ref.c"
 		}
 	}
 
@@ -23033,14 +23035,14 @@ _again:
 	_out: {}
 	}
 
-#line 2487 "char_ref.rl"
+#line 2489 "char_ref.rl"
 
   if (cs >= 7623) {
     assert(output->first != kGumboNoChar);
     char last_char = *(te - 1);
     int len = te - start;
     if (last_char == ';') {
-      bool matched = utf8iterator_maybe_consume_match(input, start, len, true);
+      matched = utf8iterator_maybe_consume_match(input, start, len, true);
       assert(matched);
       return true;
     } else if (is_in_attribute && (*te == '=' || isalnum(*te))) {
@@ -23054,7 +23056,7 @@ _again:
       bad_ref.data = start;
       add_named_reference_error(
           parser, input, GUMBO_ERR_NAMED_CHAR_REF_WITHOUT_SEMICOLON, bad_ref);
-      bool matched = utf8iterator_maybe_consume_match(input, start, len, true);
+      matched = utf8iterator_maybe_consume_match(input, start, len, true);
       assert(matched);
       return false;
     }
