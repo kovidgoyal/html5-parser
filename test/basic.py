@@ -7,7 +7,8 @@ from __future__ import (absolute_import, division, print_function,
 
 from lxml import etree
 
-from __init__ import TestCase, html_parser, parse
+from __init__ import TestCase, html_parser
+from html5_parser import parse
 
 
 class BasicTests(TestCase):
