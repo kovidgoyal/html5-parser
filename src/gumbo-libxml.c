@@ -19,6 +19,13 @@
 #include "../gumbo/gumbo.h"
 
 #define UNUSED __attribute__ ((unused))
+#ifdef __builtin_expect
+#define LIKELY(x)    __builtin_expect (!!(x), 1)
+#define UNLIKELY(x)  __builtin_expect (!!(x), 0)
+#else
+#define LIKELY(x) (x)
+#define UNLIKELY(x) (x)
+#endif
 
 // Namespace constants, indexed by GumboNamespaceEnum.
 static const char* kLegalXmlns[] = {
@@ -86,8 +93,8 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
     for (unsigned int i = 0; i < elem->attributes.length; ++i) {
         attr = elem->attributes.data[i];
         attr_name = xmlDictLookup(doc->dict, BAD_CAST attr->name, -1);
-        if (!attr_name) return false;
-        if (!xmlNewNsPropEatName(node, NULL, (xmlChar*)attr->name, BAD_CAST attr->value)) return false;
+        if (UNLIKELY(!attr_name)) return false;
+        if (UNLIKELY(!xmlNewNsPropEatName(node, NULL, (xmlChar*)attr->name, BAD_CAST attr->value))) return false;
     }
     return true;
 }
@@ -103,21 +110,21 @@ create_element(xmlDocPtr doc, GumboNode *node, GumboElement **store_elem) {
     *store_elem = elem;
 
     tag_name = xmlDictLookup(doc->dict, BAD_CAST gumbo_normalized_tagname(elem->tag), -1);
-    if (!tag_name) return NULL;
+    if (UNLIKELY(!tag_name)) return NULL;
     result = xmlNewNodeEatName(NULL, (xmlChar*)tag_name);
-    if (!result) return NULL;
+    if (UNLIKELY(!result)) return NULL;
 
     // Namespace
     if (node->parent->type != GUMBO_NODE_DOCUMENT &&
             elem->tag_namespace != node->parent->v.element.tag_namespace) {
         namespace = xmlNewNs(
                 result, BAD_CAST kLegalXmlns[elem->tag_namespace], NULL);
-        if (!namespace) { ok = false; goto end; }
+        if (UNLIKELY(!namespace)) { ok = false; goto end; }
         xmlSetNs(result, namespace);
     } 
-    if (!create_attributes(doc, result, elem)) { ok = false; goto end; }
+    if (UNLIKELY(!create_attributes(doc, result, elem))) { ok = false; goto end; }
 end:
-    if (!ok) { xmlFreeNode(result); result = NULL; }
+    if (UNLIKELY(!ok)) { xmlFreeNode(result); result = NULL; }
     return result;
 }
 
@@ -155,7 +162,7 @@ static xmlNodePtr convert_node(xmlDocPtr doc, GumboNode* node, GumboElement **el
         default:
             assert(false && "unknown node type");
     }
-    if (!ans && !PyErr_Occurred()) PyErr_NoMemory();
+    if (UNLIKELY(!ans && !PyErr_Occurred())) PyErr_NoMemory();
     return ans;
 }
 
@@ -174,7 +181,7 @@ convert_tree(xmlDocPtr doc, GumboNode *root, size_t sz) {
         stack_pop(stack, &gumbo, &parent);
         child = convert_node(doc, gumbo, &elem);
         if (!child) { ok = false; goto end; };
-        if (parent) xmlAddChild(parent, child);
+        if (LIKELY(parent)) xmlAddChild(parent, child);
         else ans = child;
         if (elem != NULL) {
             if (!push_children(child, elem, stack)) { ok = false; goto end; };
