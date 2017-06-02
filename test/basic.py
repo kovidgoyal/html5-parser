@@ -17,3 +17,8 @@ class BasicTests(TestCase):
         root = etree.adopt_external_document(capsule).getroot()
         self.ae(list(root.iterchildren('body')), list(root.xpath('./body')))
         self.ae(root.find('body/p').text, 'xxx')
+        # Test that lxml is not copying the doc internally
+        root.set('attr', 'abc')
+        cap2 = html_parser.clone_doc(capsule)
+        root2 = etree.adopt_external_document(cap2).getroot()
+        self.ae(etree.tostring(root), etree.tostring(root2))

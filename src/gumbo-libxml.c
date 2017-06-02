@@ -158,13 +158,21 @@ free_encapsulated_doc(PyObject *capsule) {
     }
 }
 
+static inline PyObject*
+encapsulate(xmlDocPtr doc) {
+    PyObject *ans = NULL;
+    ans = PyCapsule_New(doc, NAME, free_encapsulated_doc);
+    if (ans == NULL) { xmlFreeDoc(doc); return NULL; }
+    if (PyCapsule_SetContext(ans, DESTRUCTOR) != 0) { Py_DECREF(ans); return NULL; }
+    return ans;
+}
+
 static PyObject *
 parse(PyObject UNUSED *self, PyObject *args) {
     GumboOptions options = kGumboDefaultOptions;
     xmlDocPtr doc = NULL;
     char *buffer = NULL;
     Py_ssize_t sz = 0;
-    PyObject *ans = NULL;
 
     if (!PyArg_ParseTuple(args, "s#", &buffer, &sz)) return NULL;
 
@@ -179,17 +187,27 @@ parse(PyObject UNUSED *self, PyObject *args) {
     }
 
     if (!parse_with_options(doc, &options, buffer, (size_t)sz, false)) { xmlFreeDoc(doc); return NULL; }
-    ans = PyCapsule_New(doc, NAME, free_encapsulated_doc);
-    if (ans == NULL) { xmlFreeDoc(doc); return NULL; }
-    if (PyCapsule_SetContext(ans, DESTRUCTOR) != 0) { Py_DECREF(ans); return NULL; }
-    return ans;
+    return encapsulate(doc);
 }
 
+static PyObject *
+clone_doc(PyObject UNUSED *self, PyObject *capsule) {
+    if (!PyCapsule_CheckExact(capsule)) { PyErr_SetString(PyExc_TypeError, "Must specify a capsule as the argument"); return NULL; }
+    xmlDocPtr sdoc = PyCapsule_GetPointer(capsule, PyCapsule_GetName(capsule)), doc;
+    if (sdoc == NULL) return NULL;
+    doc = xmlCopyDoc(sdoc, 1);
+    if (doc == NULL) return PyErr_NoMemory();
+    return encapsulate(doc);
+}
 
 static PyMethodDef 
 methods[] = {
     {"parse", parse, METH_VARARGS,
         "parse()\n\nParse specified bytestring which must be in the UTF-8 encoding."
+    },
+
+    {"clone_doc", clone_doc, METH_O,
+        "clone_doc()\n\nClone the specified document. Which must be a document returned by the parse() function."
     },
 
     {NULL, NULL, 0, NULL}
