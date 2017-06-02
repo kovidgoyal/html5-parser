@@ -8,6 +8,7 @@ from __future__ import (absolute_import, division, print_function,
 import os
 import sys
 import unittest
+from lxml import etree
 
 iswindows = hasattr(sys, 'getwindowsversion')
 self_path = os.path.abspath(__file__)
@@ -20,6 +21,13 @@ else:
     import html_parser_debug as html_parser
 
 html_parser
+
+
+def parse(raw, **kw):
+    if not isinstance(raw, bytes):
+        raw = raw.encode('utf-8')
+    capsule = html_parser.parse(raw, **kw)
+    return etree.adopt_external_document(capsule).getroot()
 
 
 class TestCase(unittest.TestCase):

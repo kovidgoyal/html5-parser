@@ -77,6 +77,12 @@ stack_push(Stack *s, GumboNode *g, xmlNodePtr x) {
 }
 // }}}
 
+typedef struct {
+    unsigned int stack_size;
+    bool keep_doctype;
+    GumboOptions gumbo_opts;
+} Options;
+
 static inline bool
 push_children(xmlNodePtr parent, GumboElement *elem, Stack *stack) {
     for (int i = elem->children.length - 1; i >= 0; i--) {
@@ -167,8 +173,8 @@ static xmlNodePtr convert_node(xmlDocPtr doc, GumboNode* node, GumboElement **el
 }
 
 static xmlNodePtr
-convert_tree(xmlDocPtr doc, GumboNode *root, size_t sz) {
-    Stack *stack = alloc_stack(sz);
+convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
+    Stack *stack = alloc_stack(opts->stack_size);
     xmlNodePtr ans = NULL, parent = NULL, child = NULL;
     GumboNode *gumbo = NULL;
     bool ok = true;
@@ -198,12 +204,12 @@ end:
 }
 
 static bool 
-parse_with_options(xmlDocPtr doc, GumboOptions* options, const char* buffer, size_t buffer_length, bool keep_doctype) {
+parse_with_options(xmlDocPtr doc, const char* buffer, size_t buffer_length, Options *opts) {
     GumboOutput *output = NULL;
     xmlNodePtr root = NULL;
-    output = gumbo_parse_with_options(options, buffer, buffer_length);
+    output = gumbo_parse_with_options(&(opts->gumbo_opts), buffer, buffer_length);
     if (output == NULL) { PyErr_NoMemory(); return false; }
-    if (keep_doctype) {
+    if (opts->keep_doctype) {
         GumboDocument* doctype = & output->document->v.document;
         if(!xmlCreateIntSubset(
                 doc,
@@ -215,7 +221,7 @@ parse_with_options(xmlDocPtr doc, GumboOptions* options, const char* buffer, siz
             return false;
         }
     }
-    root = convert_tree(doc, output->root, 16 * 1024);
+    root = convert_tree(doc, output->root, opts);
     if (root) xmlDocSetRootElement(doc, root);
     gumbo_destroy_output(output);
     return root ? true : false;
@@ -245,13 +251,19 @@ encapsulate(xmlDocPtr doc) {
 }
 
 static PyObject *
-parse(PyObject UNUSED *self, PyObject *args) {
-    GumboOptions options = kGumboDefaultOptions;
+parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
     xmlDocPtr doc = NULL;
-    char *buffer = NULL;
+    const char *buffer = NULL;
     Py_ssize_t sz = 0;
+    Options opts = {0};
+    opts.stack_size = 16 * 1024;
+    PyObject *kd = Py_True;
+    opts.gumbo_opts = kGumboDefaultOptions;
 
-    if (!PyArg_ParseTuple(args, "s#", &buffer, &sz)) return NULL;
+    static char *kwlist[] = {"data", "keep_doctype", "stack_size", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|OI", kwlist, &buffer, &sz, &kd, &(opts.stack_size))) return NULL;
+    opts.keep_doctype = PyObject_IsTrue(kd);
 
     doc = xmlNewDoc(BAD_CAST "1.0");
     if (doc == NULL) return PyErr_NoMemory();
@@ -263,7 +275,7 @@ parse(PyObject UNUSED *self, PyObject *args) {
         }
     }
 
-    if (!parse_with_options(doc, &options, buffer, (size_t)sz, false)) { xmlFreeDoc(doc); return NULL; }
+    if (!parse_with_options(doc, buffer, (size_t)sz, &opts)) { xmlFreeDoc(doc); return NULL; }
     return encapsulate(doc);
 }
 
@@ -279,7 +291,7 @@ clone_doc(PyObject UNUSED *self, PyObject *capsule) {
 
 static PyMethodDef 
 methods[] = {
-    {"parse", parse, METH_VARARGS,
+    {"parse", (PyCFunction)parse, METH_VARARGS | METH_KEYWORDS,
         "parse()\n\nParse specified bytestring which must be in the UTF-8 encoding."
     },
 
