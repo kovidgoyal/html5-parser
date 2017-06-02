@@ -265,7 +265,7 @@ parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
 
     static char *kwlist[] = {"data", "keep_doctype", "stack_size", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|OI", kwlist, &buffer, &sz, &kd, &(opts.stack_size))) return NULL;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "et#|OI", kwlist, "UTF-8", &buffer, &sz, &kd, &(opts.stack_size))) return NULL;
     opts.keep_doctype = PyObject_IsTrue(kd);
 
     doc = xmlNewDoc(BAD_CAST "1.0");

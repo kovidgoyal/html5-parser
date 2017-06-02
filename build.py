@@ -87,7 +87,7 @@ if iswindows:
                  native_optimizations=False,
                  add_python=True):
         cc, ccver, cc_name = cc_version()
-        cflags = '/c /nologo /MD /W3 /EHsc /DNDEBUG'.split()
+        cflags = '/c /nologo /MD /W3 /O2 /EHsc /DNDEBUG'.split()
         ldflags = '/DLL /nologo /INCREMENTAL:NO /NODEFAULTLIB:libcmt.lib'
         ldflags = ldflags.split()
         ans = Env(cc, cflags, ldflags, 'link.exe', debug, cc_name, ccver)
