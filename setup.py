@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # vim:fileencoding=utf-8
-# License: GPLv3 Copyright: 2017, Kovid Goyal <kovid at kovidgoyal.net>
+# License: Apache 2.0 Copyright: 2017, Kovid Goyal <kovid at kovidgoyal.net>
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -118,7 +118,7 @@ else:
         sanitize_args.add('-fno-omit-frame-pointer')
         sanitize_args.add('-fsanitize=address')
         if (cc == 'gcc' and ccver >= (5, 0)) or (cc == 'clang' and not isosx):
-            # clang on oS X does not support -fsanitize=undefined
+            # clang on macOS does not support -fsanitize=undefined
             sanitize_args.add('-fsanitize=undefined')
             # if cc == 'gcc' or (cc == 'clang' and ccver >= (4, 2)):
             #     sanitize_args.add('-fno-sanitize-recover=all')
@@ -128,7 +128,6 @@ else:
         native_optimizations = (native_optimizations and not sanitize and
                                 not debug)
         cc, ccver, cc_name = cc_version()
-        print('CC:', cc, ccver, cc_name)
         stack_protector = '-fstack-protector'
         if ccver >= (4, 9) and cc_name == 'gcc':
             stack_protector += '-strong'
@@ -274,7 +273,7 @@ def main():
         exe = sys.executable if iswindows else TEST_EXE
         if not iswindows:
             os.environ['ASAN_OPTIONS'] = 'leak_check_at_exit=0'
-        os.execlp(exe, exe, os.path.join(base, 'test.py'))
+        os.execlp(exe, exe, '-m', 'unittest', 'discover', '-v', 'test', '*.py')
 
 
 if __name__ == '__main__':

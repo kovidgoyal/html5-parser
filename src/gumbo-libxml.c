@@ -12,11 +12,15 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <libxml/tree.h>
+#include <libxml/dict.h>
 
 #include <assert.h>
 #include <string.h>
 
 #define UNUSED __attribute__ ((unused))
+#define CONVERT_NODE static xmlNodePtr convert_node(xmlDocPtr doc, GumboNode* node)
+
+CONVERT_NODE;
 
 // Namespace constants, indexed by GumboNamespaceEnum.
 static const char* kLegalXmlns[] = {
@@ -25,9 +29,65 @@ static const char* kLegalXmlns[] = {
     "http://www.w3.org/1998/Math/MathML"
 };
 
-static xmlNodePtr 
-convert_node(xmlDocPtr doc, GumboNode* node) {
-    xmlNodePtr result = NULL, child = NULL;
+
+static inline bool
+create_children(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
+    xmlNodePtr child;
+    for (unsigned int i = 0; i < elem->children.length; ++i) {
+        child = convert_node(doc, elem->children.data[i]);
+        if (child) xmlAddChild(node, child);
+        else return false;
+    }
+    return true;
+}
+
+
+static inline bool
+create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
+    GumboAttribute* attr;
+    const xmlChar *attr_name;
+    for (unsigned int i = 0; i < elem->attributes.length; ++i) {
+        attr = elem->attributes.data[i];
+        attr_name = xmlDictLookup(doc->dict, BAD_CAST attr->name, -1);
+        if (!attr_name) return false;
+        if (!xmlNewNsPropEatName(node, NULL, (xmlChar*)attr->name, BAD_CAST attr->value)) return false;
+    }
+    return true;
+}
+
+
+static inline xmlNodePtr
+create_element(xmlDocPtr doc, GumboNode *node) {
+    xmlNodePtr result = NULL;
+    xmlNsPtr namespace = NULL;
+    const xmlChar *tag_name = NULL;
+    GumboElement* elem = &node->v.element;
+    bool ok = true;
+
+    tag_name = xmlDictLookup(doc->dict, BAD_CAST gumbo_normalized_tagname(elem->tag), -1);
+    if (!tag_name) return NULL;
+    result = xmlNewNodeEatName(NULL, (xmlChar*)tag_name);
+    if (!result) return NULL;
+
+    // Namespace
+    if (node->parent->type != GUMBO_NODE_DOCUMENT &&
+            elem->tag_namespace != node->parent->v.element.tag_namespace) {
+        namespace = xmlNewNs(
+                result, BAD_CAST kLegalXmlns[elem->tag_namespace], NULL);
+        if (!namespace) { ok = false; goto end; }
+        xmlSetNs(result, namespace);
+    } 
+    if (!create_attributes(doc, result, elem)) { ok = false; goto end; }
+    if (!create_children(doc, result, elem)) { ok = false; goto end; }
+end:
+    if (!ok) { xmlFreeNode(result); result = NULL; }
+    return result;
+}
+
+
+CONVERT_NODE {
+    xmlNodePtr ans = NULL;
+
     switch (node->type) {
         case GUMBO_NODE_DOCUMENT:
             assert(false &&
@@ -36,39 +96,14 @@ convert_node(xmlDocPtr doc, GumboNode* node) {
             break;
         case GUMBO_NODE_ELEMENT:
         case GUMBO_NODE_TEMPLATE:
-            {
-                GumboElement* elem = &node->v.element;
-                // Tag name & namespace.
-                result = xmlNewNode(NULL, BAD_CAST gumbo_normalized_tagname(elem->tag));
-                if (result) {
-                    xmlNsPtr namespace = NULL;
-                    if (node->parent->type != GUMBO_NODE_DOCUMENT &&
-                            elem->tag_namespace != node->parent->v.element.tag_namespace) {
-                        namespace = xmlNewNs(
-                                result, BAD_CAST kLegalXmlns[elem->tag_namespace], NULL);
-                        xmlSetNs(result, namespace);
-                    }
-                    // Attributes.
-                    for (unsigned int i = 0; i < elem->attributes.length; ++i) {
-                        GumboAttribute* attr = elem->attributes.data[i];
-                        xmlNewProp(result, BAD_CAST attr->name, BAD_CAST attr->value);
-                    }
-
-                    // Children.
-                    for (unsigned int i = 0; i < elem->children.length; ++i) {
-                        child = convert_node(doc, elem->children.data[i]);
-                        if (child) xmlAddChild(result, child);
-                        else break;
-                    }
-                } 
-            }
+            ans = create_element(doc, node);
             break;
         case GUMBO_NODE_TEXT:
         case GUMBO_NODE_WHITESPACE:
-            result = xmlNewText(BAD_CAST node->v.text.text);
+            ans = xmlNewText(BAD_CAST node->v.text.text);
             break;
         case GUMBO_NODE_COMMENT:
-            result = xmlNewComment(BAD_CAST node->v.text.text);
+            ans = xmlNewComment(BAD_CAST node->v.text.text);
             break;
         case GUMBO_NODE_CDATA:
             {
@@ -76,14 +111,14 @@ convert_node(xmlDocPtr doc, GumboNode* node) {
                 // original_text.length rather than strlen, but I haven't verified that
                 // that's correct in all cases.
                 const char* node_text = node->v.text.text;
-                result = xmlNewCDataBlock(doc, BAD_CAST node_text, strlen(node_text));
+                ans = xmlNewCDataBlock(doc, BAD_CAST node_text, strlen(node_text));
             }
             break;
         default:
             assert(false && "unknown node type");
     }
-    if (!result && !PyErr_Occurred()) PyErr_NoMemory();
-    return result;
+    if (!ans && !PyErr_Occurred()) PyErr_NoMemory();
+    return ans;
 }
 
 static bool 
@@ -135,6 +170,13 @@ parse(PyObject UNUSED *self, PyObject *args) {
 
     doc = xmlNewDoc(BAD_CAST "1.0");
     if (doc == NULL) return PyErr_NoMemory();
+    if (doc->dict == NULL) {
+        doc->dict = xmlDictCreate();
+        if (doc->dict == NULL) {
+            xmlFreeDoc(doc);
+            return PyErr_NoMemory();
+        }
+    }
 
     if (!parse_with_options(doc, &options, buffer, (size_t)sz, false)) { xmlFreeDoc(doc); return NULL; }
     ans = PyCapsule_New(doc, NAME, free_encapsulated_doc);
@@ -153,11 +195,16 @@ methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
+#ifdef NDEBUG
+static const char* MODULE = "html_parser";
 PyMODINIT_FUNC
 inithtml_parser(void) {
+#else
+static const char* MODULE = "html_parser_debug";
+PyMODINIT_FUNC
+inithtml_parser_debug(void) {
+#endif
     PyObject *m;
-    m = Py_InitModule3("html_parser", methods,
-    "HTML parser in C for speed."
-    );
+    m = Py_InitModule3(MODULE, methods, "HTML parser in C for speed.");
     if (m == NULL) return;
 }
