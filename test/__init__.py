@@ -10,15 +10,14 @@ import sys
 import unittest
 from lxml import etree
 
-iswindows = hasattr(sys, 'getwindowsversion')
 self_path = os.path.abspath(__file__)
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(self_path)), 'build'))
 
-if iswindows:
-    import html_parser
-else:
+try:
     import html_parser_debug as html_parser
+except ImportError:
+    import html_parser
 
 html_parser
 
