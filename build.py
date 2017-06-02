@@ -37,9 +37,8 @@ def safe_makedirs(path):
 
 
 def add_python_flags(env, return_libs=False):
-    env.cflags.extend(
-        '-I' + sysconfig.get_path(x) for x in 'include platinclude'.split()
-    )
+    env.cflags.extend('-I' + sysconfig.get_path(x)
+                      for x in 'include platinclude'.split())
     libs = []
     libs += sysconfig.get_config_var('LIBS').split()
     libs += sysconfig.get_config_var('SYSLIBS').split()
@@ -50,15 +49,13 @@ def add_python_flags(env, return_libs=False):
             if val and '/{}.framework'.format(fw) in val:
                 fdir = val[:val.index('/{}.framework'.format(fw))]
                 if os.path.isdir(
-                    os.path.join(fdir, '{}.framework'.format(fw))
-                ):
+                        os.path.join(fdir, '{}.framework'.format(fw))):
                     framework_dir = fdir
                     break
         else:
             raise SystemExit('Failed to find Python framework')
         libs.append(
-            os.path.join(framework_dir, sysconfig.get_config_var('LDLIBRARY'))
-        )
+            os.path.join(framework_dir, sysconfig.get_config_var('LDLIBRARY')))
     else:
         libs += ['-L' + sysconfig.get_config_var('LIBDIR')]
         libs += [
@@ -78,25 +75,24 @@ if iswindows:
     def get_sanitize_args(*a):
         return set()
 
-    def init_env(debug=False, sanitize=False, native_optimizations=False):
+    def init_env(debug=False,
+                 sanitize=False,
+                 native_optimizations=False,
+                 add_python=True):
         cc, ccver, cc_name = cc_version()
         cflags = '/c /nologo /MD /W3 /EHsc /DNDEBUG'.split()
         ldflags = '/DLL /nologo /INCREMENTAL:NO /NODEFAULTLIB:libcmt.lib'
         ldflags = ldflags.split()
-        return add_python_flags(Env(
-            cc, cflags, ldflags, 'link.exe', debug, cc_name, ccver))
+        ans = Env(cc, cflags, ldflags, 'link.exe', debug, cc_name, ccver)
+        return add_python_flags(ans) if add_python else ans
 else:
 
     def pkg_config(pkg, *args):
         return list(
-            filter(
-                None,
-                shlex.split(
-                    subprocess.check_output([PKGCONFIG, pkg] + list(args))
-                    .decode('utf-8')
-                )
-            )
-        )
+            filter(None,
+                   shlex.split(
+                       subprocess.check_output([PKGCONFIG, pkg] + list(args))
+                       .decode('utf-8'))))
 
     def cc_version():
         cc = os.environ.get('CC', 'gcc')
@@ -124,7 +120,10 @@ else:
             #     sanitize_args.add('-fno-sanitize-recover=all')
         return sanitize_args
 
-    def init_env(debug=False, sanitize=False, native_optimizations=False):
+    def init_env(debug=False,
+                 sanitize=False,
+                 native_optimizations=False,
+                 add_python=True):
         native_optimizations = (native_optimizations and not sanitize and
                                 not debug)
         cc, ccver, cc_name = cc_version()
@@ -156,8 +155,8 @@ else:
         cflags += shlex.split(os.environ.get('CFLAGS', ''))
         ldflags += shlex.split(os.environ.get('LDFLAGS', ''))
         cflags.append('-pthread')
-        return add_python_flags(Env(
-            cc, cflags, ldflags, cc, debug, cc_name, ccver))
+        ans = Env(cc, cflags, ldflags, cc, debug, cc_name, ccver)
+        return add_python_flags(ans) if add_python else ans
 
 
 def define(x):
@@ -179,7 +178,7 @@ def newer(dest, *sources):
         dtime = os.path.getmtime(dest)
     except EnvironmentError:
         return True
-    for s in chain(sources, (self_path,)):
+    for s in chain(sources, (self_path, )):
         if os.path.getmtime(s) >= dtime:
             return True
     return False
@@ -224,8 +223,7 @@ def build_obj(src, env, headers):
 def link(objects, env):
     ext = '.' + ('pyd' if iswindows else 'so')
     suffix = '_debug' if env.debug else ''
-    dest = os.path.join(
-        'build', 'html_parser' + suffix + ext)
+    dest = os.path.join('build', 'html_parser' + suffix + ext)
     o = ['/OUT:' + dest] if iswindows else ['-o', dest]
     cmd = [env.linker] + env.ldflags + objects + o
     if newer(dest, *objects):
@@ -234,16 +232,17 @@ def link(objects, env):
 
 
 TEST_EXE = 'build/test'
+SRC_DIRS = 'src gumbo'.split()
 
 
 def build(args):
     objects, debug_objects = [], []
     debug_env = init_env(debug=True, sanitize=True)
     release_env = init_env()
-    for sdir in ('src', 'gumbo'):
+    for sdir in SRC_DIRS:
         sources, headers = find_c_files(sdir)
         if sdir == 'src':
-            headers += ('gumbo/gumbo.h',)
+            headers += ('gumbo/gumbo.h', )
         if not iswindows:
             debug_objects.extend(
                 build_obj(c, debug_env, headers) for c in sources)
@@ -254,10 +253,8 @@ def build(args):
             link(obj, env)
     if not iswindows:
         ldflags = add_python_flags(deepcopy(debug_env), return_libs=True)
-        cmd = (
-            [debug_env.cc] + debug_env.cflags + ['test.c'] +
-            ['-o', TEST_EXE] + ldflags
-        )
+        cmd = ([debug_env.cc] + debug_env.cflags + ['test.c'] +
+               ['-o', TEST_EXE] + ldflags)
         if newer(TEST_EXE, *debug_objects):
             run_tool(cmd)
 
