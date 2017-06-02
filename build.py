@@ -101,6 +101,15 @@ else:
                        subprocess.check_output([PKGCONFIG, pkg] + list(args))
                        .decode('utf-8'))))
 
+    def include_dirs():
+        return [x[2:] for x in pkg_config('libxml-2.0', '--cflags-only-I')]
+
+    def libraries():
+        return [x[2:] for x in pkg_config('libxml-2.0', '--libs-only-l')]
+
+    def library_dirs():
+        return [x[2:] for x in pkg_config('libxml-2.0', '--libs-only-L')]
+
     def cc_version():
         cc = os.environ.get('CC', 'gcc')
         raw = subprocess.check_output(
