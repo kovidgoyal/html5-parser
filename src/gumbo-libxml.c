@@ -9,10 +9,14 @@
 
 #include "../gumbo/gumbo.h"
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+#include <libxml/tree.h>
+
 #include <assert.h>
 #include <string.h>
 
-#include <libxml/tree.h>
+#define UNUSED __attribute__ ((unused))
 
 // Namespace constants, indexed by GumboNamespaceEnum.
 static const char* kLegalXmlns[] = {
@@ -21,9 +25,9 @@ static const char* kLegalXmlns[] = {
     "http://www.w3.org/1998/Math/MathML"
 };
 
-static 
-xmlNodePtr convert_node(xmlDocPtr doc, GumboNode* node) {
-    xmlNodePtr result = NULL;
+static xmlNodePtr 
+convert_node(xmlDocPtr doc, GumboNode* node) {
+    xmlNodePtr result = NULL, child = NULL;
     switch (node->type) {
         case GUMBO_NODE_DOCUMENT:
             assert(false &&
@@ -52,9 +56,11 @@ xmlNodePtr convert_node(xmlDocPtr doc, GumboNode* node) {
 
                     // Children.
                     for (unsigned int i = 0; i < elem->children.length; ++i) {
-                        xmlAddChild(result, convert_node(doc, elem->children.data[i]));
+                        child = convert_node(doc, elem->children.data[i]);
+                        if (child) xmlAddChild(result, child);
+                        else break;
                     }
-                }
+                } 
             }
             break;
         case GUMBO_NODE_TEXT:
@@ -76,28 +82,82 @@ xmlNodePtr convert_node(xmlDocPtr doc, GumboNode* node) {
         default:
             assert(false && "unknown node type");
     }
+    if (!result && !PyErr_Occurred()) PyErr_NoMemory();
     return result;
 }
 
-xmlDocPtr 
-gumbo_libxml_parse_with_options(GumboOptions* options, const char* buffer, size_t buffer_length) {
-    xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
-    GumboOutput* output = gumbo_parse_with_options(options, buffer, buffer_length);
-    GumboDocument* doctype = & output->document->v.document;
-    xmlCreateIntSubset(
-            doc,
-            BAD_CAST doctype->name,
-            BAD_CAST doctype->public_identifier,
-            BAD_CAST doctype->system_identifier);
-
-    xmlDocSetRootElement(doc, convert_node(doc, output->root));
+static bool 
+parse_with_options(xmlDocPtr doc, GumboOptions* options, const char* buffer, size_t buffer_length, bool keep_doctype) {
+    GumboOutput *output = NULL;
+    xmlNodePtr root = NULL;
+    output = gumbo_parse_with_options(options, buffer, buffer_length);
+    if (output == NULL) { PyErr_NoMemory(); return false; }
+    if (keep_doctype) {
+        GumboDocument* doctype = & output->document->v.document;
+        if(!xmlCreateIntSubset(
+                doc,
+                BAD_CAST doctype->name,
+                BAD_CAST doctype->public_identifier,
+                BAD_CAST doctype->system_identifier)) {
+            PyErr_NoMemory();
+            gumbo_destroy_output(output);
+            return false;
+        }
+    }
+    root = convert_node(doc, output->root);
+    if (root) xmlDocSetRootElement(doc, root);
     gumbo_destroy_output(output);
-    return doc;
-
+    return root ? true : false;
 }
 
-xmlDocPtr 
-gumbo_libxml_parse(const char* buffer) {
+
+static char *NAME =  "libxml2:xmlDoc";
+static char *DESTRUCTOR = "destructor:xmlFreeDoc";
+
+static void 
+free_encapsulated_doc(PyObject *capsule) {
+    xmlDocPtr doc = PyCapsule_GetPointer(capsule, NAME);
+    if (doc != NULL) {
+        char *ctx = PyCapsule_GetContext(capsule);
+        if (ctx == DESTRUCTOR) xmlFreeDoc(doc);
+    }
+}
+
+static PyObject *
+parse(PyObject UNUSED *self, PyObject *args) {
     GumboOptions options = kGumboDefaultOptions;
-    return gumbo_libxml_parse_with_options(&options, buffer, strlen(buffer));
+    xmlDocPtr doc = NULL;
+    char *buffer = NULL;
+    Py_ssize_t sz = 0;
+    PyObject *ans = NULL;
+
+    if (!PyArg_ParseTuple(args, "s#", &buffer, &sz)) return NULL;
+
+    doc = xmlNewDoc(BAD_CAST "1.0");
+    if (doc == NULL) return PyErr_NoMemory();
+
+    if (!parse_with_options(doc, &options, buffer, (size_t)sz, false)) { xmlFreeDoc(doc); return NULL; }
+    ans = PyCapsule_New(doc, NAME, free_encapsulated_doc);
+    if (ans == NULL) { xmlFreeDoc(doc); return NULL; }
+    if (PyCapsule_SetContext(ans, DESTRUCTOR) != 0) { Py_DECREF(ans); return NULL; }
+    return ans;
+}
+
+
+static PyMethodDef 
+methods[] = {
+    {"parse", parse, METH_VARARGS,
+        "parse()\n\nParse specified bytestring which must be in the UTF-8 encoding."
+    },
+
+    {NULL, NULL, 0, NULL}
+};
+
+PyMODINIT_FUNC
+inithtml_parser(void) {
+    PyObject *m;
+    m = Py_InitModule3("html_parser", methods,
+    "HTML parser in C for speed."
+    );
+    if (m == NULL) return;
 }

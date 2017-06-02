@@ -35,6 +35,40 @@ def safe_makedirs(path):
             raise
 
 
+def add_python_flags(env):
+    env.cflags.extend(
+        '-I' + sysconfig.get_path(x) for x in 'include platinclude'.split()
+    )
+    libs = []
+    libs += sysconfig.get_config_var('LIBS').split()
+    libs += sysconfig.get_config_var('SYSLIBS').split()
+    fw = sysconfig.get_config_var('PYTHONFRAMEWORK')
+    if fw:
+        for var in 'data include stdlib'.split():
+            val = sysconfig.get_path(var)
+            if val and '/{}.framework'.format(fw) in val:
+                fdir = val[:val.index('/{}.framework'.format(fw))]
+                if os.path.isdir(
+                    os.path.join(fdir, '{}.framework'.format(fw))
+                ):
+                    framework_dir = fdir
+                    break
+        else:
+            raise SystemExit('Failed to find Python framework')
+        libs.append(
+            os.path.join(framework_dir, sysconfig.get_config_var('LDLIBRARY'))
+        )
+    else:
+        libs += ['-L' + sysconfig.get_config_var('LIBDIR')]
+        libs += [
+            '-lpython' + sysconfig.get_config_var('VERSION') + getattr(
+                sys, 'abiflags', '')
+        ]
+        libs += sysconfig.get_config_var('LINKFORSHARED').split()
+    env.ldflags.extend(libs)
+    return env
+
+
 if iswindows:
 
     def cc_version():
@@ -46,8 +80,10 @@ if iswindows:
     def init_env(debug=False, sanitize=False, native_optimizations=False):
         cc, ccver, cc_name = cc_version()
         cflags = '/c /nologo /MD /W3 /EHsc /DNDEBUG'.split()
-        ldflags = []
-        return Env(cc, cflags, ldflags, 'link.exe', debug, cc_name, ccver)
+        ldflags = '/DLL /nologo /INCREMENTAL:NO /NODEFAULTLIB:libcmt.lib'
+        ldflags = ldflags.split()
+        return add_python_flags(Env(
+            cc, cflags, ldflags, 'link.exe', debug, cc_name, ccver))
 else:
 
     def pkg_config(pkg, *args):
@@ -113,13 +149,15 @@ else:
         cflags = shlex.split(cflags) + libxml_cflags + shlex.split(
             sysconfig.get_config_var('CCSHARED'))
         ldflags = os.environ.get('OVERRIDE_LDFLAGS',
-                                 '-Wall ' + ' '.join(sanitize_args) +
+                                 '-Wall -shared ' + ' '.join(sanitize_args) +
                                  ('' if debug else ' -O3'))
-        ldflags = shlex.split(ldflags)
+        libxml_ldflags = pkg_config('libxml-2.0', '--libs')
+        ldflags = shlex.split(ldflags) + libxml_ldflags
         cflags += shlex.split(os.environ.get('CFLAGS', ''))
         ldflags += shlex.split(os.environ.get('LDFLAGS', ''))
         cflags.append('-pthread')
-        return Env(cc, cflags, ldflags, cc, debug, cc_name, ccver)
+        return add_python_flags(Env(
+            cc, cflags, ldflags, cc, debug, cc_name, ccver))
 
 
 def define(x):
@@ -184,6 +222,17 @@ def build_obj(src, env, headers):
     return obj
 
 
+def link(objects, env):
+    ext = '.' + ('pyd' if iswindows else 'so')
+    suffix = '_debug' if env.debug else ''
+    dest = os.path.join(
+        'build', 'html_parser' + suffix + ext)
+    o = ['/OUT:' + dest] if iswindows else ['-o', dest]
+    cmd = [env.linker] + env.ldflags + objects + o
+    run_tool(cmd)
+    return dest
+
+
 def build(args):
     objects, debug_objects = [], []
     debug_env = init_env(debug=True, sanitize=True)
@@ -196,6 +245,10 @@ def build(args):
             debug_objects.extend(
                 build_obj(c, debug_env, headers) for c in sources)
         objects.extend(build_obj(c, release_env, headers) for c in sources)
+    for obj in debug_objects, objects:
+        if obj:
+            env = debug_env if obj is debug_objects else release_env
+            link(obj, env)
 
 
 def main():
