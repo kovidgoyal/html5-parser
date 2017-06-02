@@ -13,6 +13,7 @@ import shlex
 import subprocess
 import sys
 import sysconfig
+from copy import deepcopy
 from collections import namedtuple
 from itertools import chain
 
@@ -35,7 +36,7 @@ def safe_makedirs(path):
             raise
 
 
-def add_python_flags(env):
+def add_python_flags(env, return_libs=False):
     env.cflags.extend(
         '-I' + sysconfig.get_path(x) for x in 'include platinclude'.split()
     )
@@ -66,7 +67,7 @@ def add_python_flags(env):
         ]
         libs += sysconfig.get_config_var('LINKFORSHARED').split()
     env.ldflags.extend(libs)
-    return env
+    return libs if return_libs else env
 
 
 if iswindows:
@@ -212,13 +213,12 @@ def build_obj(src, env, headers):
     suffix = '-debug' if env.debug else ''
     obj = os.path.join(
         'build', os.path.basename(src).rpartition('.')[0] + suffix + '.o')
-    if not newer(obj, src, *headers):
-        return
-    if iswindows:
-        cmd = [env.cc] + env.cflags + ['/Tc' + src] + ['/Fo' + obj]
-    else:
-        cmd = [env.cc] + env.cflags + ['-c', src] + ['-o', obj]
-    run_tool(cmd)
+    if newer(obj, src, *headers):
+        if iswindows:
+            cmd = [env.cc] + env.cflags + ['/Tc' + src] + ['/Fo' + obj]
+        else:
+            cmd = [env.cc] + env.cflags + ['-c', src] + ['-o', obj]
+        run_tool(cmd)
     return obj
 
 
@@ -229,8 +229,12 @@ def link(objects, env):
         'build', 'html_parser' + suffix + ext)
     o = ['/OUT:' + dest] if iswindows else ['-o', dest]
     cmd = [env.linker] + env.ldflags + objects + o
-    run_tool(cmd)
+    if newer(dest, *objects):
+        run_tool(cmd)
     return dest
+
+
+TEST_EXE = 'build/test'
 
 
 def build(args):
@@ -249,6 +253,14 @@ def build(args):
         if obj:
             env = debug_env if obj is debug_objects else release_env
             link(obj, env)
+    if not iswindows:
+        ldflags = add_python_flags(deepcopy(debug_env), return_libs=True)
+        cmd = (
+            [debug_env.cc] + debug_env.cflags + ['test.c'] +
+            ['-o', TEST_EXE] + ldflags
+        )
+        if newer(TEST_EXE, *debug_objects):
+            run_tool(cmd)
 
 
 def main():
@@ -258,8 +270,11 @@ def main():
     if args.action == 'build':
         build(args)
     elif args.action == 'test':
-        os.execlp(sys.executable, sys.executable, os.path.join(
-            base, 'test.py'))
+        build(args)
+        exe = sys.executable if iswindows else TEST_EXE
+        if not iswindows:
+            os.environ['ASAN_OPTIONS'] = 'leak_check_at_exit=0'
+        os.execlp(exe, exe, os.path.join(base, 'test.py'))
 
 
 if __name__ == '__main__':
