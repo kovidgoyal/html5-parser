@@ -7,7 +7,6 @@
 
 // Based on https://github.com/nostrademons/gumbo-libxml/blob/master/gumbo_libxml.c
 
-#include "../gumbo/gumbo.h"
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
@@ -17,10 +16,9 @@
 #include <assert.h>
 #include <string.h>
 
-#define UNUSED __attribute__ ((unused))
-#define CONVERT_NODE static xmlNodePtr convert_node(xmlDocPtr doc, GumboNode* node)
+#include "../gumbo/gumbo.h"
 
-CONVERT_NODE;
+#define UNUSED __attribute__ ((unused))
 
 // Namespace constants, indexed by GumboNamespaceEnum.
 static const char* kLegalXmlns[] = {
@@ -29,14 +27,53 @@ static const char* kLegalXmlns[] = {
     "http://www.w3.org/1998/Math/MathML"
 };
 
+// Stack {{{
+
+typedef struct {
+    GumboNode *gumbo;
+    xmlNodePtr xml;
+} StackItem;
+
+typedef struct {
+    size_t length;
+    size_t capacity;
+    StackItem *items;
+} Stack;
+
+static inline Stack*
+alloc_stack(size_t sz) {
+    Stack *ans = (Stack*)calloc(sizeof(Stack), 1);
+    if (ans) {
+        ans->items = (StackItem*)malloc(sizeof(StackItem) * sz);
+        if (ans->items) ans->capacity = sz;
+        else { free(ans); ans = NULL; }
+    }
+    return ans;
+}
+
+static inline void
+free_stack(Stack *s) { if (s) { free(s->items); free(s); } }
+
+static inline void
+stack_pop(Stack *s, GumboNode **g, xmlNodePtr *x) { StackItem *si = &(s->items[--(s->length)]); *g = si->gumbo; *x = si->xml; }
 
 static inline bool
-create_children(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
-    xmlNodePtr child;
-    for (unsigned int i = 0; i < elem->children.length; ++i) {
-        child = convert_node(doc, elem->children.data[i]);
-        if (child) xmlAddChild(node, child);
-        else return false;
+stack_push(Stack *s, GumboNode *g, xmlNodePtr x) {
+    if (s->length >= s->capacity) {
+        s->capacity *= 2;
+        s->items = (StackItem*)realloc(s->items, s->capacity * sizeof(StackItem));
+        if (!s->items) return false;
+    }
+    StackItem *si = &(s->items[(s->length)++]);
+    si->gumbo = g; si->xml = x;
+    return true;
+}
+// }}}
+
+static inline bool
+push_children(xmlNodePtr parent, GumboElement *elem, Stack *stack) {
+    for (int i = elem->children.length - 1; i >= 0; i--) {
+        if (!stack_push(stack, elem->children.data[i], parent)) return false;
     }
     return true;
 }
@@ -57,12 +94,13 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
 
 
 static inline xmlNodePtr
-create_element(xmlDocPtr doc, GumboNode *node) {
+create_element(xmlDocPtr doc, GumboNode *node, GumboElement **store_elem) {
     xmlNodePtr result = NULL;
     xmlNsPtr namespace = NULL;
     const xmlChar *tag_name = NULL;
     GumboElement* elem = &node->v.element;
     bool ok = true;
+    *store_elem = elem;
 
     tag_name = xmlDictLookup(doc->dict, BAD_CAST gumbo_normalized_tagname(elem->tag), -1);
     if (!tag_name) return NULL;
@@ -78,15 +116,15 @@ create_element(xmlDocPtr doc, GumboNode *node) {
         xmlSetNs(result, namespace);
     } 
     if (!create_attributes(doc, result, elem)) { ok = false; goto end; }
-    if (!create_children(doc, result, elem)) { ok = false; goto end; }
 end:
     if (!ok) { xmlFreeNode(result); result = NULL; }
     return result;
 }
 
 
-CONVERT_NODE {
+static xmlNodePtr convert_node(xmlDocPtr doc, GumboNode* node, GumboElement **elem) {
     xmlNodePtr ans = NULL;
+    *elem = NULL;
 
     switch (node->type) {
         case GUMBO_NODE_DOCUMENT:
@@ -96,7 +134,7 @@ CONVERT_NODE {
             break;
         case GUMBO_NODE_ELEMENT:
         case GUMBO_NODE_TEMPLATE:
-            ans = create_element(doc, node);
+            ans = create_element(doc, node, elem);
             break;
         case GUMBO_NODE_TEXT:
         case GUMBO_NODE_WHITESPACE:
@@ -121,6 +159,37 @@ CONVERT_NODE {
     return ans;
 }
 
+static xmlNodePtr
+convert_tree(xmlDocPtr doc, GumboNode *root, size_t sz) {
+    Stack *stack = alloc_stack(sz);
+    xmlNodePtr ans = NULL, parent = NULL, child = NULL;
+    GumboNode *gumbo = NULL;
+    bool ok = true;
+    GumboElement *elem;
+
+    if (stack == NULL) { PyErr_NoMemory(); return NULL; }
+    stack_push(stack, root, NULL);
+
+    while(stack->length > 0) {
+        stack_pop(stack, &gumbo, &parent);
+        child = convert_node(doc, gumbo, &elem);
+        if (!child) { ok = false; goto end; };
+        if (parent) xmlAddChild(parent, child);
+        else ans = child;
+        if (elem != NULL) {
+            if (!push_children(child, elem, stack)) { ok = false; goto end; };
+        }
+
+    }
+end:
+    if (!ok) {
+        if (ans) { xmlFreeNode(ans); ans = NULL; }
+        if (!PyErr_Occurred()) PyErr_NoMemory();
+    }
+    free_stack(stack);
+    return ans;
+}
+
 static bool 
 parse_with_options(xmlDocPtr doc, GumboOptions* options, const char* buffer, size_t buffer_length, bool keep_doctype) {
     GumboOutput *output = NULL;
@@ -139,12 +208,13 @@ parse_with_options(xmlDocPtr doc, GumboOptions* options, const char* buffer, siz
             return false;
         }
     }
-    root = convert_node(doc, output->root);
+    root = convert_tree(doc, output->root, 16 * 1024);
     if (root) xmlDocSetRootElement(doc, root);
     gumbo_destroy_output(output);
     return root ? true : false;
 }
 
+// Python wrapper {{{
 
 static char *NAME =  "libxml2:xmlDoc";
 static char *DESTRUCTOR = "destructor:xmlFreeDoc";
@@ -226,3 +296,4 @@ inithtml_parser_debug(void) {
     m = Py_InitModule3(MODULE, methods, "HTML parser in C for speed.");
     if (m == NULL) return;
 }
+// }}}
