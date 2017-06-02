@@ -18,6 +18,9 @@
 
 #include "../gumbo/gumbo.h"
 
+#define MAJOR 1
+#define MINOR 0
+#define PATCH 0
 #define UNUSED __attribute__ ((unused))
 #ifdef __builtin_expect
 #define LIKELY(x)    __builtin_expect (!!(x), 1)
@@ -314,5 +317,8 @@ inithtml_parser_debug(void) {
     PyObject *m;
     m = Py_InitModule3(MODULE, methods, "HTML parser in C for speed.");
     if (m == NULL) return;
+    PyModule_AddIntMacro(m, MAJOR);
+    PyModule_AddIntMacro(m, MINOR);
+    PyModule_AddIntMacro(m, PATCH);
 }
 // }}}

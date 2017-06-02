@@ -13,8 +13,8 @@ import shlex
 import subprocess
 import sys
 import sysconfig
-from copy import deepcopy
 from collections import namedtuple
+from copy import deepcopy
 from itertools import chain
 
 self_path = os.path.abspath(__file__)
@@ -26,6 +26,13 @@ iswindows = hasattr(sys, 'getwindowsversion')
 is_travis = os.environ.get('TRAVIS') == 'true'
 Env = namedtuple('Env', 'cc cflags ldflags linker debug cc_name cc_ver')
 PKGCONFIG = os.environ.get('PKGCONFIG_EXE', 'pkg-config')
+with open(os.path.join(base, 'src/gumbo-libxml.c'), 'rb') as f:
+    raw = f.read().decode('utf-8')
+version = tuple(map(int, (
+    re.search(r'^#define MAJOR (\d+)', raw, flags=re.MULTILINE).group(1),
+    re.search(r'^#define MINOR (\d+)', raw, flags=re.MULTILINE).group(1),
+    re.search(r'^#define PATCH (\d+)', raw, flags=re.MULTILINE).group(1),
+)))
 
 
 def safe_makedirs(path):
