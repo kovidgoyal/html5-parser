@@ -56,7 +56,7 @@ setup(
     platforms=['any'],
     install_requires=[
         'chardet',
-        # 'lxml>=3.8.0'
+        'lxml>=3.8.0'
     ],
     packages=['html5_parser'],
     test_suite='setup.discover_tests',
