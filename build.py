@@ -227,7 +227,7 @@ MOD_EXT = '.so'
 def link(objects, env):
     dest = os.path.join(build_dir, 'html_parser' + MOD_EXT)
     o = ['-o', dest]
-    cmd = [env.linker] + env.ldflags + objects + o
+    cmd = [env.linker] + objects + o + env.ldflags
     if newer(dest, *objects):
         run_tool(cmd)
     return dest
