@@ -305,17 +305,10 @@ methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-#ifdef NDEBUG
-static const char* MODULE = "html_parser";
 PyMODINIT_FUNC
 inithtml_parser(void) {
-#else
-static const char* MODULE = "html_parser_debug";
-PyMODINIT_FUNC
-inithtml_parser_debug(void) {
-#endif
     PyObject *m;
-    m = Py_InitModule3(MODULE, methods, "HTML parser in C for speed.");
+    m = Py_InitModule3("html_parser", methods, "HTML parser in C for speed.");
     if (m == NULL) return;
     PyModule_AddIntMacro(m, MAJOR);
     PyModule_AddIntMacro(m, MINOR);

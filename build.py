@@ -7,9 +7,11 @@ from __future__ import (absolute_import, division, print_function,
 
 import argparse
 import errno
+import glob
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import sysconfig
@@ -19,7 +21,8 @@ from itertools import chain
 
 self_path = os.path.abspath(__file__)
 base = os.path.dirname(self_path)
-build_dir = os.path.join(base, 'build')
+build_dir = os.path.join(base, 'build', 'custom')
+freeze_dir = os.path.join(base, 'build', 'html5_parser')
 _plat = sys.platform.lower()
 isosx = 'darwin' in _plat
 iswindows = hasattr(sys, 'getwindowsversion')
@@ -28,11 +31,12 @@ Env = namedtuple('Env', 'cc cflags ldflags linker debug cc_name cc_ver')
 PKGCONFIG = os.environ.get('PKGCONFIG_EXE', 'pkg-config')
 with open(os.path.join(base, 'src/gumbo-libxml.c'), 'rb') as f:
     raw = f.read().decode('utf-8')
-version = tuple(map(int, (
-    re.search(r'^#define MAJOR (\d+)', raw, flags=re.MULTILINE).group(1),
-    re.search(r'^#define MINOR (\d+)', raw, flags=re.MULTILINE).group(1),
-    re.search(r'^#define PATCH (\d+)', raw, flags=re.MULTILINE).group(1),
-)))
+version = tuple(
+    map(int, (re.search(
+        r'^#define MAJOR (\d+)', raw, flags=re.MULTILINE).group(1), re.search(
+            r'^#define MINOR (\d+)', raw,
+            flags=re.MULTILINE).group(1), re.search(
+                r'^#define PATCH (\d+)', raw, flags=re.MULTILINE).group(1), )))
 
 
 def safe_makedirs(path):
@@ -205,7 +209,7 @@ def option_parser():
     p.add_argument(
         'action',
         nargs='?',
-        default='build',
+        default='test',
         choices='build test'.split(),
         help='Action to perform (default is build)')
     return p
@@ -226,7 +230,7 @@ def find_c_files(src_dir):
 def build_obj(src, env, headers):
     suffix = '-debug' if env.debug else ''
     obj = os.path.join(
-        'build', os.path.basename(src).rpartition('.')[0] + suffix + '.o')
+        build_dir, os.path.basename(src).rpartition('.')[0] + suffix + '.o')
     if newer(obj, src, *headers):
         if iswindows:
             cmd = [env.cc] + env.cflags + ['/Tc' + src] + ['/Fo' + obj]
@@ -236,10 +240,13 @@ def build_obj(src, env, headers):
     return obj
 
 
+TEST_EXE = os.path.join(build_dir, 'test')
+SRC_DIRS = 'src gumbo'.split()
+MOD_EXT = '.' + ('pyd' if iswindows else 'so')
+
+
 def link(objects, env):
-    ext = '.' + ('pyd' if iswindows else 'so')
-    suffix = '_debug' if env.debug else ''
-    dest = os.path.join('build', 'html_parser' + suffix + ext)
+    dest = os.path.join(build_dir, 'html_parser' + MOD_EXT)
     o = ['/OUT:' + dest] if iswindows else ['-o', dest]
     cmd = [env.linker] + env.ldflags + objects + o
     if newer(dest, *objects):
@@ -247,38 +254,30 @@ def link(objects, env):
     return dest
 
 
-TEST_EXE = 'build/test'
-SRC_DIRS = 'src gumbo'.split()
-
-
 def build(args):
-    objects, debug_objects = [], []
+    debug_objects = []
     debug_env = init_env(debug=True, sanitize=True)
-    release_env = init_env()
     for sdir in SRC_DIRS:
         sources, headers = find_c_files(sdir)
         if sdir == 'src':
             headers += ('gumbo/gumbo.h', )
-        if not iswindows:
-            debug_objects.extend(
-                build_obj(c, debug_env, headers) for c in sources)
-        objects.extend(build_obj(c, release_env, headers) for c in sources)
-    for obj in debug_objects, objects:
-        if obj:
-            env = debug_env if obj is debug_objects else release_env
-            link(obj, env)
-    if not iswindows:
-        ldflags = add_python_flags(deepcopy(debug_env), return_libs=True)
-        cmd = ([debug_env.cc] + debug_env.cflags + ['test.c'] +
-               ['-o', TEST_EXE] + ldflags)
-        if newer(TEST_EXE, *debug_objects):
-            run_tool(cmd)
+        debug_objects.extend(build_obj(c, debug_env, headers) for c in sources)
+    link(debug_objects, debug_env)
+    ldflags = add_python_flags(deepcopy(debug_env), return_libs=True)
+    cmd = ([debug_env.cc] + debug_env.cflags + ['test.c'] + ['-o', TEST_EXE] +
+           ldflags)
+    if newer(TEST_EXE, *debug_objects):
+        run_tool(cmd)
+    for mod in glob.glob(os.path.join(build_dir, '*' + MOD_EXT)):
+        shutil.copy2(mod, freeze_dir)
+    for mod in glob.glob(os.path.join('html5_parser', '*.py')):
+        shutil.copy2(mod, freeze_dir)
 
 
 def main():
     args = option_parser().parse_args()
     os.chdir(base)
-    safe_makedirs(build_dir)
+    safe_makedirs(build_dir), safe_makedirs(freeze_dir)
     if args.action == 'build':
         build(args)
     elif args.action == 'test':
