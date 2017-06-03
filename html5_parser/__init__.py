@@ -8,7 +8,7 @@ import codecs
 from collections import namedtuple
 from locale import getpreferredencoding
 
-from lxml import etree
+from lxml import etree  # Must be imported before html_parser to initialize libxml
 
 from . import html_parser
 
