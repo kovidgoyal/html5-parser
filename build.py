@@ -217,6 +217,9 @@ def build_obj(src, env, headers):
 
 
 TEST_EXE = os.path.join(build_dir, 'test')
+if is_travis:
+    TEST_EXE = os.path.join(
+        os.path.dirname(os.path.abspath(sys.executable)), 'test-html5-parser')
 SRC_DIRS = 'src gumbo'.split()
 MOD_EXT = '.so'
 
@@ -259,11 +262,6 @@ def main():
     elif args.action == 'test':
         build(args)
         os.environ['ASAN_OPTIONS'] = 'leak_check_at_exit=0'
-        if is_travis:
-            subprocess.check_call(['ldd', TEST_EXE])
-            print(sys.path)
-            subprocess.check_call(
-                [TEST_EXE, '-c', 'import sys; print(sys.path)'])
         os.execlp(TEST_EXE, TEST_EXE, '-m', 'unittest', 'discover', '-v',
                   'test', '*.py')
 
