@@ -305,13 +305,46 @@ methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
+#define MODULE_NAME "html_parser"
+#define MODULE_DOC "HTML parser in C for speed."
+
+#if PY_MAJOR_VERSION >= 3
+
+static struct PyModuleDef 
+moduledef = {
+        PyModuleDef_HEAD_INIT,
+        MODULE_NAME,
+        MODULE_DOC,
+        0,
+        methods,
+        NULL,
+        NULL,
+        NULL,
+        NULL
+};
+
+#define INITERROR return NULL
+
+PyMODINIT_FUNC
+PyInit_html_parser(void) {
+
+#else
+#define INITERROR return
 PyMODINIT_FUNC
 inithtml_parser(void) {
+#endif
     PyObject *m;
-    m = Py_InitModule3("html_parser", methods, "HTML parser in C for speed.");
-    if (m == NULL) return;
+#if PY_MAJOR_VERSION >= 3
+    m = PyModule_Create(&moduledef);
+#else
+    m = Py_InitModule3(MODULE_NAME, methods, MODULE_DOC);
+#endif
+    if (m == NULL) INITERROR;
     PyModule_AddIntMacro(m, MAJOR);
     PyModule_AddIntMacro(m, MINOR);
     PyModule_AddIntMacro(m, PATCH);
+#if PY_MAJOR_VERSION >= 3
+    return m;
+#endif
 }
 // }}}
