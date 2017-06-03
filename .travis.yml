@@ -37,7 +37,7 @@ before_install:
     - if [[ "$TRAVIS_OS_NAME" == 'osx' ]]; then brew install libxml2; fi
 
 install:
-    - pip install cython
+    - pip install chardet cython
     - git clone --depth 1 https://github.com/lxml/lxml && cd lxml && CFLAGS=-O0 python setup.py install && cd ..
     - python -c "from lxml import etree; print(etree)"
 
