@@ -8,6 +8,8 @@ addons:
 
 python:
     - 2.7
+    - 3.4
+
 env:
     global:
         - PYTHONHASHSEED=random
@@ -15,6 +17,11 @@ env:
         - BUILDER=build.py CC=gcc
         - BUILDER=build.py CC=clang
         - BUILDER=setup.py
+
+matrix:
+    exclude:
+        - python: 3.4
+          env: BUILDER=build.py
 
 install:
     - pip install cython
