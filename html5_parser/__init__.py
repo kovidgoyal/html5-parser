@@ -2,10 +2,12 @@
 # vim:fileencoding=utf-8
 # License: Apache 2.0 Copyright: 2017, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (absolute_import, division, print_function, unicode_literals)
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import codecs
 from collections import namedtuple
+from locale import getpreferredencoding
 
 from lxml import etree
 
@@ -53,6 +55,18 @@ def detect_encoding(raw):
 passthrough_encodings = frozenset(('utf-8', 'utf8', 'ascii'))
 
 
+def safe_get_preferred_encoding():
+    try:
+        ans = getpreferredencoding(False)
+    except Exception:
+        pass
+    else:
+        try:
+            return codecs.lookup(ans).name
+        except LookupError:
+            pass
+
+
 def as_utf8(bytes_or_unicode, transport_encoding=None):
     if isinstance(bytes_or_unicode, bytes):
         data = bytes_or_unicode
@@ -67,7 +81,9 @@ def as_utf8(bytes_or_unicode, transport_encoding=None):
                 if bom is not UTF_8:
                     data = data.decode(bom).encode('utf-8')
             else:
-                encoding = check_for_meta_charset(data) or detect_encoding(data)
+                encoding = (
+                    check_for_meta_charset(data) or detect_encoding(data) or
+                    safe_get_preferred_encoding() or 'cp-1252')
                 if encoding and encoding.lower() not in passthrough_encodings:
                     data = data.decode(encoding).encode('utf-8')
     else:
@@ -84,6 +100,6 @@ def parse(bytes_or_unicode, transport_encoding=None, keep_doctype=True, stack_si
         default is sufficient to avoid memory allocations for all but the
         largest documents.
     '''
-    data = as_utf8(bytes_or_unicode, transport_encoding=transport_encoding)
+    data = as_utf8(bytes_or_unicode or b'', transport_encoding=transport_encoding)
     capsule = html_parser.parse(data, keep_doctype=keep_doctype, stack_size=stack_size)
     return etree.adopt_external_document(capsule).getroot()
