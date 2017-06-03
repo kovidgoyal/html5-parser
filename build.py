@@ -78,109 +78,88 @@ def add_python_flags(env, return_libs=False):
     return libs if return_libs else env
 
 
-if iswindows:
+def pkg_config(pkg, *args):
+    return list(
+        filter(None,
+               shlex.split(
+                   subprocess.check_output([PKGCONFIG, pkg] + list(args))
+                   .decode('utf-8'))))
 
-    def cc_version():
-        return 'cl.exe', (0, 0), 'cl'
 
-    def get_sanitize_args(*a):
-        return set()
+def include_dirs():
+    return [x[2:] for x in pkg_config('libxml-2.0', '--cflags-only-I')]
 
-    def init_env(debug=False,
-                 sanitize=False,
-                 native_optimizations=False,
-                 add_python=True):
-        cc, ccver, cc_name = cc_version()
-        cflags = '/c /nologo /MD /W3 /O2 /EHsc /DNDEBUG'.split()
-        ldflags = '/DLL /nologo /INCREMENTAL:NO /NODEFAULTLIB:libcmt.lib'
-        ldflags = ldflags.split()
-        ans = Env(cc, cflags, ldflags, 'link.exe', debug, cc_name, ccver)
-        return add_python_flags(ans) if add_python else ans
-else:
 
-    def pkg_config(pkg, *args):
-        return list(
-            filter(None,
-                   shlex.split(
-                       subprocess.check_output([PKGCONFIG, pkg] + list(args))
-                       .decode('utf-8'))))
+def libraries():
+    return [x[2:] for x in pkg_config('libxml-2.0', '--libs-only-l')]
 
-    def include_dirs():
-        return [x[2:] for x in pkg_config('libxml-2.0', '--cflags-only-I')]
 
-    def libraries():
-        return [x[2:] for x in pkg_config('libxml-2.0', '--libs-only-l')]
+def library_dirs():
+    return [x[2:] for x in pkg_config('libxml-2.0', '--libs-only-L')]
 
-    def library_dirs():
-        return [x[2:] for x in pkg_config('libxml-2.0', '--libs-only-L')]
 
-    def cc_version():
-        cc = os.environ.get('CC', 'gcc')
-        raw = subprocess.check_output(
-            [cc, '-dM', '-E', '-'], stdin=open(os.devnull, 'rb'))
-        m = re.search(br'^#define __clang__ 1', raw, flags=re.M)
-        cc_name = 'gcc' if m is None else 'clang'
-        ver = int(
-            re.search(br'#define __GNUC__ (\d+)', raw, flags=re.M)
-            .group(1)), int(
-                re.search(br'#define __GNUC_MINOR__ (\d+)', raw, flags=re.M)
-                .group(1))
-        return cc, ver, cc_name
+def cc_version():
+    cc = os.environ.get('CC', 'gcc')
+    raw = subprocess.check_output(
+        [cc, '-dM', '-E', '-'], stdin=open(os.devnull, 'rb'))
+    m = re.search(br'^#define __clang__ 1', raw, flags=re.M)
+    cc_name = 'gcc' if m is None else 'clang'
+    ver = int(re.search(br'#define __GNUC__ (\d+)', raw, flags=re.M)
+              .group(1)), int(
+                  re.search(br'#define __GNUC_MINOR__ (\d+)', raw, flags=re.M)
+                  .group(1))
+    return cc, ver, cc_name
 
-    def get_sanitize_args(cc, ccver):
-        sanitize_args = set()
-        if cc == 'gcc' and ccver < (4, 8):
-            return sanitize_args
-        sanitize_args.add('-fno-omit-frame-pointer')
-        sanitize_args.add('-fsanitize=address')
-        if (cc == 'gcc' and ccver >= (5, 0)) or (cc == 'clang' and not isosx):
-            # clang on macOS does not support -fsanitize=undefined
-            sanitize_args.add('-fsanitize=undefined')
-            # if cc == 'gcc' or (cc == 'clang' and ccver >= (4, 2)):
-            #     sanitize_args.add('-fno-sanitize-recover=all')
+
+def get_sanitize_args(cc, ccver):
+    sanitize_args = set()
+    if cc == 'gcc' and ccver < (4, 8):
         return sanitize_args
-
-    def init_env(debug=False,
-                 sanitize=False,
-                 native_optimizations=False,
-                 add_python=True):
-        native_optimizations = (native_optimizations and not sanitize and
-                                not debug)
-        cc, ccver, cc_name = cc_version()
-        stack_protector = '-fstack-protector'
-        if ccver >= (4, 9) and cc_name == 'gcc':
-            stack_protector += '-strong'
-        missing_braces = ''
-        if ccver < (5, 2) and cc_name == 'gcc':
-            missing_braces = '-Wno-missing-braces'
-        optimize = '-ggdb' if debug or sanitize else '-O3'
-        sanitize_args = get_sanitize_args(cc_name,
-                                          ccver) if sanitize else set()
-        cflags = os.environ.get(
-            'OVERRIDE_CFLAGS',
-            ('-Wextra -Wno-missing-field-initializers -Wall -std=c99'
-             ' -pedantic-errors -Werror {} {} -D{}DEBUG -fwrapv {} {} -pipe {}'
-             ).format(optimize, ' '.join(sanitize_args), (''
-                                                          if debug else 'N'),
-                      stack_protector, missing_braces, '-march=native'
-                      if native_optimizations else ''))
-        libxml_cflags = pkg_config('libxml-2.0', '--cflags')
-        cflags = shlex.split(cflags) + libxml_cflags + shlex.split(
-            sysconfig.get_config_var('CCSHARED'))
-        ldflags = os.environ.get('OVERRIDE_LDFLAGS',
-                                 '-Wall -shared ' + ' '.join(sanitize_args) +
-                                 ('' if debug else ' -O3'))
-        libxml_ldflags = pkg_config('libxml-2.0', '--libs')
-        ldflags = shlex.split(ldflags) + libxml_ldflags
-        cflags += shlex.split(os.environ.get('CFLAGS', ''))
-        ldflags += shlex.split(os.environ.get('LDFLAGS', ''))
-        cflags.append('-pthread')
-        ans = Env(cc, cflags, ldflags, cc, debug, cc_name, ccver)
-        return add_python_flags(ans) if add_python else ans
+    sanitize_args.add('-fno-omit-frame-pointer')
+    sanitize_args.add('-fsanitize=address')
+    if (cc == 'gcc' and ccver >= (5, 0)) or (cc == 'clang' and not isosx):
+        # clang on macOS does not support -fsanitize=undefined
+        sanitize_args.add('-fsanitize=undefined')
+        # if cc == 'gcc' or (cc == 'clang' and ccver >= (4, 2)):
+        #     sanitize_args.add('-fno-sanitize-recover=all')
+    return sanitize_args
 
 
-def define(x):
-    return '-D' + x
+def init_env(debug=False,
+             sanitize=False,
+             native_optimizations=False,
+             add_python=True):
+    native_optimizations = (native_optimizations and not sanitize and
+                            not debug)
+    cc, ccver, cc_name = cc_version()
+    stack_protector = '-fstack-protector'
+    if ccver >= (4, 9) and cc_name == 'gcc':
+        stack_protector += '-strong'
+    missing_braces = ''
+    if ccver < (5, 2) and cc_name == 'gcc':
+        missing_braces = '-Wno-missing-braces'
+    optimize = '-ggdb' if debug or sanitize else '-O3'
+    sanitize_args = get_sanitize_args(cc_name, ccver) if sanitize else set()
+    cflags = os.environ.get(
+        'OVERRIDE_CFLAGS',
+        ('-Wextra -Wno-missing-field-initializers -Wall -std=c99'
+         ' -pedantic-errors -Werror {} {} -D{}DEBUG -fwrapv {} {} -pipe {}'
+         ).format(optimize, ' '.join(sanitize_args), ('' if debug else 'N'),
+                  stack_protector, missing_braces, '-march=native'
+                  if native_optimizations else ''))
+    libxml_cflags = pkg_config('libxml-2.0', '--cflags')
+    cflags = shlex.split(cflags) + libxml_cflags + shlex.split(
+        sysconfig.get_config_var('CCSHARED'))
+    ldflags = os.environ.get('OVERRIDE_LDFLAGS',
+                             '-Wall -shared ' + ' '.join(sanitize_args) +
+                             ('' if debug else ' -O3'))
+    libxml_ldflags = pkg_config('libxml-2.0', '--libs')
+    ldflags = shlex.split(ldflags) + libxml_ldflags
+    cflags += shlex.split(os.environ.get('CFLAGS', ''))
+    ldflags += shlex.split(os.environ.get('LDFLAGS', ''))
+    cflags.append('-pthread')
+    ans = Env(cc, cflags, ldflags, cc, debug, cc_name, ccver)
+    return add_python_flags(ans) if add_python else ans
 
 
 def run_tool(cmd):
@@ -232,22 +211,19 @@ def build_obj(src, env, headers):
     obj = os.path.join(
         build_dir, os.path.basename(src).rpartition('.')[0] + suffix + '.o')
     if newer(obj, src, *headers):
-        if iswindows:
-            cmd = [env.cc] + env.cflags + ['/Tc' + src] + ['/Fo' + obj]
-        else:
-            cmd = [env.cc] + env.cflags + ['-c', src] + ['-o', obj]
+        cmd = [env.cc] + env.cflags + ['-c', src] + ['-o', obj]
         run_tool(cmd)
     return obj
 
 
 TEST_EXE = os.path.join(build_dir, 'test')
 SRC_DIRS = 'src gumbo'.split()
-MOD_EXT = '.' + ('pyd' if iswindows else 'so')
+MOD_EXT = '.so'
 
 
 def link(objects, env):
     dest = os.path.join(build_dir, 'html_parser' + MOD_EXT)
-    o = ['/OUT:' + dest] if iswindows else ['-o', dest]
+    o = ['-o', dest]
     cmd = [env.linker] + env.ldflags + objects + o
     if newer(dest, *objects):
         run_tool(cmd)
@@ -282,10 +258,9 @@ def main():
         build(args)
     elif args.action == 'test':
         build(args)
-        exe = sys.executable if iswindows else TEST_EXE
-        if not iswindows:
-            os.environ['ASAN_OPTIONS'] = 'leak_check_at_exit=0'
-        os.execlp(exe, exe, '-m', 'unittest', 'discover', '-v', 'test', '*.py')
+        os.environ['ASAN_OPTIONS'] = 'leak_check_at_exit=0'
+        os.execlp(TEST_EXE, TEST_EXE, '-m', 'unittest', 'discover', '-v',
+                  'test', '*.py')
 
 
 if __name__ == '__main__':
