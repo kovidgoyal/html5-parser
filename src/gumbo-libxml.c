@@ -18,8 +18,8 @@
 
 #include "../gumbo/gumbo.h"
 
-#define MAJOR 1
-#define MINOR 0
+#define MAJOR 0
+#define MINOR 1
 #define PATCH 0
 #define UNUSED __attribute__ ((unused))
 #ifdef __builtin_expect

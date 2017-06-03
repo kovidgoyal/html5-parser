@@ -12,10 +12,8 @@ self_path = os.path.abspath(__file__)
 base = os.path.dirname(self_path)
 sys.path.insert(0, base)
 if True:
-    from build import (
-        SRC_DIRS, find_c_files, include_dirs, libraries,
-        library_dirs, version, iswindows
-    )
+    from build import (SRC_DIRS, find_c_files, include_dirs, libraries,
+                       library_dirs, version, iswindows)
 del sys.path[0]
 
 src_files = tuple(chain(*map(lambda x: find_c_files(x)[0], SRC_DIRS)))
@@ -29,12 +27,29 @@ def discover_tests():
     return test_suite
 
 
+CLASSIFIERS = """\
+Development Status :: 5 - Production/Stable
+Intended Audience :: Developers
+License :: OSI Approved :: Apache 2.0
+Natural Language :: English
+Operating System :: OS Independent
+Programming Language :: Python
+Topic :: Text Processing
+Topic :: Text Processing :: Markup
+Topic :: Text Processing :: Markup :: HTML
+Topic :: Text Processing :: Markup :: XML
+"""
+
 setup(
     name='html5-parser',
     version='{}.{}.{}'.format(*version),
     author='Kovid Goyal',
     description='Fast C based HTML 5 parsing for python',
     license='Apache 2.0',
+    url='https://github.com/kovidgoyal/html5-parser',
+    download_url=("https://pypi.python.org/packages/source/m/html5-parser/"
+                  "html5-parser-{}.{}.{}.tar.gz".format(*version)),
+    classifiers=[c for c in CLASSIFIERS.split("\n") if c],
     platforms=['any'],
     # install_requires=['lxml>=3.8.0'],
     packages=['html5_parser'],
