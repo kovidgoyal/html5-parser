@@ -30,7 +30,7 @@ def discover_tests():
 CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
 Intended Audience :: Developers
-License :: OSI Approved :: Apache 2.0
+License :: OSI Approved :: Apache Software License
 Natural Language :: English
 Operating System :: OS Independent
 Programming Language :: Python
