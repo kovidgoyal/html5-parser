@@ -12,7 +12,6 @@ from html5_parser import parse, html_parser
 
 
 class BasicTests(TestCase):
-
     def test_lxml_integration(self):
         capsule = html_parser.parse(b'<p>xxx')
         root = etree.adopt_external_document(capsule).getroot()
@@ -30,3 +29,16 @@ class BasicTests(TestCase):
         for stack_size in (3, 4, 5, 8000):
             r = parse(raw, stack_size=stack_size)
             self.ae(len(tuple(r.iterdescendants('p'))), sz)
+
+    def test_doctype(self):
+        base = '\n<html><body><p>xxx</p></body></html>'
+        for dt in (
+                'html',
+                'html PUBLIC "-//W3C//DTD HTML 4.01//EN" '
+                '"http://www.w3.org/TR/html4/strict.dtd"'
+        ):
+            dt = '<!DOCTYPE {}>'.format(dt)
+            t = parse(dt + base).getroottree()
+            self.ae(dt, t.docinfo.doctype)
+            t = parse(dt + base, keep_doctype=False).getroottree()
+            self.assertFalse(t.docinfo.doctype)
