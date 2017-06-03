@@ -12,6 +12,7 @@
 #include <Python.h>
 #include <libxml/tree.h>
 #include <libxml/dict.h>
+#include <libxml/xmlversion.h>
 
 #include <assert.h>
 #include <string.h>
@@ -347,6 +348,7 @@ inithtml_parser(void) {
     PyModule_AddIntMacro(m, MAJOR);
     PyModule_AddIntMacro(m, MINOR);
     PyModule_AddIntMacro(m, PATCH);
+    PyModule_AddIntConstant(m, "LIBXML_VERSION", atoi(xmlParserVersion));
 #if PY_MAJOR_VERSION >= 3
     return m;
 #endif

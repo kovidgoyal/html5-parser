@@ -18,6 +18,14 @@ version = namedtuple('Version', 'major minor patch')(
 if not hasattr(etree, 'adopt_external_document'):
     raise ImportError('Your version of lxml is too old, version 3.8.0 is minimum')
 
+LIBXML_VERSION = ((html_parser.LIBXML_VERSION // 10000) % 100,
+                  (html_parser.LIBXML_VERSION // 100) % 100, html_parser.LIBXML_VERSION % 100, )
+if LIBXML_VERSION != etree.LIBXML_VERSION:
+    raise RuntimeError(
+        'html5-parser and lxml are using different versions of libxml2.'
+        ' This is not supported. html5-parser: {} != lxml: {}'.format(
+            LIBXML_VERSION, etree.LIBXML_VERSION))
+
 UTF_8 = 'utf-8'
 
 
