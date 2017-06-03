@@ -9,7 +9,6 @@ addons:
 python:
     - 2.7
     - 3.4
-    - nightly
 
 env:
     global:
@@ -24,10 +23,6 @@ matrix:
         - python: 3.4
           env: BUILDER=build.py CC=gcc
         - python: 3.4
-          env: BUILDER=build.py CC=clang
-        - python: nightly
-          env: BUILDER=build.py CC=gcc
-        - python: nightly
           env: BUILDER=build.py CC=clang
 
 install:
