@@ -18,6 +18,8 @@ del sys.path[0]
 
 src_files = tuple(chain(*map(lambda x: find_c_files(x)[0], SRC_DIRS)))
 cargs = ('/O2' if iswindows else '-O3').split()
+if not iswindows:
+    cargs.append('-std=c99')
 
 
 def discover_tests():
