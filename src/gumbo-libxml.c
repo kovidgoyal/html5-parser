@@ -171,20 +171,20 @@ static xmlNodePtr convert_node(xmlDocPtr doc, GumboNode* node, GumboElement **el
         default:
             assert(false && "unknown node type");
     }
-    if (UNLIKELY(!ans && !PyErr_Occurred())) PyErr_NoMemory();
     return ans;
 }
 
 static xmlNodePtr
 convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
-    Stack *stack = alloc_stack(opts->stack_size);
     xmlNodePtr ans = NULL, parent = NULL, child = NULL;
     GumboNode *gumbo = NULL;
     bool ok = true;
     GumboElement *elem;
+    Stack *stack = alloc_stack(opts->stack_size);
 
     if (stack == NULL) { PyErr_NoMemory(); return NULL; }
     stack_push(stack, root, NULL);
+    Py_BEGIN_ALLOW_THREADS;
 
     while(stack->length > 0) {
         stack_pop(stack, &gumbo, &parent);
@@ -198,6 +198,7 @@ convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
 
     }
 end:
+    Py_END_ALLOW_THREADS;
     if (!ok) {
         if (ans) { xmlFreeNode(ans); ans = NULL; }
         if (!PyErr_Occurred()) PyErr_NoMemory();
@@ -210,7 +211,9 @@ static bool
 parse_with_options(xmlDocPtr doc, const char* buffer, size_t buffer_length, Options *opts) {
     GumboOutput *output = NULL;
     xmlNodePtr root = NULL;
+    Py_BEGIN_ALLOW_THREADS;
     output = gumbo_parse_with_options(&(opts->gumbo_opts), buffer, buffer_length);
+    Py_END_ALLOW_THREADS;
     if (output == NULL) { PyErr_NoMemory(); return false; }
     if (opts->keep_doctype) {
         GumboDocument* doctype = & output->document->v.document;
