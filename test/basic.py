@@ -60,3 +60,7 @@ class BasicTests(TestCase):
         t("<meta http-equiv='moo' content='charset=iso-8859-5'>", None)
         t("<meta http-equiv='Content-Type' content='iso-8859-5'>", None)
         t("<meta http-equiv='Content-Type' content='charset=iso-8859-5'>", 'iso8859-5')
+        t("<meta http-equiv='Content-Type' content='xxx charset=iso-8859-5'>", 'iso8859-5')
+        t("<meta http-equiv='Content-Type' content='xxx;charset=iso-8859-5'>", 'iso8859-5')
+        t("<meta http-equiv='Content-Type' content='xxxcharset=iso-8859-5'>", 'iso8859-5')
+        t("<meta http-equiv='Content-Type' content='xxxcharset =\n iso-8859-5'>", 'iso8859-5')
