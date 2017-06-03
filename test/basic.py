@@ -5,10 +5,12 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import codecs
+
 from lxml import etree
 
 from __init__ import TestCase
-from html5_parser import parse, html_parser
+from html5_parser import check_for_meta_charset, html_parser, parse
 
 
 class BasicTests(TestCase):
@@ -42,3 +44,19 @@ class BasicTests(TestCase):
             self.ae(dt, t.docinfo.doctype)
             t = parse(dt + base, keep_doctype=False).getroottree()
             self.assertFalse(t.docinfo.doctype)
+
+    def test_meta_charset(self):
+        def t(html, expected):
+            detected = check_for_meta_charset(html.encode('utf-8'))
+            self.ae(detected, expected, '{} is not {} in \n{}'.format(detected, expected, html))
+            if detected:
+                codecs.lookup(detected)
+        t('', None)
+        t('<html><meta charset=ISO-8859-5>', 'iso8859-5')
+        t('<html><meta a="1" charset="ISO-8859-5" b="2">', 'iso8859-5')
+        t("<meta charset='ISO-8859-2'/>", 'iso8859-2')
+        t('<html><mEta Charset="ISO-8859-5>', None)
+        t("<!--<meta charset='ISO-8859-2'>--><meta charset=\"iso-8859-5\" />", 'iso8859-5')
+        t("<meta http-equiv='moo' content='charset=iso-8859-5'>", None)
+        t("<meta http-equiv='Content-Type' content='iso-8859-5'>", None)
+        t("<meta http-equiv='Content-Type' content='charset=iso-8859-5'>", 'iso8859-5')
