@@ -1,4 +1,3 @@
-language: python
 cache: pip
 dist: trusty
 addons:
@@ -6,24 +5,36 @@ addons:
         packages:
             - libxml2-dev
 
-python:
-    - 2.7
-    - 3.4
-
 env:
     global:
         - PYTHONHASHSEED=random
-    matrix:
-        - BUILDER=build.py CC=gcc
-        - BUILDER=build.py CC=clang
-        - BUILDER=setup.py
 
 matrix:
-    exclude:
-        - python: 3.4
+    include:
+        - os: linux
+          language: python
+          python: 2.7
           env: BUILDER=build.py CC=gcc
-        - python: 3.4
+        - os: linux
+          language: python
+          python: 2.7
           env: BUILDER=build.py CC=clang
+        - os: linux
+          language: python
+          python: 2.7
+          env: BUILDER=setup.py
+        - os: linux
+          language: python
+          python: 3.4
+          env: BUILDER=setup.py
+
+        - os: osx
+          python:
+          language: generic
+          env: BUILDER=setup.py
+
+before_install:
+    - if [[ "$TRAVIS_OS_NAME" == 'osx' ]]; then brew install libxml2; fi
 
 install:
     - pip install cython
