@@ -44,6 +44,7 @@ setup(
     name='html5-parser',
     version='{}.{}.{}'.format(*version),
     author='Kovid Goyal',
+    author_email='redacted@acme.com',
     description='Fast C based HTML 5 parsing for python',
     license='Apache 2.0',
     url='https://github.com/kovidgoyal/html5-parser',

@@ -1,3 +1,4 @@
 build
 .eggs
 *.egg-info
+dist
