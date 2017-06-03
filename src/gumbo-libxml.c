@@ -262,6 +262,7 @@ parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
     opts.stack_size = 16 * 1024;
     PyObject *kd = Py_True;
     opts.gumbo_opts = kGumboDefaultOptions;
+    opts.gumbo_opts.max_errors = 0;  // We discard errors since we are not reporting them anyway
 
     static char *kwlist[] = {"data", "keep_doctype", "stack_size", NULL};
 
