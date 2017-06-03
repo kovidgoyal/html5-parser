@@ -2,8 +2,7 @@
 # vim:fileencoding=utf-8
 # License: Apache 2.0 Copyright: 2017, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import codecs
 from collections import namedtuple
@@ -67,7 +66,7 @@ def safe_get_preferred_encoding():
             pass
 
 
-def as_utf8(bytes_or_unicode, transport_encoding=None):
+def as_utf8(bytes_or_unicode, transport_encoding=None, fallback_encoding=None):
     if isinstance(bytes_or_unicode, bytes):
         data = bytes_or_unicode
         if transport_encoding:
@@ -82,24 +81,29 @@ def as_utf8(bytes_or_unicode, transport_encoding=None):
                     data = data.decode(bom).encode('utf-8')
             else:
                 encoding = (
-                    check_for_meta_charset(data) or detect_encoding(data) or
+                    check_for_meta_charset(data) or detect_encoding(data) or fallback_encoding or
                     safe_get_preferred_encoding() or 'cp-1252')
                 if encoding and encoding.lower() not in passthrough_encodings:
                     data = data.decode(encoding).encode('utf-8')
     else:
-        if transport_encoding:
-            raise TypeError('You cannot provide a transport_encoding with unicode data')
         data = bytes_or_unicode.encode('utf-8')
     return data
 
 
-def parse(bytes_or_unicode, transport_encoding=None, keep_doctype=True, stack_size=16 * 1024):
+def parse(
+    html, transport_encoding=None, fallback_encoding=None, keep_doctype=True, stack_size=16 * 1024
+):
     '''
+    :param html: The HTML to be parsed. Can be either bytes or a unicode string.
+    :param transport_encoding: If specified, assume the passed in bytes are in this encoding.
+        Ignored if :param:`html` is unicode.
+    :param fallback_encoding: If no encoding could be detected, then use this encoding.
+        Defaults to an encoding based on system locale.
     :param keep_doctype: Keep the <DOCTYPE> (if any).
     :param stack_size: The initial size (number of items) in the stack. The
         default is sufficient to avoid memory allocations for all but the
         largest documents.
     '''
-    data = as_utf8(bytes_or_unicode or b'', transport_encoding=transport_encoding)
+    data = as_utf8(html or b'', transport_encoding, fallback_encoding)
     capsule = html_parser.parse(data, keep_doctype=keep_doctype, stack_size=stack_size)
     return etree.adopt_external_document(capsule).getroot()
