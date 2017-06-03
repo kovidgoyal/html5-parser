@@ -1,0 +1,25 @@
+language: python
+cache: pip
+dist: trusty
+addons:
+    apt:
+        packages:
+            - libxml2-dev
+
+python:
+    - 2.7
+env:
+    global:
+        - PYTHONHASHSEED=random
+    matrix:
+        - BUILDER=build.py CC=gcc
+        - BUILDER=build.py CC=clang
+        - BUILDER=setup.py
+
+install:
+    - pip install cython
+    - git clone --depth 1 https://github.com/lxml/lxml && cd lxml && CFLAGS=-O0 python setup.py install && cd ..
+    - python -c "from lxml import etree; print(etree)"
+
+script:
+    - python $BUILDER test
