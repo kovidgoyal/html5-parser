@@ -211,7 +211,10 @@ def build_obj(src, env, headers):
     obj = os.path.join(
         build_dir, os.path.basename(src).rpartition('.')[0] + suffix + '.o')
     if newer(obj, src, *headers):
-        cmd = [env.cc] + env.cflags + ['-c', src] + ['-o', obj]
+        cflags = list(env.cflags)
+        if src.endswith('char_ref.c'):
+            cflags.append('-Wno-unused-const-variable')
+        cmd = [env.cc] + cflags + ['-c', src] + ['-o', obj]
         run_tool(cmd)
     return obj
 
