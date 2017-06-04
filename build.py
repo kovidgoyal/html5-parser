@@ -262,7 +262,7 @@ def build(args):
         run_tool(cmd)
     for mod in glob.glob(os.path.join(build_dir, '*' + MOD_EXT)):
         shutil.copy2(mod, freeze_dir)
-    for mod in glob.glob(os.path.join('html5_parser', '*.py')):
+    for mod in glob.glob(os.path.join('src', 'html5_parser', '*.py')):
         shutil.copy2(mod, freeze_dir)
 
 

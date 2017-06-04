@@ -70,6 +70,7 @@ setup(
     platforms=['any'],
     install_requires=['chardet', 'lxml>=3.8.0'],
     packages=['html5_parser'],
+    package_dir={'': 'src'},
     cmdclass={'test': Test},
     ext_modules=[
         Extension(
