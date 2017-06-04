@@ -7,8 +7,8 @@ A fast implementation of the `HTML 5 parsing spec
 <https://www.w3.org/TR/html5/syntax.html#parsing>`_. Parsing is done in C using
 a variant of the `gumbo parser <https://github.com/google/gumbo-parser>`_. The
 gumbo parse tree is then transformed into an `lxml <http://lxml.de/>`_ tree, also
-in C, yielding parse times that can be **a fiftieth** of the html5lib parse
-times. That is a speedup of **50x**.
+in C, yielding parse times that can be **a thirtieth** of the html5lib parse
+times. That is a speedup of **30x**.
 
 
 Installation
@@ -50,8 +50,8 @@ running the following commands in a Visual Studio 2015 Command prompt:
     python.exe win-ci.py install_deps
     python.exe win-ci.py test
 
-This will install all dependencies and html5-parser in the :file:`sw`
-sub-directory. You will need to add :file:`sw\bin` to ``PATH`` and
+This will install all dependencies and html5-parser in the ``sw``
+sub-directory. You will need to add ``sw\bin`` to ``PATH`` and
 ``sw\python\Lib\site-packages`` to ``PYTHONPATH``. Or copy the files
 into your system python's directories.
 
@@ -59,9 +59,24 @@ into your system python's directories.
 Benchmarking
 -------------
 
-There is a benchmark script named :file:`benchmark.py` that compares the
-parse times for parsing a large (~ 6MB) HTML document in html5lib and
-html5-parser. The results on my system show a speedup of 
+There is a benchmark script named ``benchmark.py`` that compares the
+parse times for parsing a large (~ 5.7MB) HTML document in html5lib and
+html5-parser. The results on my system show a speedup of **28x**. The output
+from the script on my system is:
+
+.. code-block:: none
+
+    Testing with HTML file of 5,956,815 bytes
+    Parsing repeatedly with html5-parser
+    html5-parser took an average of : 0.491 seconds to parse it
+    Parsing repeatedly with html5lib
+    html5lib took an average of : 13.744 seconds to parse it
+
+There is further potential for speedup. Currently the gumbo subsystem uses
+its own cache for tag and attribute names and the libxml2 sub-system uses its
+own cache. Unifying the two to use the libxml2 cache should yield significant
+performance and memory consumption gains.
+
 
 .. |pypi| image:: https://img.shields.io/pypi/v/html5-parser.svg?label=version
     :target: https://pypi.python.org/pypi/html5-parser
