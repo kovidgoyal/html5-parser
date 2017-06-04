@@ -21,7 +21,7 @@
 
 #define MAJOR 0
 #define MINOR 1
-#define PATCH 0
+#define PATCH 1
 #define UNUSED __attribute__ ((unused))
 #ifdef __builtin_expect
 #define LIKELY(x)    __builtin_expect (!!(x), 1)
