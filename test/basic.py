@@ -64,3 +64,13 @@ class BasicTests(TestCase):
         t("<meta http-equiv='Content-Type' content='xxx;charset=iso-8859-5'>", 'iso8859-5')
         t("<meta http-equiv='Content-Type' content='xxxcharset=iso-8859-5'>", 'iso8859-5')
         t("<meta http-equiv='Content-Type' content='xxxcharset =\n iso-8859-5'>", 'iso8859-5')
+
+    def test_maybe_xhtml(self):
+        for tag in 'title script style'.split():
+            html = '<html><head><{}/></head><body><p>xxx</p></body></html>'.format(tag)
+            root = parse(html)
+            root = parse(html, maybe_xhtml=True)
+            self.ae(len(root[1]), 1)
+            html = '<html><head></head><body><{}/><p>xxx</p></body></html>'.format(tag)
+            root = parse(html, maybe_xhtml=True)
+            self.ae(len(root[1]), 2)
