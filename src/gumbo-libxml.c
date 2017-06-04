@@ -143,16 +143,12 @@ end:
 }
 
 
-static xmlNodePtr convert_node(xmlDocPtr doc, GumboNode* node, GumboElement **elem) {
+static xmlNodePtr 
+convert_node(xmlDocPtr doc, GumboNode* node, GumboElement **elem, char **errmsg) {
     xmlNodePtr ans = NULL;
     *elem = NULL;
 
     switch (node->type) {
-        case GUMBO_NODE_DOCUMENT:
-            assert(false &&
-                    "convert_node cannot be used on the document node.  "
-                    "Doctype information is automatically added to the xmlDocPtr.");
-            break;
         case GUMBO_NODE_ELEMENT:
         case GUMBO_NODE_TEMPLATE:
             ans = create_element(doc, node, elem);
@@ -174,7 +170,8 @@ static xmlNodePtr convert_node(xmlDocPtr doc, GumboNode* node, GumboElement **el
             }
             break;
         default:
-            assert(false && "unknown node type");
+            *errmsg =  "unknown gumbo node type";
+            break;
     }
     return ans;
 }
@@ -186,6 +183,7 @@ convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
     bool ok = true;
     GumboElement *elem;
     Stack *stack = alloc_stack(opts->stack_size);
+    char *errmsg = NULL;
 
     if (stack == NULL) { PyErr_NoMemory(); return NULL; }
     stack_push(stack, root, NULL);
@@ -193,8 +191,8 @@ convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
 
     while(stack->length > 0) {
         stack_pop(stack, &gumbo, &parent);
-        child = convert_node(doc, gumbo, &elem);
-        if (!child) { ok = false; goto end; };
+        child = convert_node(doc, gumbo, &elem, &errmsg);
+        if (UNLIKELY(!child)) { ok = false;  goto end; };
         if (LIKELY(parent)) xmlAddChild(parent, child);
         else ans = child;
         if (elem != NULL) {
@@ -206,7 +204,10 @@ end:
     Py_END_ALLOW_THREADS;
     if (!ok) {
         if (ans) { xmlFreeNode(ans); ans = NULL; }
-        if (!PyErr_Occurred()) PyErr_NoMemory();
+        if (!PyErr_Occurred()) {
+            if (errmsg) PyErr_SetString(PyExc_TypeError, errmsg);
+            else PyErr_NoMemory();
+        }
     }
     free_stack(stack);
     return ans;
