@@ -1,7 +1,7 @@
 html5-parser
 ================
 
-|pypi| |unix_build| 
+|pypi| |unix_build| |windows_build|
 
 .. |pypi| image:: https://img.shields.io/pypi/v/html5-parser.svg?label=version
     :target: https://pypi.python.org/pypi/html5-parser
@@ -11,4 +11,6 @@ html5-parser
     :target: http://travis-ci.org/kovidgoyal/html5-parser
     :alt: Build status of the master branch on Unix
 
-
+.. |windows_build|  image:: https://ci.appveyor.com/api/projects/status/github/kovidgoyal/html5-parser?svg=true
+    :target: https://ci.appveyor.com/project/kovidgoyal/html5-parser
+    :alt: Build status of the master branch on Windows

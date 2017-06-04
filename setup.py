@@ -36,6 +36,7 @@ class Test(Build):
         import subprocess
         env = add_python_path(os.environ.copy(), self.build_lib)
         print('\nrunning tests...')
+        sys.stdout.flush()
         ret = subprocess.Popen([sys.executable] + TEST_COMMAND, env=env).wait()
         if ret != 0:
             raise SystemExit(ret)
