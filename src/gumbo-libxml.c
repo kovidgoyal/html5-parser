@@ -108,7 +108,7 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
         attr = elem->attributes.data[i];
         attr_name = xmlDictLookup(doc->dict, BAD_CAST attr->name, -1);
         if (UNLIKELY(!attr_name)) return false;
-        if (UNLIKELY(!xmlNewNsPropEatName(node, NULL, (xmlChar*)attr->name, BAD_CAST attr->value))) return false;
+        if (UNLIKELY(!xmlNewNsPropEatName(node, NULL, (xmlChar*)attr_name, BAD_CAST attr->value))) return false;
     }
     return true;
 }
