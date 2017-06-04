@@ -1,5 +1,6 @@
 cache: pip
 dist: trusty
+sudo: false
 addons:
     apt:
         packages:
