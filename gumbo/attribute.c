@@ -19,11 +19,6 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef _MSC_VER
-#define strcasecmp _stricmp
-#else
-#include <strings.h>
-#endif
 
 #include "util.h"
 #include "vector.h"

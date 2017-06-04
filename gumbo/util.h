@@ -21,6 +21,10 @@
 #define GUMBO_UTIL_H_
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
+#else
+#include <strings.h>
 #endif
 #include <stdbool.h>
 #include <stddef.h>

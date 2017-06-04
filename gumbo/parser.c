@@ -14,16 +14,12 @@
 //
 // Author: jdtang@google.com (Jonathan Tang)
 
+
 #include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef _MSC_VER
-#define strcasecmp _stricmp
-#else
-#include <strings.h>
-#endif
 #include <limits.h>
 
 #include "attribute.h"
