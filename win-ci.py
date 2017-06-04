@@ -20,6 +20,7 @@ ZLIB = "http://zlib.net/zlib-{}.tar.xz".format("1.2.11")
 LIBXML2 = "ftp://xmlsoft.org/libxml2/libxml2-{}.tar.gz".format('2.9.4')
 LIBXSLT = "ftp://xmlsoft.org/libxml2/libxslt-{}.tar.gz".format('1.1.28')
 LXML = "https://pypi.python.org/packages/20/b3/9f245de14b7696e2d2a386c0b09032a2ff6625270761d6543827e667d8de/lxml-3.8.0.tar.gz"  # noqa
+CHARDET = 'https://pypi.python.org/packages/fc/f9/3963ae8e196ceb4a09e0d7906f511fdf62a631f05d9288dc4905a93a1f52/chardet-3.0.3.tar.gz' # noqa
 SW = os.path.abspath('sw')
 PYTHON = os.path.expandvars('C:\\Python%PY%-%Platform%\\python.exe').replace('-x86', '')
 
@@ -143,6 +144,10 @@ def install_tree(src, dest_parent='include', ignore=None):
     return dst
 
 
+def chardet():
+    run(PYTHON, 'setup.py', 'install')
+
+
 def zlib():
     run('nmake -f win32/Makefile.msc')
     install_binaries('zlib1.dll*', 'bin')
@@ -201,7 +206,7 @@ def install_deps():
         ensure_dir(os.path.join(SW, x))
     os.chdir(os.path.join(SW, 'build'))
     base = os.getcwd()
-    for name in 'zlib libxml2 libxslt lxml'.split():
+    for name in 'chardet zlib libxml2 libxslt lxml'.split():
         os.chdir(base)
         if os.path.exists(name):
             continue
