@@ -86,15 +86,28 @@ def pkg_config(pkg, *args):
                    .decode('utf-8'))))
 
 
+def env_var(which, default='', split=os.pathsep):
+    val = str(os.environ.get(which, default))
+    if not split:
+        return val
+    return list(filter(None, val.split(split)))
+
+
 def include_dirs():
+    if iswindows:
+        return env_var('LIBXML_INCLUDE_DIRS')
     return [x[2:] for x in pkg_config('libxml-2.0', '--cflags-only-I')]
 
 
 def libraries():
+    if iswindows:
+        return env_var('LIBXML_LIBS', 'libxml2')
     return [x[2:] for x in pkg_config('libxml-2.0', '--libs-only-l')]
 
 
 def library_dirs():
+    if iswindows:
+        return env_var('LIBXML_LIB_DIRS')
     return [x[2:] for x in pkg_config('libxml-2.0', '--libs-only-L')]
 
 
