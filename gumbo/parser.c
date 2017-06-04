@@ -19,7 +19,11 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _MSC_VER
+#define strcasecmp _stricmp
+#else
 #include <strings.h>
+#endif
 #include <limits.h>
 
 #include "attribute.h"
@@ -2812,7 +2816,7 @@ static bool handle_in_body(GumboParser* parser, GumboToken* token) {
     text_state->_start_position = token->position;
     text_state->_type = GUMBO_NODE_TEXT;
     if (prompt_attr) {
-      int prompt_attr_length = strlen(prompt_attr->value);
+      int prompt_attr_length = (int)strlen(prompt_attr->value);
       gumbo_string_buffer_destroy(&text_state->_buffer);
       text_state->_buffer.data = gumbo_strdup(prompt_attr->value);
       text_state->_buffer.length = prompt_attr_length;

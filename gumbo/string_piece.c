@@ -19,7 +19,11 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _MSC_VER
+#define strncasecmp _strnicmp
+#else
 #include <strings.h>
+#endif
 
 #include "util.h"
 

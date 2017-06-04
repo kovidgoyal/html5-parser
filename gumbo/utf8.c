@@ -19,7 +19,11 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#ifdef _MSC_VER
+#define strncasecmp _strnicmp 
+#else
 #include <strings.h>    // For strncasecmp.
+#endif
 
 #include "error.h"
 #include "gumbo.h"

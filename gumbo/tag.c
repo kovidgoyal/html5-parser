@@ -20,7 +20,11 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdint.h>
+#ifdef _MSC_VER
+#define strcasecmp _stricmp 
+#else
 #include <strings.h>    // For strcasecmp.
+#endif
 #include <string.h>    // For strcasecmp.
 
 const char* kGumboTagNames[] = {

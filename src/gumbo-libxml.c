@@ -22,7 +22,11 @@
 #define MAJOR 0
 #define MINOR 1
 #define PATCH 1
+#ifdef _MSC_VER
+#define UNUSED 
+#else
 #define UNUSED __attribute__ ((unused))
+#endif
 #ifdef __builtin_expect
 #define LIKELY(x)    __builtin_expect (!!(x), 1)
 #define UNLIKELY(x)  __builtin_expect (!!(x), 0)
@@ -166,7 +170,7 @@ static xmlNodePtr convert_node(xmlDocPtr doc, GumboNode* node, GumboElement **el
                 // original_text.length rather than strlen, but I haven't verified that
                 // that's correct in all cases.
                 const char* node_text = node->v.text.text;
-                ans = xmlNewCDataBlock(doc, BAD_CAST node_text, strlen(node_text));
+                ans = xmlNewCDataBlock(doc, BAD_CAST node_text, (int)strlen(node_text));
             }
             break;
         default:
