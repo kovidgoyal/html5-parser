@@ -4,6 +4,7 @@
 
 import os
 import sys
+from distutils.command.build import build as Build
 from itertools import chain
 
 from setuptools import Extension, setup
@@ -12,8 +13,9 @@ self_path = os.path.abspath(__file__)
 base = os.path.dirname(self_path)
 sys.path.insert(0, base)
 if True:
-    from build import (SRC_DIRS, find_c_files, include_dirs, libraries,
-                       library_dirs, version, iswindows)
+    from build import (
+        SRC_DIRS, find_c_files, include_dirs, libraries, library_dirs, version, iswindows,
+        TEST_COMMAND, add_python_path)
 del sys.path[0]
 
 src_files = tuple(chain(*map(lambda x: find_c_files(x)[0], SRC_DIRS)))
@@ -22,11 +24,21 @@ if not iswindows:
     cargs.append('-std=c99')
 
 
-def discover_tests():
-    import unittest
-    test_loader = unittest.TestLoader()
-    test_suite = test_loader.discover('test', pattern='*.py')
-    return test_suite
+class Test(Build):
+
+    description = "run unit tests after in-place build"
+
+    def run(self):
+        Build.run(self)
+        if self.dry_run:
+            self.announce('skipping "test" (dry run)')
+            return
+        import subprocess
+        env = add_python_path(os.environ.copy(), self.build_lib)
+        print('\nrunning tests...')
+        ret = subprocess.Popen([sys.executable] + TEST_COMMAND, env=env).wait()
+        if ret != 0:
+            raise SystemExit(ret)
 
 
 CLASSIFIERS = """\
@@ -50,16 +62,14 @@ setup(
     description='Fast C based HTML 5 parsing for python',
     license='Apache 2.0',
     url='https://github.com/kovidgoyal/html5-parser',
-    download_url=("https://pypi.python.org/packages/source/m/html5-parser/"
-                  "html5-parser-{}.{}.{}.tar.gz".format(*version)),
+    download_url=(
+        "https://pypi.python.org/packages/source/m/html5-parser/"
+        "html5-parser-{}.{}.{}.tar.gz".format(*version)),
     classifiers=[c for c in CLASSIFIERS.split("\n") if c],
     platforms=['any'],
-    install_requires=[
-        'chardet',
-        'lxml>=3.8.0'
-    ],
+    install_requires=['chardet', 'lxml>=3.8.0'],
     packages=['html5_parser'],
-    test_suite='setup.discover_tests',
+    cmdclass={'test': Test},
     ext_modules=[
         Extension(
             'html5_parser.html_parser',
@@ -67,5 +77,4 @@ setup(
             libraries=libraries(),
             library_dirs=library_dirs(),
             extra_compile_args=cargs,
-            sources=list(map(str, src_files)))
-    ])
+            sources=list(map(str, src_files)))])

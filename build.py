@@ -256,6 +256,16 @@ def build(args):
         shutil.copy2(mod, freeze_dir)
 
 
+TEST_COMMAND = ['-m', 'unittest', 'discover', '-v', 'test', '*.py']
+
+
+def add_python_path(env, path):
+    pp = env.get('PYTHONPATH', '')
+    to_join = filter(None, [os.path.abspath(path), pp])
+    env['PYTHONPATH'] = os.pathsep.join(to_join)
+    return env
+
+
 def main():
     args = option_parser().parse_args()
     os.chdir(base)
@@ -265,8 +275,9 @@ def main():
     elif args.action == 'test':
         build(args)
         os.environ['ASAN_OPTIONS'] = 'leak_check_at_exit=0'
-        os.execlp(TEST_EXE, TEST_EXE, '-m', 'unittest', 'discover', '-v',
-                  'test', '*.py')
+        add_python_path(os.environ, os.path.dirname(freeze_dir))
+        print('\nrunning tests...')
+        os.execlp(TEST_EXE, TEST_EXE, *TEST_COMMAND)
 
 
 if __name__ == '__main__':
