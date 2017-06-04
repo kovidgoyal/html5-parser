@@ -23,6 +23,8 @@ LXML = "https://pypi.python.org/packages/20/b3/9f245de14b7696e2d2a386c0b09032a2f
 CHARDET = 'https://pypi.python.org/packages/fc/f9/3963ae8e196ceb4a09e0d7906f511fdf62a631f05d9288dc4905a93a1f52/chardet-3.0.3.tar.gz' # noqa
 SW = os.path.abspath('sw')
 PYTHON = os.path.expandvars('C:\\Python%PY%-%Platform%\\python.exe').replace('-x86', '')
+os.environ['SW'] = SW
+os.environ['PYTHONPATH'] = os.path.expandvars('%SW%\\python\\Lib\\site-packages;%PYTHONPATH%')
 
 
 def printf(*a, **k):
@@ -145,7 +147,7 @@ def install_tree(src, dest_parent='include', ignore=None):
 
 
 def chardet():
-    run(PYTHON, 'setup.py', 'install')
+    run(PYTHON, 'setup.py', 'install', '--prefix', os.path.join(SW, 'python'))
 
 
 def zlib():
@@ -197,12 +199,12 @@ def lxml():
         *(
             'setup.py build_ext -I {0}/include;{0}/include/libxml2 -L {0}/lib'.format(
                 SW.replace(os.sep, '/')).split()))
-    run(PYTHON, 'setup.py', 'install')
+    run(PYTHON, 'setup.py', 'install', '--prefix', os.path.join(SW, 'python'))
 
 
 def install_deps():
     print(PYTHON)
-    for x in 'build lib bin include'.split():
+    for x in 'build lib bin include python'.split():
         ensure_dir(os.path.join(SW, x))
     os.chdir(os.path.join(SW, 'build'))
     base = os.getcwd()
