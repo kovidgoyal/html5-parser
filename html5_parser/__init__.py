@@ -23,7 +23,9 @@ LIBXML_VERSION = ((html_parser.LIBXML_VERSION // 10000) % 100,
 if LIBXML_VERSION != etree.LIBXML_VERSION:
     raise RuntimeError(
         'html5-parser and lxml are using different versions of libxml2.'
-        ' This is not supported. html5-parser: {} != lxml: {}'.format(
+        ' This happens commonly when using pip installed versions of lxml.'
+        ' Use pip install --no-binary lxml lxml instead.'
+        ' libxml2 versions: html5-parser: {} != lxml: {}'.format(
             LIBXML_VERSION, etree.LIBXML_VERSION))
 
 UTF_8 = 'utf-8'
