@@ -33,11 +33,8 @@ matrix:
           language: generic
           env: BUILDER=setup.py
 
-before_install:
-    - if [[ "$TRAVIS_OS_NAME" == 'osx' ]]; then brew install libxml2; fi
-
 install:
-    - pip install chardet lxml
+    - pip install --no-binary lxml chardet lxml
     - python -c "from lxml import etree; print(etree)"
 
 script:
