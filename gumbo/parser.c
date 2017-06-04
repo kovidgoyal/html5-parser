@@ -4074,12 +4074,12 @@ GumboOutput* gumbo_parse_fragment(
   // of hanging the process before we ever get an error.
   int loop_count = 0;
 
-  GumboToken token;
+  GumboToken token = {0};
   bool has_error = false;
 
   // XHTML5 parsing support
   bool inject_end = false;
-  GumboToken injected_token;
+  GumboToken injected_token = {0};
 
   do {
     if (state->_reprocess_current_token) {
