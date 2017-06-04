@@ -4,6 +4,9 @@ platform:
     - x64
     - x86
 
+cache:
+    - sw -> win-ci.py
+
 environment:
     matrix:
         - PY: 36

@@ -210,9 +210,8 @@ def install_deps():
             download_and_extract(globals()[name.upper()])
             globals()[name]()
         except:
-            cwd = os.getcwd()
             os.chdir(base)
-            shutil.rmtree(cwd)
+            shutil.rmtree(name)
             raise
 
 
