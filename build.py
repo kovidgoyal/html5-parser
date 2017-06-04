@@ -79,11 +79,8 @@ def add_python_flags(env, return_libs=False):
 
 
 def pkg_config(pkg, *args):
-    return list(
-        filter(None,
-               shlex.split(
-                   subprocess.check_output([PKGCONFIG, pkg] + list(args))
-                   .decode('utf-8'))))
+    val = subprocess.check_output([PKGCONFIG, pkg] + list(args)).decode('utf-8')
+    return list(filter(None, map(str, shlex.split(val))))
 
 
 def env_var(which, default='', split=os.pathsep):
