@@ -116,7 +116,7 @@ GumboNode* gumbo_create_element_node(GumboTag tag, GumboNamespaceEnum gns) {
 
 
 // Creates an template node and returns it.
-GumboNode* gumbo_create_template_node() {
+GumboNode* gumbo_create_template_node(void) {
   GumboNode* node = gumbo_create_node(GUMBO_NODE_TEMPLATE);
   GumboElement* element = &node->v.element;
   gumbo_vector_init(1, &element->children);

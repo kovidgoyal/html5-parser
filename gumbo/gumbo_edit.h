@@ -54,7 +54,7 @@ extern "C" {
   // Note: Use gumbo_destroy_node(GumboNode * node) to properly destroy the node if outside 
   // the final output tree.
 
-  GumboNode* gumbo_create_template_node();
+  GumboNode* gumbo_create_template_node(void);
 
   // Appends a node to the end of its parent, setting the "parent" and
   // "index_within_parent" fields appropriately.
