@@ -345,10 +345,10 @@ inithtml_parser(void) {
     m = Py_InitModule3(MODULE_NAME, methods, MODULE_DOC);
 #endif
     if (m == NULL) INITERROR;
-    PyModule_AddIntMacro(m, MAJOR);
-    PyModule_AddIntMacro(m, MINOR);
-    PyModule_AddIntMacro(m, PATCH);
-    PyModule_AddIntConstant(m, "LIBXML_VERSION", atoi(xmlParserVersion));
+    if (PyModule_AddIntMacro(m, MAJOR) != 0) INITERROR;
+    if (PyModule_AddIntMacro(m, MINOR) != 0) INITERROR;
+    if (PyModule_AddIntMacro(m, PATCH) != 0) INITERROR;
+    if (PyModule_AddIntConstant(m, "LIBXML_VERSION", atoi(xmlParserVersion)) != 0) INITERROR;
 #if PY_MAJOR_VERSION >= 3
     return m;
 #endif
