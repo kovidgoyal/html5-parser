@@ -204,7 +204,7 @@ def lxml():
 
 def install_deps():
     print(PYTHON)
-    for x in 'build lib bin include python'.split():
+    for x in 'build lib bin include python/Lib/site-packages'.split():
         ensure_dir(os.path.join(SW, x))
     os.chdir(os.path.join(SW, 'build'))
     base = os.getcwd()
