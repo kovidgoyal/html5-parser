@@ -16,3 +16,5 @@ sys.path = list(filter(None, sys.path))
 class TestCase(unittest.TestCase):
 
     ae = unittest.TestCase.assertEqual
+    longMessage = True
+    tb_locals = True
