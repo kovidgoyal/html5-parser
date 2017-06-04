@@ -22,7 +22,10 @@ LIBXSLT = "ftp://xmlsoft.org/libxml2/libxslt-{}.tar.gz".format('1.1.28')
 LXML = "https://pypi.python.org/packages/20/b3/9f245de14b7696e2d2a386c0b09032a2ff6625270761d6543827e667d8de/lxml-3.8.0.tar.gz"  # noqa
 CHARDET = 'https://pypi.python.org/packages/fc/f9/3963ae8e196ceb4a09e0d7906f511fdf62a631f05d9288dc4905a93a1f52/chardet-3.0.3.tar.gz' # noqa
 SW = os.path.abspath('sw')
-PYTHON = os.path.expandvars('C:\\Python%PY%-%Platform%\\python.exe').replace('-x86', '')
+if 'PY' in os.environ and 'Platform' in os.environ:
+    PYTHON = os.path.expandvars('C:\\Python%PY%-%Platform%\\python.exe').replace('-x86', '')
+else:
+    PYTHON = sys.executable
 os.environ['SW'] = SW
 os.environ['PYTHONPATH'] = os.path.expandvars('%SW%\\python\\Lib\\site-packages;%PYTHONPATH%')
 
@@ -42,7 +45,14 @@ def download_file(url):
     for i in range(5):
         try:
             printf('Downloading', url)
-            return subprocess.check_output(['curl.exe', '-fSL', url])
+            try:
+                return subprocess.check_output(['curl.exe', '-fSL', url])
+            except FileNotFoundError:
+                try:
+                    from urllib.request import urlopen
+                except ImportError:
+                    from urllib import urlopen
+                return urlopen(url).read()
         except subprocess.CalledProcessError:
             time.sleep(1)
     raise SystemExit('Failed to download: {}'.format(url))
