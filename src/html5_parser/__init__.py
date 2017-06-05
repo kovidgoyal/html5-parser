@@ -28,21 +28,13 @@ if LIBXML_VERSION != etree.LIBXML_VERSION:
         ' libxml2 versions: html5-parser: {} != lxml: {}'.format(
             LIBXML_VERSION, etree.LIBXML_VERSION))
 
-UTF_8 = 'utf-8'
+BOMS = (codecs.BOM_UTF8, codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE)
 
 
 def check_bom(data):
-    q = data[:4]
-    if q == codecs.BOM_UTF8:
-        return UTF_8
-    if q == codecs.BOM_UTF16_BE:
-        return 'utf-16-be'
-    if q == codecs.BOM_UTF16_LE:
-        return 'utf-16-le'
-    if q == codecs.BOM_UTF32_BE:
-        return 'utf-32-be'
-    if q == codecs.BOM_UTF32_LE:
-        return 'utf-32-le'
+    for bom in BOMS:
+        if data.startswith(bom):
+            return bom
 
 
 def check_for_meta_charset(raw):
@@ -87,7 +79,8 @@ def as_utf8(bytes_or_unicode, transport_encoding=None, fallback_encoding=None):
             # https://www.w3.org/TR/2011/WD-html5-20110113/parsing.html#determining-the-character-encoding
             bom = check_bom(data)
             if bom is not None:
-                if bom is not UTF_8:
+                data = data[len(bom):]
+                if bom is not codecs.BOM_UTF8:
                     data = data.decode(bom).encode('utf-8')
             else:
                 encoding = (

@@ -10,7 +10,7 @@ import codecs
 from lxml import etree
 
 from __init__ import TestCase
-from html5_parser import check_for_meta_charset, html_parser, parse
+from html5_parser import check_for_meta_charset, html_parser, parse, check_bom, BOMS
 
 
 class BasicTests(TestCase):
@@ -45,6 +45,10 @@ class BasicTests(TestCase):
             self.ae(dt, t.docinfo.doctype)
             t = parse(dt + base, keep_doctype=False).getroottree()
             self.assertFalse(t.docinfo.doctype)
+
+    def test_check_bom(self):
+        for bom in BOMS:
+            self.assertIs(bom, check_bom(bom + b'xxx'))
 
     def test_meta_charset(self):
         def t(html, expected):
