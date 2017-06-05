@@ -17,6 +17,6 @@ See `documentation <https://html5-parser.readthedocs.io>`_.
     :target: https://ci.appveyor.com/project/kovidgoyal/html5-parser
     :alt: Build status of the master branch on Windows
 
-.. |docs| image:: https://html5-parser.readthedocs.io/en/latest/?badge=latest
-    :target: http://html5-parser.readthedocs.io/en/latest/
+.. |docs| image:: http://html5-parser.readthedocs.io/en/latest/?badge=latest
+    :target: https://html5-parser.readthedocs.io/en/latest/
     :alt: Latest version of html5-parser documentation
