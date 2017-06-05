@@ -74,13 +74,7 @@ API documentation
 
 The API of html5-parser is a single function, ``parse()``.
 
-.. function:: html5_parser.parse(html, \
-    transport_encoding=None, \
-    namespace_elements=False,
-    fallback_encoding=None, \
-    keep_doctype=True, \
-    maybe_xhtml=False, \
-    stack_size=16 * 1024)
+.. function:: html5_parser.parse(html, transport_encoding=None, namespace_elements=False, fallback_encoding=None, keep_doctype=True, maybe_xhtml=False, stack_size=16 * 1024)
 
     Parse the specified :attr:`html` and return the parsed representation.
 
@@ -107,8 +101,12 @@ The API of html5-parser is a single function, ``parse()``.
         default is sufficient to avoid memory allocations for all but the
         largest documents.
 
-Benchmarking
--------------
+
+Comparison with html5lib
+-----------------------------
+
+Benchmarks
+^^^^^^^^^^^^^^
 
 There is a benchmark script named `benchmark.py
 <https://github.com/kovidgoyal/html5-parser/blob/master/benchmark.py>`_ that compares the
@@ -129,6 +127,47 @@ its own data structures to store parse results and these are converted to
 libxml2 data structures in a second pass after parsing completes. By modifying gumbo
 to use libxml2 data structures directly, there could be significant speed and
 memory usage gains.
+
+XML namespace handling
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+html5lib has truly horrible handling of namespaces. There is even a source-code
+file in it named :file:`_ihatexml.py`. Compare the result of parsing and pretty
+printing the following simple HTML fragment (pretty printing is done via lxml in both
+cases).
+
+.. code-block:: html
+
+    <p>xxx<svg><image xlink:href="xxx"></svg><p>yyy
+
+With **html5lib**:
+
+.. code-block:: html
+
+    <html:html xmlns:html="http://www.w3.org/1999/xhtml">
+        <html:head/>
+        <html:body>
+            <html:p>xxx<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg"><ns0:image xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="xxx"/></ns0:svg></html:p>
+            <html:p>yyy</html:p>
+        </html:body>
+    </html:html> 
+
+With **html5-parser**:
+
+.. code-block:: html
+
+    <html xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head/>
+        <body>
+            <p>xxx<svg xmlns="http://www.w3.org/2000/svg"><image xlink:href="xxx"/></svg></p>
+            <p>yyy</p>
+        </body>
+    </html>
+
+While both outputs are technically correct, the output produced via
+html5-parser is much easier to read and much closer to what an actual human
+would write. In particular, notice the unnecessary use of prefixes in
+the html5lib output.
 
 
 .. |pypi| image:: https://img.shields.io/pypi/v/html5-parser.svg?label=version
