@@ -61,3 +61,7 @@ class BasicTests(TestCase):
         root = nsparse('<html xml:lang="fr" lang="es"><svg xml:lang="1">xxx')
         self.ae(root.xpath('//@xml:lang'), ['1'])
         self.assertIn('xml:lang', root.attrib)
+
+    def test_xmlns(self):
+        root = nsparse('<html><p xmlns:foo="1">xxx')
+        print(tostring(root))

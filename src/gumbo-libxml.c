@@ -46,6 +46,7 @@ typedef struct {
     xmlNsPtr xlink, xml;
     xmlNodePtr root;
     bool maybe_xml;
+    const char* errmsg;
 } ParseData;
 
 // Stack {{{
@@ -204,8 +205,9 @@ end:
 
 
 static inline xmlNodePtr 
-convert_node(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode* node, GumboElement **elem, Options *opts, char **errmsg) {
+convert_node(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode* node, GumboElement **elem, Options *opts) {
     xmlNodePtr ans = NULL;
+    ParseData *pd = (ParseData*)doc->_private;
     *elem = NULL;
 
     switch (node->type) {
@@ -231,7 +233,7 @@ convert_node(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode* node, GumboElement
             }
             break;
         default:
-            *errmsg =  "unknown gumbo node type";
+            pd->errmsg =  "unknown gumbo node type";
             break;
     }
     return ans;
@@ -245,7 +247,6 @@ convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
     bool ok = true;
     GumboElement *elem;
     Stack *stack = alloc_stack(opts->stack_size);
-    char *errmsg = NULL;
 
     if (stack == NULL) { PyErr_NoMemory(); return NULL; }
     stack_push(stack, root, NULL);
@@ -255,7 +256,7 @@ convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
     doc->_private = (void*)&parse_data;
     while(stack->length > 0) {
         stack_pop(stack, &gumbo, &parent);
-        child = convert_node(doc, parent, gumbo, &elem, opts, &errmsg);
+        child = convert_node(doc, parent, gumbo, &elem, opts);
         if (UNLIKELY(!child)) { ok = false;  goto end; };
         if (LIKELY(parent)) {
             if (UNLIKELY(!xmlAddChild(parent, child))) { ok = false; goto end; }
@@ -271,7 +272,7 @@ end:
     if (!ok) {
         if (parse_data.root) { xmlFreeNode(parse_data.root); parse_data.root = NULL; }
         if (!PyErr_Occurred()) {
-            if (errmsg) PyErr_SetString(PyExc_TypeError, errmsg);
+            if (parse_data.errmsg) PyErr_SetString(PyExc_Exception, parse_data.errmsg);
             else PyErr_NoMemory();
         }
     }
