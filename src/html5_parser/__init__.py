@@ -108,27 +108,7 @@ def parse(
     maybe_xhtml=False,
     stack_size=16 * 1024
 ):
-    '''
-    :param html: The HTML to be parsed. Can be either bytes or a unicode string.
-
-    :param transport_encoding: If specified, assume the passed in bytes are in this encoding.
-        Ignored if :param:`html` is unicode.
-
-    :param fallback_encoding: If no encoding could be detected, then use this encoding.
-        Defaults to an encoding based on system locale.
-
-    :param keep_doctype: Keep the <DOCTYPE> (if any).
-
-    :param maybe_xhtml: Useful when it is unknown if the HTML to be parsed is
-        actually XHTML. Changes the HTML 5 parsing algorithm to be more
-        suitable for XHTML. In particular handles self-closed RCDATA elements.
-        So a ``<title/>`` in the HTML will not completely break parsing.
-
-    :param stack_size: The initial size (number of items) in the stack. The
-        default is sufficient to avoid memory allocations for all but the
-        largest documents.
-
-    '''
+    ' See https://html5-parser.readthedocs.io/en/latest/#html5_parser.parse '
     data = as_utf8(html or b'', transport_encoding, fallback_encoding)
     capsule = html_parser.parse(
         data,
