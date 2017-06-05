@@ -42,6 +42,11 @@ static const char* kLegalXmlns[] = {
     "http://www.w3.org/1998/Math/MathML"
 };
 
+typedef struct {
+    xmlNsPtr xlink;
+    xmlNodePtr root;
+} ParseData;
+
 // Stack {{{
 
 typedef struct {
@@ -112,11 +117,28 @@ static inline bool
 create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
     GumboAttribute* attr;
     const xmlChar *attr_name;
+    ParseData *pd = (ParseData*)doc->_private;
+    xmlNsPtr ns;
+
     for (unsigned int i = 0; i < elem->attributes.length; ++i) {
         attr = elem->attributes.data[i];
+        ns = NULL;
+        switch (attr->attr_namespace) {
+            case GUMBO_ATTR_NAMESPACE_XLINK:
+                if (LIKELY(pd->root)) {
+                    if (UNLIKELY(!pd->xlink)) {
+                        pd->xlink = xmlNewNs(pd->root, BAD_CAST "http://www.w3.org/1999/xlink", BAD_CAST "xlink");
+                        if(UNLIKELY(!pd->xlink)) return false;
+                    }
+                    ns = pd->xlink;
+                }
+                break;
+            default:
+                break;
+        }
         attr_name = xmlDictLookup(doc->dict, BAD_CAST attr->name, -1);
         if (UNLIKELY(!attr_name)) return false;
-        if (UNLIKELY(!xmlNewNsPropEatName(node, NULL, (xmlChar*)attr_name, BAD_CAST attr->value))) return false;
+        if (UNLIKELY(!xmlNewNsPropEatName(node, ns, (xmlChar*)attr_name, BAD_CAST attr->value))) return false;
     }
     return true;
 }
@@ -193,8 +215,9 @@ convert_node(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode* node, GumboElement
 
 static xmlNodePtr
 convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
-    xmlNodePtr ans = NULL, parent = NULL, child = NULL;
+    xmlNodePtr parent = NULL, child = NULL;
     GumboNode *gumbo = NULL;
+    ParseData parse_data = {0};
     bool ok = true;
     GumboElement *elem;
     Stack *stack = alloc_stack(opts->stack_size);
@@ -202,31 +225,33 @@ convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
 
     if (stack == NULL) { PyErr_NoMemory(); return NULL; }
     stack_push(stack, root, NULL);
-    Py_BEGIN_ALLOW_THREADS;
 
+    Py_BEGIN_ALLOW_THREADS;
+    doc->_private = (void*)&parse_data;
     while(stack->length > 0) {
         stack_pop(stack, &gumbo, &parent);
         child = convert_node(doc, parent, gumbo, &elem, opts, &errmsg);
         if (UNLIKELY(!child)) { ok = false;  goto end; };
         if (LIKELY(parent)) {
             if (UNLIKELY(!xmlAddChild(parent, child))) { ok = false; goto end; }
-        } else ans = child;
+        } else parse_data.root = child; 
         if (elem != NULL) {
             if (!push_children(child, elem, stack)) { ok = false; goto end; };
         }
 
     }
 end:
+    doc->_private = NULL;
     Py_END_ALLOW_THREADS;
     if (!ok) {
-        if (ans) { xmlFreeNode(ans); ans = NULL; }
+        if (parse_data.root) { xmlFreeNode(parse_data.root); parse_data.root = NULL; }
         if (!PyErr_Occurred()) {
             if (errmsg) PyErr_SetString(PyExc_TypeError, errmsg);
             else PyErr_NoMemory();
         }
     }
     free_stack(stack);
-    return ans;
+    return parse_data.root;
 }
 
 static bool 
