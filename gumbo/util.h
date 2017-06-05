@@ -71,9 +71,13 @@ static inline bool gumbo_isalpha(int c)
   return (c | 0x20) >= 'a' && (c | 0x20) <= 'z';
 }
 
+#ifdef GUMBO_DEBUG
 // Debug wrapper for printf, to make it easier to turn off debugging info when
 // required.
-void gumbo_debug(const char* format, ...);
+#define gumbo_debug(...) fprintf(stdout, __VA_ARGS__)
+#else
+#define gumbo_debug(...)
+#endif
 
 #ifdef __cplusplus
 }

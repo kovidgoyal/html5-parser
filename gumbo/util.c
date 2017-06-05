@@ -24,7 +24,6 @@
 
 #include "gumbo.h"
 #include "parser.h"
-#define AVOID_UNUSED_VARIABLE_WARNING(i) (void)(i)
 
 // TODO(jdtang): This should be elsewhere, but there's no .c file for
 // SourcePositions and yet the constant needs some linkage, so this is as good
@@ -46,18 +45,4 @@ void gumbo_memory_set_allocator(void *(*allocator_p)(void *, size_t))
 void gumbo_memory_set_free(void (*free_p)(void *))
 {
   gumbo_user_free = free_p ? free_p : free;
-}
-
-// Debug function to trace operation of the parser.  Pass --copts=-DGUMBO_DEBUG
-// to use.
-void gumbo_debug(const char* format, ...) {
-#ifdef GUMBO_DEBUG
-  va_list args;
-  va_start(args, format);
-  vprintf(format, args);
-  va_end(args);
-  fflush(stdout);
-#else
-AVOID_UNUSED_VARIABLE_WARNING(format);
-#endif
 }
