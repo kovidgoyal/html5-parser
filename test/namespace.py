@@ -6,9 +6,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from functools import partial
 
-from lxml import etree
-
-from __init__ import TestCase
+from __init__ import TestCase, tostring
 from html5_parser import parse
 
 nsparse = partial(parse, namespace_elements=True)
@@ -16,10 +14,6 @@ XHTML = "http://www.w3.org/1999/xhtml"
 SVG = "http://www.w3.org/2000/svg"
 XLINK = "http://www.w3.org/1999/xlink"
 XML = "http://www.w3.org/XML/1998/namespace"
-
-
-def tostring(root):
-    return etree.tostring(root, encoding='unicode')
 
 
 class BasicTests(TestCase):
@@ -64,4 +58,3 @@ class BasicTests(TestCase):
 
     def test_xmlns(self):
         root = nsparse('<html><p xmlns:foo="1">xxx')
-        print(tostring(root))

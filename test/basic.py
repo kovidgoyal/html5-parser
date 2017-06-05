@@ -9,7 +9,7 @@ import codecs
 
 from lxml import etree
 
-from __init__ import TestCase
+from __init__ import TestCase, tostring
 from html5_parser import check_for_meta_charset, html_parser, parse, check_bom, BOMS
 
 
@@ -24,7 +24,7 @@ class BasicTests(TestCase):
         root.set('attr', 'abc')
         cap2 = html_parser.clone_doc(capsule)
         root2 = etree.adopt_external_document(cap2).getroot()
-        self.ae(etree.tostring(root), etree.tostring(root2))
+        self.ae(tostring(root), tostring(root2))
 
     def test_stack(self):
         sz = 100

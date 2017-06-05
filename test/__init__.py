@@ -7,10 +7,16 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys
 import unittest
 
+from lxml import etree
+
 # python 2 inserts the current directory into the path which causes
 # import of html5_parser to use the source directory instead of the build
 # directory
 sys.path = list(filter(None, sys.path))
+
+
+def tostring(root):
+    return etree.tostring(root, encoding='unicode')
 
 
 class TestCase(unittest.TestCase):
