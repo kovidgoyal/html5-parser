@@ -74,7 +74,7 @@ static inline bool gumbo_isalpha(int c)
 #ifdef GUMBO_DEBUG
 // Debug wrapper for printf, to make it easier to turn off debugging info when
 // required.
-#define gumbo_debug(...) fprintf(stdout, __VA_ARGS__)
+#define gumbo_debug(...) fprintf(stderr, __VA_ARGS__)
 #else
 #define gumbo_debug(...)
 #endif
