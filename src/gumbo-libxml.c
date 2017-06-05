@@ -43,8 +43,9 @@ static const char* kLegalXmlns[] = {
 };
 
 typedef struct {
-    xmlNsPtr xlink;
+    xmlNsPtr xlink, xml;
     xmlNodePtr root;
+    bool maybe_xml;
 } ParseData;
 
 // Stack {{{
@@ -112,31 +113,51 @@ push_children(xmlNodePtr parent, GumboElement *elem, Stack *stack) {
     return true;
 }
 
+static inline xmlNsPtr
+ensure_xml_ns(xmlDocPtr doc, ParseData *pd, xmlNodePtr node) {
+    // By default libxml2 docs do not have the xml: namespace defined.
+    xmlNodePtr root = pd->root ? pd->root : node;
+    if (UNLIKELY(!pd->xml)) {
+        pd->xml = xmlSearchNs(doc, root, BAD_CAST "xml");
+    }
+    return pd->xml;
+}
 
 static inline bool
 create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
     GumboAttribute* attr;
     const xmlChar *attr_name;
+    const char *aname;
     ParseData *pd = (ParseData*)doc->_private;
     xmlNsPtr ns;
+    xmlNodePtr root;
 
     for (unsigned int i = 0; i < elem->attributes.length; ++i) {
         attr = elem->attributes.data[i];
+        aname = attr->name;
         ns = NULL;
         switch (attr->attr_namespace) {
             case GUMBO_ATTR_NAMESPACE_XLINK:
-                if (LIKELY(pd->root)) {
-                    if (UNLIKELY(!pd->xlink)) {
-                        pd->xlink = xmlNewNs(pd->root, BAD_CAST "http://www.w3.org/1999/xlink", BAD_CAST "xlink");
-                        if(UNLIKELY(!pd->xlink)) return false;
-                    }
-                    ns = pd->xlink;
+                root = pd->root ? pd->root : node;
+                if (UNLIKELY(!pd->xlink)) {
+                    pd->xlink = xmlNewNs(root, BAD_CAST "http://www.w3.org/1999/xlink", BAD_CAST "xlink");
+                    if(UNLIKELY(!pd->xlink)) return false;
                 }
+                ns = pd->xlink;
+                break;
+            case GUMBO_ATTR_NAMESPACE_XML:
+                ns = ensure_xml_ns(doc, pd, node);
+                if (UNLIKELY(!ns)) return false;
                 break;
             default:
+                if (pd->maybe_xml && UNLIKELY(strcmp(attr->name, "xml:lang") == 0)) {
+                    aname = "lang";
+                    ns = ensure_xml_ns(doc, pd, node);
+                    if (UNLIKELY(!ns)) return false;
+                }
                 break;
         }
-        attr_name = xmlDictLookup(doc->dict, BAD_CAST attr->name, -1);
+        attr_name = xmlDictLookup(doc->dict, BAD_CAST aname, -1);
         if (UNLIKELY(!attr_name)) return false;
         if (UNLIKELY(!xmlNewNsPropEatName(node, ns, (xmlChar*)attr_name, BAD_CAST attr->value))) return false;
     }
@@ -227,6 +248,7 @@ convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
     stack_push(stack, root, NULL);
 
     Py_BEGIN_ALLOW_THREADS;
+    parse_data.maybe_xml = opts->gumbo_opts.use_xhtml_rules;
     doc->_private = (void*)&parse_data;
     while(stack->length > 0) {
         stack_pop(stack, &gumbo, &parent);

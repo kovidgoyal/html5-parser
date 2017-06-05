@@ -15,6 +15,7 @@ nsparse = partial(parse, namespace_elements=True)
 XHTML = "http://www.w3.org/1999/xhtml"
 SVG = "http://www.w3.org/2000/svg"
 XLINK = "http://www.w3.org/1999/xlink"
+XML = "http://www.w3.org/XML/1998/namespace"
 
 
 def tostring(root):
@@ -46,5 +47,14 @@ class BasicTests(TestCase):
         self.ae(root.xpath('//@id'), ['1'])
         self.ae(root.xpath('//@a'), ['1'])
         self.ae(root.xpath('//@b'), ['2'])
+        self.ae(root.xpath('//@xlink:href', namespaces={'xlink': XLINK}), ['href'])
+
+    def test_xml_ns(self):
+        root = nsparse('<html xml:lang="fr" lang="es"><svg xml:lang="1">xxx', maybe_xhtml=True)
         self.ae(
-            root.xpath('//@xlink:href', namespaces={'xlink': XLINK}), ['href'])
+            tostring(root), '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr"'
+            ' lang="es"><head/><body><svg xmlns="http://www.w3.org/2000/svg" xml:lang="1">'
+            'xxx</svg></body></html>')
+        self.ae(root.xpath('//@lang'), ['es'])
+        self.assertIn('{%s}lang' % XML, root.attrib)
+        self.ae(root.xpath('//@xml:lang'), ['fr', '1'])
