@@ -174,7 +174,10 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
     if (UNLIKELY(!tag_name)) return NULL;
 #define ABORT { ok = false; goto end; }
 
-    result = xmlNewNodeEatName(NULL, (xmlChar*)tag_name);
+    // Must use xmlNewDocNodeEatName as we are using a dict string and without this
+    // if an error occurs and we have to call xmlFreeNode before adding this node to the doc
+    // we get a segfault.
+    result = xmlNewDocNodeEatName(doc, NULL, (xmlChar*)tag_name, NULL);
     if (UNLIKELY(!result)) ABORT;
 
     if (namespace_elements) {
