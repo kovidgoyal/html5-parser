@@ -62,7 +62,7 @@ setup(
     author_email='redacted@acme.com',
     description='Fast C based HTML 5 parsing for python',
     license='Apache 2.0',
-    url='https://github.com/kovidgoyal/html5-parser',
+    url='https://html5-parser.readthedocs.io',
     download_url=(
         "https://pypi.python.org/packages/source/m/html5-parser/"
         "html5-parser-{}.{}.{}.tar.gz".format(*version)),
