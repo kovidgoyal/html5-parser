@@ -4091,6 +4091,7 @@ GumboOutput* gumbo_parse_fragment(
           current_node->v.element.tag_namespace != GUMBO_NAMESPACE_HTML);
       has_error = !gumbo_lex(&parser, &token) || has_error;
     }
+#ifdef GUMBO_DEBUG
     const char* token_type = "text";
     switch (token.type) {
       case GUMBO_TOKEN_DOCTYPE:
@@ -4111,6 +4112,7 @@ GumboOutput* gumbo_parse_fragment(
     gumbo_debug("Handling %s token @%d:%d in state %d.\n",
                (char*) token_type, token.position.line, token.position.column,
                state->_insertion_mode);
+#endif
 
     state->_current_token = &token;
     state->_self_closing_flag_acknowledged =
