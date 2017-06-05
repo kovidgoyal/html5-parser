@@ -121,45 +121,53 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
     return true;
 }
 
-
 static inline xmlNodePtr
-create_element(xmlDocPtr doc, GumboNode *node, GumboElement **store_elem) {
+create_element(xmlDocPtr doc, GumboNode *parent, GumboElement *elem, bool namespace_elements) {
     xmlNodePtr result = NULL;
-    xmlNsPtr namespace = NULL;
-    const xmlChar *tag_name = NULL;
-    GumboElement* elem = &node->v.element;
     bool ok = true;
-    *store_elem = elem;
+    const xmlChar *tag_name = xmlDictLookup(doc->dict, BAD_CAST gumbo_normalized_tagname(elem->tag), -1);
+    xmlNsPtr namespace = NULL;
 
-    tag_name = xmlDictLookup(doc->dict, BAD_CAST gumbo_normalized_tagname(elem->tag), -1);
     if (UNLIKELY(!tag_name)) return NULL;
-    result = xmlNewNodeEatName(NULL, (xmlChar*)tag_name);
-    if (UNLIKELY(!result)) return NULL;
+#define ABORT { ok = false; goto end; }
 
-    // Namespace
-    if (node->parent->type != GUMBO_NODE_DOCUMENT &&
-            elem->tag_namespace != node->parent->v.element.tag_namespace) {
+    if (namespace_elements) {
         namespace = xmlNewNs(
-                result, BAD_CAST kLegalXmlns[elem->tag_namespace], NULL);
-        if (UNLIKELY(!namespace)) { ok = false; goto end; }
-        xmlSetNs(result, namespace);
-    } 
-    if (UNLIKELY(!create_attributes(doc, result, elem))) { ok = false; goto end; }
+                NULL, BAD_CAST kLegalXmlns[elem->tag_namespace], NULL);
+        if (UNLIKELY(!namespace)) ABORT;
+    }
+
+    result = xmlNewNodeEatName(namespace, (xmlChar*)tag_name);
+    if (UNLIKELY(!result)) ABORT;
+
+    if (namespace_elements && UNLIKELY(parent->type == GUMBO_NODE_DOCUMENT ||
+            elem->tag_namespace != parent->v.element.tag_namespace)) {
+        // Default namespace has changed
+        result->nsDef = result->ns;
+    }
+
+    ok = create_attributes(doc, result, elem);
+#undef ABORT
 end:
-    if (UNLIKELY(!ok)) { xmlFreeNode(result); result = NULL; }
+    if (UNLIKELY(!ok)) { 
+        if(result) xmlFreeNode(result); 
+        if(namespace) xmlFreeNs(namespace);
+        result = NULL; 
+    }
     return result;
 }
 
 
-static xmlNodePtr 
-convert_node(xmlDocPtr doc, GumboNode* node, GumboElement **elem, char **errmsg) {
+static inline xmlNodePtr 
+convert_node(xmlDocPtr doc, GumboNode* node, GumboElement **elem, Options *opts, char **errmsg) {
     xmlNodePtr ans = NULL;
     *elem = NULL;
 
     switch (node->type) {
         case GUMBO_NODE_ELEMENT:
         case GUMBO_NODE_TEMPLATE:
-            ans = create_element(doc, node, elem);
+            *elem = &node->v.element;
+            ans = create_element(doc, node->parent, *elem, opts->namespace_elements);
             break;
         case GUMBO_NODE_TEXT:
         case GUMBO_NODE_WHITESPACE:
@@ -199,7 +207,7 @@ convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
 
     while(stack->length > 0) {
         stack_pop(stack, &gumbo, &parent);
-        child = convert_node(doc, gumbo, &elem, &errmsg);
+        child = convert_node(doc, gumbo, &elem, opts, &errmsg);
         if (UNLIKELY(!child)) { ok = false;  goto end; };
         if (LIKELY(parent)) xmlAddChild(parent, child);
         else ans = child;
@@ -242,11 +250,7 @@ parse_with_options(xmlDocPtr doc, const char* buffer, size_t buffer_length, Opti
         }
     }
     root = convert_tree(doc, output->root, opts);
-    if (root) {
-        xmlDocSetRootElement(doc, root);
-        if (opts->namespace_elements) {
-        }
-    }
+    if (root) xmlDocSetRootElement(doc, root);
     gumbo_destroy_output(output);
     return root ? true : false;
 }

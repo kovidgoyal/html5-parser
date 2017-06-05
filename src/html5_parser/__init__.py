@@ -103,6 +103,7 @@ def as_utf8(bytes_or_unicode, transport_encoding=None, fallback_encoding=None):
 def parse(
     html,
     transport_encoding=None,
+    namespace_elements=False,
     fallback_encoding=None,
     keep_doctype=True,
     maybe_xhtml=False,
@@ -112,6 +113,7 @@ def parse(
     data = as_utf8(html or b'', transport_encoding, fallback_encoding)
     capsule = html_parser.parse(
         data,
+        namespace_elements=namespace_elements,
         keep_doctype=keep_doctype,
         maybe_xhtml=maybe_xhtml,
         stack_size=stack_size)

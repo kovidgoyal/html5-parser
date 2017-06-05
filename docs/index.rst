@@ -76,6 +76,7 @@ The API of html5-parser is a single function, ``parse()``.
 
 .. function:: html5_parser.parse(html, \
     transport_encoding=None, \
+    namespace_elements=False,
     fallback_encoding=None, \
     keep_doctype=True, \
     maybe_xhtml=False, \
@@ -87,6 +88,9 @@ The API of html5-parser is a single function, ``parse()``.
 
     :param transport_encoding: If specified, assume the passed in bytes are in this encoding.
         Ignored if :attr:`html` is unicode.
+
+    :param namespace_elements:
+        Add XML namespaces when parsing so that the resulting tree is XHTML.
 
     :param fallback_encoding: If no encoding could be detected, then use this encoding.
         Defaults to an encoding based on system locale.
