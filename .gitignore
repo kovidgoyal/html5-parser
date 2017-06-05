@@ -3,5 +3,4 @@ build
 *.egg-info
 dist
 docs/_build
-docs/index.rst
 test/large.html

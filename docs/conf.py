@@ -17,7 +17,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
+# import os
 import time
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
@@ -44,8 +44,6 @@ source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = 'index'
-if not os.path.lexists('index.rst'):
-    os.symlink('../README.rst', 'index.rst')
 
 # General information about the project.
 project = 'html5-quickstart'
@@ -90,7 +88,11 @@ html_theme = 'alabaster'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    'github_user': 'kovidgoyal',
+    'github_repo': 'html5-parser',
+    'github_banner': True
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
