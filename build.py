@@ -193,17 +193,6 @@ def newer(dest, *sources):
     return False
 
 
-def option_parser():
-    p = argparse.ArgumentParser()
-    p.add_argument(
-        'action',
-        nargs='?',
-        default='test',
-        choices='build test'.split(),
-        help='Action to perform (default is build)')
-    return p
-
-
 def find_c_files(src_dir):
     ans, headers = [], []
     for x in os.listdir(src_dir):
@@ -276,6 +265,18 @@ def add_python_path(env, path):
     return env
 
 
+def option_parser():
+    p = argparse.ArgumentParser()
+    p.add_argument(
+        'action',
+        nargs='?',
+        default='test',
+        choices='build test try'.split(),
+        help='Action to perform (default is build)')
+    p.add_argument('rest', nargs='*')
+    return p
+
+
 def main():
     args = option_parser().parse_args()
     os.chdir(base)
@@ -288,6 +289,11 @@ def main():
         add_python_path(os.environ, os.path.dirname(freeze_dir))
         print('\nrunning tests...')
         os.execlp(TEST_EXE, TEST_EXE, *TEST_COMMAND)
+    elif args.action == 'try':
+        build(args)
+        os.environ['ASAN_OPTIONS'] = 'leak_check_at_exit=0'
+        add_python_path(os.environ, os.path.dirname(freeze_dir))
+        os.execlp(TEST_EXE, TEST_EXE, '-c', args.rest[0], *args.rest[1:])
 
 
 if __name__ == '__main__':
