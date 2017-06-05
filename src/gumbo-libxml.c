@@ -72,11 +72,19 @@ free_stack(Stack *s) { if (s) { free(s->items); free(s); } }
 static inline void
 stack_pop(Stack *s, GumboNode **g, xmlNodePtr *x) { StackItem *si = &(s->items[--(s->length)]); *g = si->gumbo; *x = si->xml; }
 
+static inline void*
+safe_realloc(void *p, size_t sz) {
+    void *orig = p;
+    void *ans = realloc(p, sz);
+    if (ans == NULL) free(orig);
+    return ans;
+}
+
 static inline bool
 stack_push(Stack *s, GumboNode *g, xmlNodePtr x) {
     if (s->length >= s->capacity) {
         s->capacity *= 2;
-        s->items = (StackItem*)realloc(s->items, s->capacity * sizeof(StackItem));
+        s->items = (StackItem*)safe_realloc(s->items, s->capacity * sizeof(StackItem));
         if (!s->items) return false;
     }
     StackItem *si = &(s->items[(s->length)++]);
