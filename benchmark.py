@@ -27,7 +27,6 @@ except Exception:
     raw = urlopen('https://www.w3.org/TR/html5/single-page.html').read()
     open(TF, 'wb').write(raw)
 
-
 print('Testing with HTML file of', '{:,}'.format(len(raw)), 'bytes')
 
 
@@ -48,5 +47,7 @@ def doit(name, func, num=5):
     print(name, 'took an average of : {:,.3f} seconds to parse it'.format(t))
 
 
-doit('html5-parser', partial(html5_parser.parse, raw, transport_encoding="utf-8"))
+doit(
+    'html5-parser',
+    partial(html5_parser.parse, raw, transport_encoding="utf-8", namespace_elements=True))
 doit('html5lib', partial(html5lib.parse, raw, transport_encoding="utf-8", treebuilder="lxml"))
