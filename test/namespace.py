@@ -58,3 +58,6 @@ class BasicTests(TestCase):
         self.ae(root.xpath('//@lang'), ['es'])
         self.assertIn('{%s}lang' % XML, root.attrib)
         self.ae(root.xpath('//@xml:lang'), ['fr', '1'])
+        root = nsparse('<html xml:lang="fr" lang="es"><svg xml:lang="1">xxx')
+        self.ae(root.xpath('//@xml:lang'), ['1'])
+        self.assertIn('xml:lang', root.attrib)
