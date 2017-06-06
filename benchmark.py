@@ -41,10 +41,10 @@ def timeit(func, number=1):
     return total / number
 
 
-def doit(name, func, num=5):
-    print('Parsing repeatedly with', name)
+def doit(name, func, num=20):
+    print('Parsing', num, 'times with', name)
     t = timeit(func, num)
-    print(name, 'took an average of : {:,.3f} seconds to parse it'.format(t))
+    print(name, 'took an average of: {:,.3f} seconds to parse it'.format(t))
 
 
 doit(
