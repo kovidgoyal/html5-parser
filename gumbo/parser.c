@@ -1649,11 +1649,12 @@ static void merge_attributes(GumboToken* token, GumboNode* node) {
 #endif
 }
 
-const char* gumbo_normalize_svg_tagname(const GumboStringPiece* tag) {
+const char* gumbo_normalize_svg_tagname(const GumboStringPiece* tag, uint8_t *sz) {
   for (unsigned int i = 0;
        i < sizeof(kSvgTagReplacements) / sizeof(ReplacementEntry); ++i) {
     const ReplacementEntry* entry = &kSvgTagReplacements[i];
     if (gumbo_string_equals_ignore_case(tag, &entry->from)) {
+      *sz = entry->to.length;
       return entry->to.data;
     }
   }

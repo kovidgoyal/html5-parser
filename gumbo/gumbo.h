@@ -200,7 +200,7 @@ void gumbo_tag_from_original_text(GumboStringPiece* text);
  * no normalization is called for.  The return value is static data and owned by
  * the library.
  */
-const char* gumbo_normalize_svg_tagname(const GumboStringPiece* tagname);
+const char* gumbo_normalize_svg_tagname(const GumboStringPiece* tagname, uint8_t *sz);
 
 /**
  * Converts a tag name string (which may be in upper or mixed case) to a tag
