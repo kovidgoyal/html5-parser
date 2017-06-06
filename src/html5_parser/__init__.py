@@ -5,6 +5,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import codecs
+import importlib
 from collections import namedtuple
 from locale import getpreferredencoding
 
@@ -93,21 +94,41 @@ def as_utf8(bytes_or_unicode, transport_encoding=None, fallback_encoding=None):
     return data
 
 
+def normalize_treebuilder(x):
+    if hasattr(x, 'lower'):
+        x = x.lower()
+    return {'lxml.etree': 'lxml'}.get(x, x)
+
+
+NAMESPACE_SUPPORTING_BUILDERS = frozenset('lxml etree dom'.split())
+
+
 def parse(
     html,
     transport_encoding=None,
     namespace_elements=False,
+    treebuilder='lxml',
     fallback_encoding=None,
     keep_doctype=True,
     maybe_xhtml=False,
+    return_root=True,
     stack_size=16 * 1024
 ):
     ' See https://html5-parser.readthedocs.io/en/latest/#html5_parser.parse '
     data = as_utf8(html or b'', transport_encoding, fallback_encoding)
+    treebuilder = normalize_treebuilder(treebuilder)
+    if treebuilder not in NAMESPACE_SUPPORTING_BUILDERS:
+        namespace_elements = False
+
     capsule = html_parser.parse(
         data,
         namespace_elements=namespace_elements,
         keep_doctype=keep_doctype,
         maybe_xhtml=maybe_xhtml,
         stack_size=stack_size)
-    return etree.adopt_external_document(capsule).getroot()
+
+    ans = etree.adopt_external_document(capsule)
+    if treebuilder == 'lxml':
+        return ans.getroot() if return_root else ans
+    m = importlib.import_module('html5_parser.' + treebuilder)
+    return m.adapt(ans, return_root=return_root)
