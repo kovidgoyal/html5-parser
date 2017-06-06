@@ -18,7 +18,7 @@ register_namespace('svg', "http://www.w3.org/2000/svg")
 register_namespace('xlink',  "http://www.w3.org/1999/xlink")
 
 
-def adapt(src_tree, return_root=True):
+def adapt(src_tree, return_root=True, **kw):
     src_root = src_tree.getroot()
     dest_root = Element(src_root.tag, dict(src_root.items()))
     stack = [(src_root, dest_root)]
