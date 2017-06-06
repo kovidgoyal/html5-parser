@@ -45,7 +45,7 @@ static const char* kLegalXmlns[] = {
 typedef struct {
     xmlNsPtr xlink, xml;
     xmlNodePtr root;
-    bool maybe_xml;
+    bool maybe_xhtml;
     const char* errmsg;
 } ParseData;
 
@@ -151,10 +151,14 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
                 if (UNLIKELY(!ns)) return false;
                 break;
             default:
-                if (pd->maybe_xml && UNLIKELY(strcmp(attr->name, "xml:lang") == 0)) {
+                if (UNLIKELY(pd->maybe_xhtml && strncmp(aname, "xml:lang", 8) == 0)) {
                     aname = "lang";
                     ns = ensure_xml_ns(doc, pd, node);
                     if (UNLIKELY(!ns)) return false;
+                } else if (UNLIKELY(strncmp("xmlns:", aname, 6) == 0)) {
+                    continue;
+                    /* if (strlen(aname) == 6) continue; */
+                    /* snprintf(buf, sizeof(buf) - 1, "xmlns-%s",   */
                 }
                 break;
         }
@@ -167,13 +171,22 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
 
 static inline xmlNodePtr
 create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboElement *elem, bool namespace_elements) {
+#define ABORT { ok = false; goto end; }
     xmlNodePtr result = NULL;
     bool ok = true;
-    const xmlChar *tag_name = xmlDictLookup(doc->dict, BAD_CAST gumbo_normalized_tagname(elem->tag), -1);
+    const xmlChar *tag_name = NULL;
+    const char *tag;
     xmlNsPtr namespace = NULL;
 
-    if (UNLIKELY(!tag_name)) return NULL;
-#define ABORT { ok = false; goto end; }
+    if (elem->tag_namespace == GUMBO_NAMESPACE_SVG) {
+        // gumbo does not normalize the original tag for svg elements
+        gumbo_tag_from_original_text(&(elem->original_tag));
+        tag = gumbo_normalize_svg_tagname(&(elem->original_tag));
+        if (tag == NULL) tag = gumbo_normalized_tagname(elem->tag);
+    } else tag = gumbo_normalized_tagname(elem->tag);
+
+    tag_name = xmlDictLookup(doc->dict, BAD_CAST tag, -1);
+    if (UNLIKELY(!tag_name)) ABORT;
 
     // Must use xmlNewDocNodeEatName as we are using a dict string and without this
     // if an error occurs and we have to call xmlFreeNode before adding this node to the doc
@@ -252,7 +265,7 @@ convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
     stack_push(stack, root, NULL);
 
     Py_BEGIN_ALLOW_THREADS;
-    parse_data.maybe_xml = opts->gumbo_opts.use_xhtml_rules;
+    parse_data.maybe_xhtml = opts->gumbo_opts.use_xhtml_rules;
     doc->_private = (void*)&parse_data;
     while(stack->length > 0) {
         stack_pop(stack, &gumbo, &parent);
