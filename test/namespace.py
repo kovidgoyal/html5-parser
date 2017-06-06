@@ -6,14 +6,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from functools import partial
 
-from __init__ import TestCase, tostring
+from __init__ import TestCase, tostring, XHTML, XLINK, SVG, XML
 from html5_parser import parse
 
 nsparse = partial(parse, namespace_elements=True)
-XHTML = "http://www.w3.org/1999/xhtml"
-SVG = "http://www.w3.org/2000/svg"
-XLINK = "http://www.w3.org/1999/xlink"
-XML = "http://www.w3.org/XML/1998/namespace"
 
 
 class BasicTests(TestCase):
@@ -64,15 +60,12 @@ class BasicTests(TestCase):
         self.assertIn('{%s}lang' % XML, root.attrib)
         self.ae(root.xpath('//@xml:lang'), ['fr', '1'])
         root = nsparse('<html xml:lang="fr" lang="es"><svg xml:lang="1">xxx')
-        self.ae(root.xpath('//@xml:lang'), ['1'])
-        self.assertIn('xml:lang', root.attrib)
+        self.ae(root.xpath('//@xml:lang'), ['fr', '1'])
 
     def test_xmlns(self):
         root = parse('<html><p xmlns:foo="f">xxx<f:moo/>')
         self.ae(tostring(root), '<html><head/><body><p xmlns-foo="f">xxx<f-moo/></p></body></html>')
         root = parse('<p xmlns="x"><p xmlns:="y"><svg xmlns:xlink="xxx">')
         self.ae(
-            tostring(root),
-            '<html xmlns:xlink="http://www.w3.org/1999/xlink"><head/>'
-            '<body><p/><p><svg/></p></body></html>'
-        )
+            tostring(root), '<html xmlns:xlink="http://www.w3.org/1999/xlink"><head/>'
+            '<body><p/><p><svg/></p></body></html>')

@@ -168,7 +168,7 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
                 }
                 break;
             default:
-                if (UNLIKELY(pd->maybe_xhtml && strncmp(aname, "xml:lang", 8) == 0)) {
+                if (UNLIKELY(strncmp(aname, "xml:lang", 8) == 0)) {
                     aname = "lang";
                     ns = ensure_xml_ns(doc, pd, node);
                     if (UNLIKELY(!ns)) return false;

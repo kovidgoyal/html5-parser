@@ -14,6 +14,11 @@ from lxml import etree
 # directory
 sys.path = list(filter(None, sys.path))
 
+XHTML = "http://www.w3.org/1999/xhtml"
+SVG = "http://www.w3.org/2000/svg"
+XLINK = "http://www.w3.org/1999/xlink"
+XML = "http://www.w3.org/XML/1998/namespace"
+
 
 def tostring(root):
     return etree.tostring(root, encoding='unicode')
