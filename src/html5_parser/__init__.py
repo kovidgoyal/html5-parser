@@ -106,7 +106,7 @@ def normalize_treebuilder(x):
     return {'lxml.etree': 'lxml', 'etree': 'stdlib_etree'}.get(x, x)
 
 
-NAMESPACE_SUPPORTING_BUILDERS = frozenset('lxml etree dom'.split())
+NAMESPACE_SUPPORTING_BUILDERS = frozenset('lxml stdlib_etree dom'.split())
 
 
 def parse(

@@ -9,7 +9,7 @@ import sys
 
 from html5_parser import parse
 
-from __init__ import XML, TestCase
+from __init__ import SVG, XHTML, XLINK, XML, TestCase
 
 COMMENT = ' A -- comment -'
 DOCTYPE = '<!DOCTYPE html>'
@@ -31,15 +31,18 @@ class AdaptTest(TestCase):
 
     def test_etree(self):
         from xml.etree.ElementTree import tostring
-        root = parse(HTML, treebuilder='etree')
-        self.ae(root.tag, 'html')
+        root = parse(HTML, treebuilder='etree', namespace_elements=True)
+        self.ae(root.tag, '{%s}html' % XHTML)
+        ns = {'h': XHTML, 's': SVG, 'x': XLINK}
         self.ae(root.attrib, {'{%s}lang' % XML: 'en', 'lang': 'en'})
-        self.ae(root.find('./head/script').text, 'a < & " b')
-        self.ae(root.find('./body')[-1].attrib, {'{%s}lang' % XML: 'de'})
+        self.ae(root.find('./h:head/h:script', ns).text, 'a < & " b')
+        self.ae(root.find('./h:body', ns)[-1].attrib, {'{%s}lang' % XML: 'de'})
         self.ae(
-            tostring(root.find('body').find('p'), method='text').decode('ascii'),
+            tostring(root.find('h:body/h:p', ns), method='text').decode('ascii'),
             'A test of text and tail\n')
-        # TODO: SVG, XLINK
+        svg = root.find('./h:body/h:p/s:svg', ns)
+        img = svg[0]
+        self.ae(img.attrib, {'{%s}href' % XLINK: 'h'})
         if sys.version_info.major > 2:
             self.assertIn('<!--' + COMMENT + '-->', tostring(root).decode('ascii'))
 
@@ -61,7 +64,8 @@ class AdaptTest(TestCase):
         self.ae(
             dict(p.attributes.itemsNS()),
             dict([((u'http://www.w3.org/XML/1998/namespace', u'lang'), 'de')]))
-        # TODO: SVG, XLINK
+        svg = doc.getElementsByTagName('svg')[0]
+        self.ae(dict(svg.firstChild.attributes.itemsNS()), dict([((XLINK, u'href'), 'h')]))
         self.ae(root.lastChild.nodeValue, COMMENT.replace('--', '\u2014'))
 
     def test_soup(self):
@@ -88,5 +92,6 @@ class AdaptTest(TestCase):
         self.ae(dict(root.body.contents[-1].attrs), {'lang': 'de'})
         self.ae(root.head.script.string, 'a < & " b')
         self.ae(str(root.find('p')), '<p>A <span>test</span> of text and tail\n</p>')
-        # TODO: SVG, XLINK
+        svg = root.find('svg')
+        self.ae(dict(svg.contents[0].attrs), {'xlink:href': 'h'})
         self.ae(COMMENT, root.contents[-1].string)
