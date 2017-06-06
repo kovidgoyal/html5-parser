@@ -10,29 +10,30 @@ import sys
 from collections import namedtuple
 from locale import getpreferredencoding
 
-from lxml import etree  # Must be imported before html_parser to initialize libxml
+if not hasattr(sys, 'generating_docs_via_sphinx'):
+    from lxml import etree  # Must be imported before html_parser to initialize libxml
 
-try:
-    from . import html_parser
-except ImportError:
-    if not hasattr(sys, 'generating_docs_via_sphinx'):
+    try:
+        from . import html_parser
+    except ImportError:
         raise
-else:
-    version = namedtuple('Version', 'major minor patch')(
-        html_parser.MAJOR, html_parser.MINOR, html_parser.PATCH)
+    else:
+        version = namedtuple('Version', 'major minor patch')(
+            html_parser.MAJOR, html_parser.MINOR, html_parser.PATCH)
 
-    if not hasattr(etree, 'adopt_external_document'):
-        raise ImportError('Your version of lxml is too old, version 3.8.0 is minimum')
+        if not hasattr(etree, 'adopt_external_document'):
+            raise ImportError('Your version of lxml is too old, version 3.8.0 is minimum')
 
-    LIBXML_VERSION = ((html_parser.LIBXML_VERSION // 10000) % 100,
-                      (html_parser.LIBXML_VERSION // 100) % 100, html_parser.LIBXML_VERSION % 100, )
-    if LIBXML_VERSION != etree.LIBXML_VERSION:
-        raise RuntimeError(
-            'html5-parser and lxml are using different versions of libxml2.'
-            ' This happens commonly when using pip installed versions of lxml.'
-            ' Use pip install --no-binary lxml lxml instead.'
-            ' libxml2 versions: html5-parser: {} != lxml: {}'.format(
-                LIBXML_VERSION, etree.LIBXML_VERSION))
+        LIBXML_VERSION = ((html_parser.LIBXML_VERSION // 10000) % 100,
+                          (html_parser.LIBXML_VERSION // 100) % 100,
+                          html_parser.LIBXML_VERSION % 100, )
+        if LIBXML_VERSION != etree.LIBXML_VERSION:
+            raise RuntimeError(
+                'html5-parser and lxml are using different versions of libxml2.'
+                ' This happens commonly when using pip installed versions of lxml.'
+                ' Use pip install --no-binary lxml lxml instead.'
+                ' libxml2 versions: html5-parser: {} != lxml: {}'.format(
+                    LIBXML_VERSION, etree.LIBXML_VERSION))
 
 BOMS = (codecs.BOM_UTF8, codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE)
 
