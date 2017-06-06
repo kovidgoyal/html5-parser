@@ -41,6 +41,7 @@ class AdaptTest(TestCase):
             tostring(root.find('h:body/h:p', ns), method='text').decode('ascii'),
             'A test of text and tail\n')
         svg = root.find('./h:body/h:p/s:svg', ns)
+        self.ae(svg.attrib, {'viewBox': 'v'})
         img = svg[0]
         self.ae(img.attrib, {'{%s}href' % XLINK: 'h'})
         if sys.version_info.major > 2:
@@ -65,6 +66,9 @@ class AdaptTest(TestCase):
             dict(p.attributes.itemsNS()),
             dict([((u'http://www.w3.org/XML/1998/namespace', u'lang'), 'de')]))
         svg = doc.getElementsByTagName('svg')[0]
+        self.ae(
+            dict(svg.attributes.itemsNS()), {(None, 'viewBox'): 'v',
+                                             (u'xmlns', u'xmlns'): 'http://www.w3.org/2000/svg'})
         self.ae(dict(svg.firstChild.attributes.itemsNS()), dict([((XLINK, u'href'), 'h')]))
         self.ae(root.lastChild.nodeValue, COMMENT.replace('--', '\u2014'))
 
@@ -93,5 +97,6 @@ class AdaptTest(TestCase):
         self.ae(root.head.script.string, 'a < & " b')
         self.ae(str(root.find('p')), '<p>A <span>test</span> of text and tail\n</p>')
         svg = root.find('svg')
+        self.ae(dict(svg.attrs), {'viewBox': 'v'})
         self.ae(dict(svg.contents[0].attrs), {'xlink:href': 'h'})
         self.ae(COMMENT, root.contents[-1].string)
