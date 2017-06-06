@@ -33,4 +33,4 @@ class AdaptTest(TestCase):
             tostring(root.find('body').find('p'), method='text').decode('ascii'),
             'A test of text and tail\n')
         if sys.version_info.major > 2:
-            self.assertIn('<!-- A -- comment --->', tostring(root))
+            self.assertIn('<!-- A -- comment --->', tostring(root).decode('ascii'))
