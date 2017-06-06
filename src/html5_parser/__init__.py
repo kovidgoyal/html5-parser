@@ -6,28 +6,33 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import codecs
 import importlib
+import sys
 from collections import namedtuple
 from locale import getpreferredencoding
 
 from lxml import etree  # Must be imported before html_parser to initialize libxml
 
-from . import html_parser
+try:
+    from . import html_parser
+except ImportError:
+    if not hasattr(sys, 'generating_docs_via_sphinx'):
+        raise
+else:
+    version = namedtuple('Version', 'major minor patch')(
+        html_parser.MAJOR, html_parser.MINOR, html_parser.PATCH)
 
-version = namedtuple('Version', 'major minor patch')(
-    html_parser.MAJOR, html_parser.MINOR, html_parser.PATCH)
+    if not hasattr(etree, 'adopt_external_document'):
+        raise ImportError('Your version of lxml is too old, version 3.8.0 is minimum')
 
-if not hasattr(etree, 'adopt_external_document'):
-    raise ImportError('Your version of lxml is too old, version 3.8.0 is minimum')
-
-LIBXML_VERSION = ((html_parser.LIBXML_VERSION // 10000) % 100,
-                  (html_parser.LIBXML_VERSION // 100) % 100, html_parser.LIBXML_VERSION % 100, )
-if LIBXML_VERSION != etree.LIBXML_VERSION:
-    raise RuntimeError(
-        'html5-parser and lxml are using different versions of libxml2.'
-        ' This happens commonly when using pip installed versions of lxml.'
-        ' Use pip install --no-binary lxml lxml instead.'
-        ' libxml2 versions: html5-parser: {} != lxml: {}'.format(
-            LIBXML_VERSION, etree.LIBXML_VERSION))
+    LIBXML_VERSION = ((html_parser.LIBXML_VERSION // 10000) % 100,
+                      (html_parser.LIBXML_VERSION // 100) % 100, html_parser.LIBXML_VERSION % 100, )
+    if LIBXML_VERSION != etree.LIBXML_VERSION:
+        raise RuntimeError(
+            'html5-parser and lxml are using different versions of libxml2.'
+            ' This happens commonly when using pip installed versions of lxml.'
+            ' Use pip install --no-binary lxml lxml instead.'
+            ' libxml2 versions: html5-parser: {} != lxml: {}'.format(
+                LIBXML_VERSION, etree.LIBXML_VERSION))
 
 BOMS = (codecs.BOM_UTF8, codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE)
 
@@ -114,7 +119,33 @@ def parse(
     return_root=True,
     stack_size=16 * 1024
 ):
-    ' See https://html5-parser.readthedocs.io/en/latest/#html5_parser.parse '
+    '''
+    Parse the specified :attr:`html` and return the parsed representation.
+
+    :param html: The HTML to be parsed. Can be either bytes or a unicode string.
+
+    :param transport_encoding: If specified, assume the passed in bytes are in this encoding.
+        Ignored if :attr:`html` is unicode.
+
+    :param namespace_elements:
+        Add XML namespaces when parsing so that the resulting tree is XHTML.
+
+    :param fallback_encoding: If no encoding could be detected, then use this encoding.
+        Defaults to an encoding based on system locale.
+
+    :param keep_doctype: Keep the <DOCTYPE> (if any).
+
+    :param maybe_xhtml: Useful when it is unknown if the HTML to be parsed is
+        actually XHTML. Changes the HTML 5 parsing algorithm to be more
+        suitable for XHTML. In particular handles self-closed CDATA elements.
+        So a ``<title/>`` or ``<style/>`` in the HTML will not completely break
+        parsing.
+
+    :param stack_size: The initial size (number of items) in the stack. The
+        default is sufficient to avoid memory allocations for all but the
+        largest documents.
+
+    '''
     data = as_utf8(html or b'', transport_encoding, fallback_encoding)
     treebuilder = normalize_treebuilder(treebuilder)
     if treebuilder not in NAMESPACE_SUPPORTING_BUILDERS:

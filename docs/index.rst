@@ -74,32 +74,7 @@ API documentation
 
 The API of html5-parser is a single function, ``parse()``.
 
-.. function:: html5_parser.parse(html, transport_encoding=None, namespace_elements=False, fallback_encoding=None, keep_doctype=True, maybe_xhtml=False, stack_size=16 * 1024)
-
-    Parse the specified :attr:`html` and return the parsed representation.
-
-    :param html: The HTML to be parsed. Can be either bytes or a unicode string.
-
-    :param transport_encoding: If specified, assume the passed in bytes are in this encoding.
-        Ignored if :attr:`html` is unicode.
-
-    :param namespace_elements:
-        Add XML namespaces when parsing so that the resulting tree is XHTML.
-
-    :param fallback_encoding: If no encoding could be detected, then use this encoding.
-        Defaults to an encoding based on system locale.
-
-    :param keep_doctype: Keep the <DOCTYPE> (if any).
-
-    :param maybe_xhtml: Useful when it is unknown if the HTML to be parsed is
-        actually XHTML. Changes the HTML 5 parsing algorithm to be more
-        suitable for XHTML. In particular handles self-closed CDATA elements.
-        So a ``<title/>`` or ``<style/>`` in the HTML will not completely break
-        parsing.
-
-    :param stack_size: The initial size (number of items) in the stack. The
-        default is sufficient to avoid memory allocations for all but the
-        largest documents.
+.. autofunction:: html5_parser.parse
 
 
 Comparison with html5lib
