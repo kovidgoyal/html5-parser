@@ -130,6 +130,14 @@ def parse(
     :param namespace_elements:
         Add XML namespaces when parsing so that the resulting tree is XHTML.
 
+    :param treebuilder:
+        The type of tree to return. Supported values are:
+          * `lxml <http://lxml.de>`_  -- the default, and fastest
+          * etree (the python stdlib :mod:`xml.etree.ElementTree`)
+          * dom (the python stdlib :mod:`xml.dom.minidom`)
+          * `soup <https://www.crummy.com/software/BeautifulSoup>`_ -- BeautifulSoup,
+            which must be installed or it will raise an :class:`ImportError`
+
     :param fallback_encoding: If no encoding could be detected, then use this encoding.
         Defaults to an encoding based on system locale.
 
@@ -140,6 +148,9 @@ def parse(
         suitable for XHTML. In particular handles self-closed CDATA elements.
         So a ``<title/>`` or ``<style/>`` in the HTML will not completely break
         parsing.
+
+    :param return_root: If True, return the root node of the document, otherwise
+        return the tree object for the document.
 
     :param stack_size: The initial size (number of items) in the stack. The
         default is sufficient to avoid memory allocations for all but the
