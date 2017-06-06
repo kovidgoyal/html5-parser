@@ -35,7 +35,7 @@ matrix:
           env: BUILDER=setup.py
 
 install:
-    - pip install --no-binary lxml chardet lxml
+    - pip install --no-binary lxml chardet lxml beautifulsoup4 BeautifulSoup
     - python -c "from lxml import etree; print(etree)"
 
 script:
