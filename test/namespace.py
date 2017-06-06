@@ -52,8 +52,7 @@ class BasicTests(TestCase):
             '<head/><body><p>'
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="1 2 3 4">'
             '<animateColor/><image xlink:href="h"/></svg>'
-            '<img src="s"/></p><p/></body></html>'
-        )
+            '<img src="s"/></p><p/></body></html>')
 
     def test_xml_ns(self):
         root = nsparse('<html xml:lang="fr" lang="es"><svg xml:lang="1">xxx', maybe_xhtml=True)
@@ -69,4 +68,11 @@ class BasicTests(TestCase):
         self.assertIn('xml:lang', root.attrib)
 
     def test_xmlns(self):
-        root = nsparse('<html><p xmlns:foo="f">xxx<f:moo/>')
+        root = parse('<html><p xmlns:foo="f">xxx<f:moo/>')
+        self.ae(tostring(root), '<html><head/><body><p xmlns-foo="f">xxx<f-moo/></p></body></html>')
+        root = parse('<p xmlns="x"><p xmlns:="y"><svg xmlns:xlink="xxx">')
+        self.ae(
+            tostring(root),
+            '<html xmlns:xlink="http://www.w3.org/1999/xlink"><head/>'
+            '<body><p/><p><svg/></p></body></html>'
+        )

@@ -129,6 +129,7 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
     GumboAttribute* attr;
     const xmlChar *attr_name;
     const char *aname;
+    char buf[50] = {0};
     ParseData *pd = (ParseData*)doc->_private;
     xmlNsPtr ns;
     xmlNodePtr root;
@@ -150,15 +151,35 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
                 ns = ensure_xml_ns(doc, pd, node);
                 if (UNLIKELY(!ns)) return false;
                 break;
+            case GUMBO_ATTR_NAMESPACE_XMLNS:
+                if (strncmp(aname, "xlink", 5) == 0) {
+                    root = pd->root ? pd->root : node;
+                    if (UNLIKELY(!pd->xlink)) {
+                        pd->xlink = xmlNewNs(root, BAD_CAST "http://www.w3.org/1999/xlink", BAD_CAST "xlink");
+                        if(UNLIKELY(!pd->xlink)) return false;
+                    }
+                    // We ignore the value of this attribute since we dont want
+                    // the xlink namespace to be redefined
+                    continue;
+                } else if (strncmp(aname, "xmlns", 5) == 0) {
+                    // discard since we dont support changing the default
+                    // namespace, namespace are decided by tag names alone. 
+                    continue; 
+                }
+                break;
             default:
                 if (UNLIKELY(pd->maybe_xhtml && strncmp(aname, "xml:lang", 8) == 0)) {
                     aname = "lang";
                     ns = ensure_xml_ns(doc, pd, node);
                     if (UNLIKELY(!ns)) return false;
-                } else if (UNLIKELY(strncmp("xmlns:", aname, 6) == 0)) {
-                    continue;
-                    /* if (strlen(aname) == 6) continue; */
-                    /* snprintf(buf, sizeof(buf) - 1, "xmlns-%s",   */
+                } else if (UNLIKELY(strncmp("xmlns", aname, 5) == 0)) {
+                    size_t len = strlen(aname);
+                    if (len == 5) continue;  // ignore xmlns 
+                    if (aname[5] == ':') {
+                        if (len == 6) continue; //ignore xmlns:
+                        snprintf(buf, sizeof(buf) - 1, "xmlns-%s", aname + 6);
+                        aname = buf;
+                    }
                 }
                 break;
         }
@@ -169,6 +190,18 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
     return true;
 }
 
+static inline uint8_t
+copy_tag_name(GumboStringPiece *src, char* dest, size_t destsz) {
+    uint8_t i = 0;
+    for (; i < destsz && i < src->length; i++) {
+        char ch = src->data[i];
+        if (ch == ':') ch = '-';
+        dest[i] = ch;
+    }
+    return i;
+}
+
+
 static inline xmlNodePtr
 create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboElement *elem, bool namespace_elements) {
 #define ABORT { ok = false; goto end; }
@@ -176,16 +209,22 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
     bool ok = true;
     const xmlChar *tag_name = NULL;
     const char *tag;
+    uint8_t tag_sz;
+    char buf[50] = {0};
     xmlNsPtr namespace = NULL;
 
-    if (elem->tag_namespace == GUMBO_NAMESPACE_SVG) {
-        // gumbo does not normalize the original tag for svg elements
-        gumbo_tag_from_original_text(&(elem->original_tag));
-        tag = gumbo_normalize_svg_tagname(&(elem->original_tag));
-        if (tag == NULL) tag = gumbo_normalized_tagname(elem->tag);
-    } else tag = gumbo_normalized_tagname(elem->tag);
 
-    tag_name = xmlDictLookup(doc->dict, BAD_CAST tag, -1);
+    if (elem->tag == GUMBO_TAG_UNKNOWN) {
+        gumbo_tag_from_original_text(&(elem->original_tag));
+        tag_sz = copy_tag_name(&(elem->original_tag), buf, sizeof(buf));
+        tag = buf;
+    } else if (elem->tag_namespace == GUMBO_NAMESPACE_SVG) {
+        gumbo_tag_from_original_text(&(elem->original_tag));
+        tag = gumbo_normalize_svg_tagname(&(elem->original_tag), &tag_sz);
+        if (tag == NULL) tag = gumbo_normalized_tagname_and_size(elem->tag, &tag_sz);
+    } else tag = gumbo_normalized_tagname_and_size(elem->tag, &tag_sz);
+
+    tag_name = xmlDictLookup(doc->dict, BAD_CAST tag, tag_sz);
     if (UNLIKELY(!tag_name)) ABORT;
 
     // Must use xmlNewDocNodeEatName as we are using a dict string and without this
