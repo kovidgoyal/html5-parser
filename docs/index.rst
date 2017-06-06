@@ -80,6 +80,10 @@ The API of html5-parser is a single function, ``parse()``.
 Comparison with html5lib
 -----------------------------
 
+Before doing the actual comparison, let me say that html5lib is a great
+project. It was a pioneer of HTML 5 parsing and I have used it myself for many
+years. However, being written in pure python, it cannot help but be slow.
+
 Benchmarks
 ^^^^^^^^^^^^^^
 
@@ -142,7 +146,8 @@ With **html5-parser**:
 While both outputs are technically correct, the output produced via
 html5-parser is much easier to read and much closer to what an actual human
 would write. In particular, notice the unnecessary use of prefixes in
-the html5lib output.
+the html5lib output, as well as the ugly ``ns0`` anonymous prefix for the svg
+namespace.
 
 
 .. |pypi| image:: https://img.shields.io/pypi/v/html5-parser.svg?label=version
