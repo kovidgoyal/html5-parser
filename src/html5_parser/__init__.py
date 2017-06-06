@@ -102,7 +102,7 @@ def as_utf8(bytes_or_unicode, transport_encoding=None, fallback_encoding=None):
 def normalize_treebuilder(x):
     if hasattr(x, 'lower'):
         x = x.lower()
-    return {'lxml.etree': 'lxml'}.get(x, x)
+    return {'lxml.etree': 'lxml', 'etree': 'stdlib_etree'}.get(x, x)
 
 
 NAMESPACE_SUPPORTING_BUILDERS = frozenset('lxml etree dom'.split())
