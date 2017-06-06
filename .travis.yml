@@ -36,7 +36,7 @@ matrix:
 
 install:
     - pip install --no-binary lxml chardet lxml beautifulsoup4
-    - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then pip install BeautifulSoup; fi
+    - if [[ $TRAVIS_PYTHON_VERSION == 2.* ]]; then pip install BeautifulSoup; fi
     - python -c "from lxml import etree; print(etree)"
 
 script:
