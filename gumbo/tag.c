@@ -19,7 +19,6 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <stdint.h>
 #include <string.h>    
 
 const char* kGumboTagNames[] = {
@@ -36,6 +35,12 @@ static const uint8_t kGumboTagSizes[] = {
 
 const char* gumbo_normalized_tagname(GumboTag tag) {
   assert(tag <= GUMBO_TAG_LAST);
+  return kGumboTagNames[tag];
+}
+
+const char* gumbo_normalized_tagname_and_size(GumboTag tag, uint8_t *sz) {
+  assert(tag <= GUMBO_TAG_LAST);
+  *sz = kGumboTagSizes[tag];
   return kGumboTagNames[tag];
 }
 

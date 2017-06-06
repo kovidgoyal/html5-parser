@@ -47,6 +47,7 @@
 #define fileno _fileno
 #endif
 
+#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -173,6 +174,7 @@ typedef enum {
  * library.
  */
 const char* gumbo_normalized_tagname(GumboTag tag);
+const char* gumbo_normalized_tagname_and_size(GumboTag tag, uint8_t *sz);
 
 /**
  * Extracts the tag name from the original_text field of an element or token by
