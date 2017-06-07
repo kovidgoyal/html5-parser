@@ -291,48 +291,61 @@ convert_node(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode* node, GumboElement
     return ans;
 }
 
-static xmlNodePtr
-convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
+xmlNodePtr
+convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts, char **errmsg) {
+#define ABORT { ok = false; goto end; }
     xmlNodePtr parent = NULL, child = NULL;
     GumboNode *gumbo = NULL;
     ParseData parse_data = {0};
-    bool ok = true;
     GumboElement *elem;
+    bool ok = true;
+    *errmsg = NULL;
     Stack *stack = alloc_stack(opts->stack_size);
-
-    if (stack == NULL) { PyErr_NoMemory(); return NULL; }
+    if (stack == NULL) return NULL;
     stack_push(stack, root, NULL);
 
-    Py_BEGIN_ALLOW_THREADS;
     parse_data.maybe_xhtml = opts->gumbo_opts.use_xhtml_rules;
     doc->_private = (void*)&parse_data;
     while(stack->length > 0) {
         stack_pop(stack, &gumbo, &parent);
         child = convert_node(doc, parent, gumbo, &elem, opts);
-        if (UNLIKELY(!child)) { ok = false;  goto end; };
+        if (UNLIKELY(!child)) ABORT;
         if (LIKELY(parent)) {
-            if (UNLIKELY(!xmlAddChild(parent, child))) { ok = false; goto end; }
+            if (UNLIKELY(!xmlAddChild(parent, child))) ABORT;
         } else parse_data.root = child; 
         if (elem != NULL) {
-            if (!push_children(child, elem, stack)) { ok = false; goto end; };
+            if (!push_children(child, elem, stack)) ABORT;
         }
 
     }
+#undef ABORT
 end:
     doc->_private = NULL;
-    Py_END_ALLOW_THREADS;
+    free_stack(stack);
+    *errmsg = (char*)parse_data.errmsg;
     if (!ok) {
         if (parse_data.root) { xmlFreeNode(parse_data.root); parse_data.root = NULL; }
-        if (!PyErr_Occurred()) {
-            if (parse_data.errmsg) PyErr_SetString(PyExc_Exception, parse_data.errmsg);
-            else PyErr_NoMemory();
-        }
     }
-    free_stack(stack);
     return parse_data.root;
 }
 
-static bool 
+
+static inline xmlNodePtr
+py_convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
+    char *errmsg = NULL;
+    xmlNodePtr ans;
+
+    Py_BEGIN_ALLOW_THREADS;
+    ans = convert_tree(doc, root, opts, &errmsg);
+    Py_END_ALLOW_THREADS;
+    if (ans == NULL) {
+        if (errmsg) PyErr_SetString(PyExc_Exception, errmsg);
+        else PyErr_NoMemory();
+    }
+    return ans;
+}
+
+static inline bool 
 parse_with_options(xmlDocPtr doc, const char* buffer, size_t buffer_length, Options *opts) {
     GumboOutput *output = NULL;
     xmlNodePtr root = NULL;
@@ -352,7 +365,7 @@ parse_with_options(xmlDocPtr doc, const char* buffer, size_t buffer_length, Opti
             return false;
         }
     }
-    root = convert_tree(doc, output->root, opts);
+    root = py_convert_tree(doc, output->root, opts);
     if (root) xmlDocSetRootElement(doc, root);
     gumbo_destroy_output(output);
     return root ? true : false;
