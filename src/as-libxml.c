@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "as-libxml.h"
+#include <libxml/tree.h>
 #include <libxml/dict.h>
 
 // Namespace constants, indexed by GumboNamespaceEnum.
@@ -277,7 +278,7 @@ alloc_doc(void) {
     return doc;
 }
 
-xmlDocPtr
+libxml_doc*
 convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **errmsg) {
 #define ABORT { ok = false; goto end; }
     xmlDocPtr doc = NULL;
@@ -320,4 +321,15 @@ end:
     if (ok) xmlDocSetRootElement(doc, parse_data.root);
     else { if (parse_data.root) xmlFreeNode(parse_data.root); if (doc) xmlFreeDoc(doc); doc = NULL; }
     return doc;
+}
+
+libxml_doc* 
+copy_libxml_doc(libxml_doc* doc) { return xmlCopyDoc(doc, 1); }
+
+libxml_doc 
+free_libxml_doc(libxml_doc* doc) { xmlFreeDoc(doc); }
+
+int
+get_libxml_version(void) {
+    return atoi(xmlParserVersion);
 }

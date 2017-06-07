@@ -7,6 +7,10 @@
 #pragma once
 
 #include "data-types.h"
-#include <libxml/tree.h>
 
-xmlDocPtr convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **errmsg);
+typedef void libxml_doc;
+
+libxml_doc* copy_libxml_doc(libxml_doc* doc);
+libxml_doc free_libxml_doc(libxml_doc* doc);
+int get_libxml_version(void);
+libxml_doc* convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **errmsg);

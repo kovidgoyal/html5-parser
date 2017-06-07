@@ -8,7 +8,6 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-#include <libxml/xmlversion.h>
 
 #include "../gumbo/gumbo.h"
 #include "as-libxml.h"
@@ -20,10 +19,10 @@
 static char *NAME =  "libxml2:xmlDoc";
 static char *DESTRUCTOR = "destructor:xmlFreeDoc";
 
-static inline xmlDocPtr
+static inline libxml_doc*
 convert_tree(GumboOutput *output, Options *opts) {
     char *errmsg = NULL;
-    xmlDocPtr doc = NULL;
+    libxml_doc *doc = NULL;
 
     Py_BEGIN_ALLOW_THREADS;
     doc = convert_gumbo_tree_to_libxml_tree(output, opts, &errmsg);
@@ -35,10 +34,10 @@ convert_tree(GumboOutput *output, Options *opts) {
     return doc;
 }
 
-static inline xmlDocPtr 
+static inline libxml_doc* 
 parse_with_options(const char* buffer, size_t buffer_length, Options *opts) {
     GumboOutput *output = NULL;
-    xmlDocPtr doc = NULL;
+    libxml_doc* doc = NULL;
     Py_BEGIN_ALLOW_THREADS;
     output = gumbo_parse_with_options(&(opts->gumbo_opts), buffer, buffer_length);
     Py_END_ALLOW_THREADS;
@@ -52,25 +51,25 @@ parse_with_options(const char* buffer, size_t buffer_length, Options *opts) {
 
 static void 
 free_encapsulated_doc(PyObject *capsule) {
-    xmlDocPtr doc = PyCapsule_GetPointer(capsule, NAME);
+    libxml_doc *doc = (libxml_doc*)PyCapsule_GetPointer(capsule, NAME);
     if (doc != NULL) {
         char *ctx = PyCapsule_GetContext(capsule);
-        if (ctx == DESTRUCTOR) xmlFreeDoc(doc);
+        if (ctx == DESTRUCTOR) free_libxml_doc(doc);
     }
 }
 
 static inline PyObject*
-encapsulate(xmlDocPtr doc) {
+encapsulate(libxml_doc* doc) {
     PyObject *ans = NULL;
     ans = PyCapsule_New(doc, NAME, free_encapsulated_doc);
-    if (ans == NULL) { xmlFreeDoc(doc); return NULL; }
+    if (ans == NULL) { free_libxml_doc(doc); return NULL; }
     if (PyCapsule_SetContext(ans, DESTRUCTOR) != 0) { Py_DECREF(ans); return NULL; }
     return ans;
 }
 
 static PyObject *
 parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
-    xmlDocPtr doc = NULL;
+    libxml_doc *doc = NULL;
     const char *buffer = NULL;
     Py_ssize_t sz = 0;
     Options opts = {0};
@@ -94,9 +93,9 @@ parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
 static PyObject *
 clone_doc(PyObject UNUSED *self, PyObject *capsule) {
     if (!PyCapsule_CheckExact(capsule)) { PyErr_SetString(PyExc_TypeError, "Must specify a capsule as the argument"); return NULL; }
-    xmlDocPtr sdoc = PyCapsule_GetPointer(capsule, PyCapsule_GetName(capsule)), doc;
+    libxml_doc *sdoc = PyCapsule_GetPointer(capsule, PyCapsule_GetName(capsule)), *doc;
     if (sdoc == NULL) return NULL;
-    doc = xmlCopyDoc(sdoc, 1);
+    doc = copy_libxml_doc(sdoc);
     if (doc == NULL) return PyErr_NoMemory();
     return encapsulate(doc);
 }
@@ -152,7 +151,7 @@ inithtml_parser(void) {
     if (PyModule_AddIntMacro(m, MAJOR) != 0) INITERROR;
     if (PyModule_AddIntMacro(m, MINOR) != 0) INITERROR;
     if (PyModule_AddIntMacro(m, PATCH) != 0) INITERROR;
-    if (PyModule_AddIntConstant(m, "LIBXML_VERSION", atoi(xmlParserVersion)) != 0) INITERROR;
+    if (PyModule_AddIntConstant(m, "LIBXML_VERSION", get_libxml_version()) != 0) INITERROR;
 #if PY_MAJOR_VERSION >= 3
     return m;
 #endif
