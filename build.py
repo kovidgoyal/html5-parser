@@ -138,7 +138,7 @@ def init_env(debug=False, sanitize=False, native_optimizations=False, add_python
     sanitize_args = get_sanitize_args(cc_name, ccver) if sanitize else set()
     cflags = os.environ.get(
         'OVERRIDE_CFLAGS', (
-            '-Wextra -Wno-missing-field-initializers -Wall -std=c99'
+            '-Wextra -Wno-missing-field-initializers -Wall -std=c99 -fvisibility=hidden'
             ' -pedantic-errors -Werror {} {} -D{}DEBUG -fwrapv {} {} -pipe {}').format(
                 optimize, ' '.join(sanitize_args), ('' if debug else 'N'), stack_protector,
                 missing_braces, '-march=native' if native_optimizations else ''))

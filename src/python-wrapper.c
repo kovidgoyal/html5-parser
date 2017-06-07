@@ -133,12 +133,12 @@ moduledef = {
 
 #define INITERROR return NULL
 
-PyMODINIT_FUNC
+EXPORTED PyMODINIT_FUNC
 PyInit_html_parser(void) {
 
 #else
 #define INITERROR return
-PyMODINIT_FUNC
+EXPORTED PyMODINIT_FUNC
 inithtml_parser(void) {
 #endif
     PyObject *m;

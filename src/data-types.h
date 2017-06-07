@@ -11,8 +11,10 @@
 
 #ifdef _MSC_VER
 #define UNUSED 
+#define EXPORTED __declspec(dllexport)
 #else
 #define UNUSED __attribute__ ((unused))
+#define EXPORTED __attribute__ ((visibility ("default")))
 #endif
 #ifdef __builtin_expect
 #define LIKELY(x)    __builtin_expect (!!(x), 1)
