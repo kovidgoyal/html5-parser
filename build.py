@@ -28,7 +28,7 @@ iswindows = hasattr(sys, 'getwindowsversion')
 is_travis = os.environ.get('TRAVIS') == 'true'
 Env = namedtuple('Env', 'cc cflags ldflags linker debug cc_name cc_ver')
 PKGCONFIG = os.environ.get('PKGCONFIG_EXE', 'pkg-config')
-with open(os.path.join(base, 'src/gumbo-libxml.c'), 'rb') as f:
+with open(os.path.join(base, 'src/python-wrapper.c'), 'rb') as f:
     raw = f.read().decode('utf-8')
 version = tuple(
     map(

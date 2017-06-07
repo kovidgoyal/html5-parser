@@ -39,8 +39,7 @@
  * http://www.whatwg.org/specs/web-apps/current-work/multipage/syntax.html
  */
 
-#ifndef GUMBO_GUMBO_H_
-#define GUMBO_GUMBO_H_
+#pragma once
 
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
@@ -668,5 +667,3 @@ void gumbo_memory_set_free(void (*free_p)(void *));
 #ifdef __cplusplus
 }
 #endif
-
-#endif  // GUMBO_GUMBO_H_
