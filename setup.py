@@ -69,6 +69,7 @@ setup(
     classifiers=[c for c in CLASSIFIERS.split("\n") if c],
     platforms=['any'],
     install_requires=['chardet', 'lxml>=3.8.0'],
+    extras_require={'soup': 'beautifulsoup4'},
     packages=['html5_parser'],
     package_dir={'': 'src'},
     cmdclass={'test': Test},
