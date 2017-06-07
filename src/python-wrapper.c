@@ -20,45 +20,34 @@
 static char *NAME =  "libxml2:xmlDoc";
 static char *DESTRUCTOR = "destructor:xmlFreeDoc";
 
-static inline xmlNodePtr
-py_convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts) {
+static inline xmlDocPtr
+convert_tree(GumboOutput *output, Options *opts) {
     char *errmsg = NULL;
-    xmlNodePtr ans;
+    xmlDocPtr doc = NULL;
 
     Py_BEGIN_ALLOW_THREADS;
-    ans = convert_tree(doc, root, opts, &errmsg);
+    doc = convert_gumbo_tree_to_libxml_tree(output, opts, &errmsg);
     Py_END_ALLOW_THREADS;
-    if (ans == NULL) {
+    if (doc == NULL) {
         if (errmsg) PyErr_SetString(PyExc_Exception, errmsg);
         else PyErr_NoMemory();
     }
-    return ans;
+    return doc;
 }
 
-static inline bool 
-parse_with_options(xmlDocPtr doc, const char* buffer, size_t buffer_length, Options *opts) {
+static inline xmlDocPtr 
+parse_with_options(const char* buffer, size_t buffer_length, Options *opts) {
     GumboOutput *output = NULL;
-    xmlNodePtr root = NULL;
+    xmlDocPtr doc = NULL;
     Py_BEGIN_ALLOW_THREADS;
     output = gumbo_parse_with_options(&(opts->gumbo_opts), buffer, buffer_length);
     Py_END_ALLOW_THREADS;
-    if (output == NULL) { PyErr_NoMemory(); return false; }
-    if (opts->keep_doctype) {
-        GumboDocument* doctype = & output->document->v.document;
-        if(!xmlCreateIntSubset(
-                doc,
-                BAD_CAST doctype->name,
-                BAD_CAST doctype->public_identifier,
-                BAD_CAST doctype->system_identifier)) {
-            PyErr_NoMemory();
-            gumbo_destroy_output(output);
-            return false;
-        }
+    if (output == NULL) PyErr_NoMemory(); 
+    else {
+        doc = convert_tree(output, opts);
+        gumbo_destroy_output(output);
     }
-    root = py_convert_tree(doc, output->root, opts);
-    if (root) xmlDocSetRootElement(doc, root);
-    gumbo_destroy_output(output);
-    return root ? true : false;
+    return doc;
 }
 
 static void 
@@ -97,10 +86,8 @@ parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
     opts.keep_doctype = PyObject_IsTrue(kd);
     opts.gumbo_opts.use_xhtml_rules = PyObject_IsTrue(mx);
 
-    doc = create_doc();
-    if (!doc) return PyErr_NoMemory();
-
-    if (!parse_with_options(doc, buffer, (size_t)sz, &opts)) { xmlFreeDoc(doc); return NULL; }
+    doc = parse_with_options(buffer, (size_t)sz, &opts);
+    if (!doc) return NULL;
     return encapsulate(doc);
 }
 

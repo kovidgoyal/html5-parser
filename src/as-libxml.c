@@ -5,13 +5,12 @@
  * Distributed under terms of the Apache 2.0 license.
  */
 
-#include <libxml/dict.h>
 
 #include <assert.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include "as-libxml.h"
+#include <libxml/dict.h>
 
 // Namespace constants, indexed by GumboNamespaceEnum.
 static const char* kLegalXmlns[] = {
@@ -263,8 +262,8 @@ convert_node(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode* node, GumboElement
     return ans;
 }
 
-xmlDocPtr
-create_doc(void) {
+static inline xmlDocPtr
+alloc_doc(void) {
     xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
     if (doc) {
         if (!doc->dict) {
@@ -278,11 +277,12 @@ create_doc(void) {
     return doc;
 }
 
-xmlNodePtr
-convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts, char **errmsg) {
+xmlDocPtr
+convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **errmsg) {
 #define ABORT { ok = false; goto end; }
+    xmlDocPtr doc = NULL;
     xmlNodePtr parent = NULL, child = NULL;
-    GumboNode *gumbo = NULL;
+    GumboNode *gumbo = NULL, *root = output->root;
     ParseData parse_data = {0};
     GumboElement *elem;
     bool ok = true;
@@ -290,6 +290,13 @@ convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts, char **errmsg) {
     Stack *stack = alloc_stack(opts->stack_size);
     if (stack == NULL) return NULL;
     stack_push(stack, root, NULL);
+    doc = alloc_doc();
+    if (doc == NULL) ABORT;
+
+    if (opts->keep_doctype) {
+        GumboDocument* doctype = & output->document->v.document;
+        if(!xmlCreateIntSubset(doc, BAD_CAST doctype->name, BAD_CAST doctype->public_identifier, BAD_CAST doctype->system_identifier)) ABORT;
+    }
 
     parse_data.maybe_xhtml = opts->gumbo_opts.use_xhtml_rules;
     doc->_private = (void*)&parse_data;
@@ -307,11 +314,10 @@ convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts, char **errmsg) {
     }
 #undef ABORT
 end:
-    doc->_private = NULL;
+    if (doc) doc->_private = NULL;
     free_stack(stack);
     *errmsg = (char*)parse_data.errmsg;
-    if (!ok) {
-        if (parse_data.root) { xmlFreeNode(parse_data.root); parse_data.root = NULL; }
-    }
-    return parse_data.root;
+    if (ok) xmlDocSetRootElement(doc, parse_data.root);
+    else { if (parse_data.root) xmlFreeNode(parse_data.root); if (doc) xmlFreeDoc(doc); doc = NULL; }
+    return doc;
 }

@@ -6,10 +6,7 @@
 
 #pragma once
 
+#include "data-types.h"
 #include <libxml/tree.h>
 
-#include "data-types.h"
-
-xmlDocPtr create_doc(void);
-
-xmlNodePtr convert_tree(xmlDocPtr doc, GumboNode *root, Options *opts, char **errmsg);
+xmlDocPtr convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **errmsg);

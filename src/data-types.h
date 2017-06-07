@@ -7,6 +7,7 @@
 #pragma once
 
 #include "../gumbo/gumbo.h"
+#include <stdbool.h>
 
 #ifdef _MSC_VER
 #define UNUSED 
