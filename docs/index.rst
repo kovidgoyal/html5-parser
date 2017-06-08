@@ -6,7 +6,7 @@ html5-parser
 A fast implementation of the `HTML 5 parsing spec
 <https://www.w3.org/TR/html5/syntax.html#parsing>`_. Parsing is done in C using
 a variant of the `gumbo parser <https://github.com/google/gumbo-parser>`_. The
-gumbo parse tree is then transformed into an `lxml <http://lxml.de/>`_ tree, also
+gumbo parse tree is then transformed into an `lxml <http://lxml.de/>`__ tree, also
 in C, yielding parse times that can be **a thirtieth** of the html5lib parse
 times. That is a speedup of **30x**.
 
