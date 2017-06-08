@@ -121,15 +121,16 @@ There is a benchmark script named `benchmark.py
 <https://github.com/kovidgoyal/html5-parser/blob/master/benchmark.py>`_ that
 compares the parse times for parsing a large (~ 5.7MB) HTML document in
 html5lib and html5-parser. The results on my system (using python 3) show a
-speedup of **31x**. The output from the script on my system is:
+speedup of **37x**. The output from the script on my system is:
 
 .. code-block:: none
 
     Testing with HTML file of 5,956,815 bytes
-    Parsing 20 times with html5-parser
-    html5-parser took an average of: 0.434 seconds to parse it
+    Parsing 100 times with html5-parser
+    html5-parser took an average of: 0.374 seconds to parse it
     Parsing 20 times with html5lib
-    html5lib took an average of: 13.518 seconds to parse it
+    html5lib took an average of: 13.690 seconds to parse it
+    Speedup: 37x
 
 There is further potential for speedup. Currently the gumbo subsystem uses
 its own data structures to store parse results and these are converted to

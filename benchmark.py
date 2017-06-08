@@ -45,9 +45,11 @@ def doit(name, func, num=20):
     print('Parsing', num, 'times with', name)
     t = timeit(func, num)
     print(name, 'took an average of: {:,.3f} seconds to parse it'.format(t))
+    return t
 
 
-doit(
+t1 = doit(
     'html5-parser',
     partial(html5_parser.parse, raw, transport_encoding="utf-8", namespace_elements=True), num=100)
-doit('html5lib', partial(html5lib.parse, raw, transport_encoding="utf-8", treebuilder="lxml"))
+t2 = doit('html5lib', partial(html5lib.parse, raw, transport_encoding="utf-8", treebuilder="lxml"))
+print('Speedup: {}x'.format(round(t2/t1)))
