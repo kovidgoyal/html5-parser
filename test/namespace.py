@@ -144,14 +144,14 @@ class BasicTests(TestCase):
     def test_xml_ns(self):
         root = nsparse('<html xml:lang="fr" lang="es"><svg xml:lang="1">xxx', maybe_xhtml=True)
         self.ae(
-            tostring(root), '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr"'
-            ' lang="es"><head/><body><svg xmlns="http://www.w3.org/2000/svg" xml:lang="1">'
+            tostring(root), '<html xmlns="http://www.w3.org/1999/xhtml" lang="es"'
+            ' xml:lang="es"><head/><body><svg xmlns="http://www.w3.org/2000/svg" lang="1">'
             'xxx</svg></body></html>')
-        self.ae(root.xpath('//@lang'), ['es'])
+        self.ae(root.xpath('//@lang'), ['es', '1'])
         self.assertIn('{%s}lang' % XML, root.attrib)
-        self.ae(root.xpath('//@xml:lang'), ['fr', '1'])
+        self.ae(root.xpath('//@xml:lang'), ['es'])
         root = nsparse('<html xml:lang="fr" lang="es"><svg xml:lang="1">xxx')
-        self.ae(root.xpath('//@xml:lang'), ['fr', '1'])
+        self.ae(root.xpath('//@lang'), ['es', '1'])
 
     def test_xmlns(self):
         root = parse('<html><p xmlns:foo="f">xxx<f:moo/>')

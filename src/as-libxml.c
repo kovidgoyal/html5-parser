@@ -25,7 +25,7 @@ typedef struct {
     xmlNodePtr root;
     bool maybe_xhtml;
     const char* errmsg;
-    const xmlChar* standard_tags[GUMBO_TAG_LAST];
+    const xmlChar* standard_tags[GUMBO_TAG_LAST], *lang_attribute;
 } ParseData;
 
 // Stack {{{
@@ -37,32 +37,6 @@ typedef struct {
 #include "stack.h"
 
 // }}}
-
-typedef struct {
-    xmlNsPtr *ns;
-    xmlNodePtr *node;
-} NamespaceItem;
-
-typedef struct {
-    size_t length;
-    size_t capacity;
-    NamespaceItem *items;
-} AliasedNamespaces;
-
-static inline AliasedNamespaces*
-alloc_aliased_namespaces() {
-    AliasedNamespaces *ans = (AliasedNamespaces*)calloc(sizeof(AliasedNamespaces), 1);
-    if (ans) {
-        ans->items = malloc(sizeof(NamespaceItem) * 1000);
-        if (ans->items) ans->capacity = 1000;
-        else { free(ans); ans = NULL; }
-    }
-    return ans;
-}
-
-static inline void
-free_aliased_namespaces(AliasedNamespaces *s) { if (s) { free(s->items); free(s); } }
-
 
 static inline bool
 is_known_tag_namespace(const char *uri) {
@@ -119,6 +93,7 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
     ParseData *pd = (ParseData*)doc->_private;
     xmlNsPtr ns;
     xmlNodePtr root;
+    int added_lang = 0;
 
     for (unsigned int i = 0; i < elem->attributes.length; ++i) {
         attr = elem->attributes.data[i];
@@ -134,8 +109,16 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
                 ns = pd->xlink;
                 break;
             case GUMBO_ATTR_NAMESPACE_XML:
-                ns = ensure_xml_ns(doc, pd, node);
-                if (UNLIKELY(!ns)) return false;
+                if (strcmp(aname, "lang") == 0) {
+                    if (!added_lang) {
+                        added_lang = 1;
+                        if (UNLIKELY(!xmlNewNsPropEatName(node, NULL, (xmlChar*)pd->lang_attribute, BAD_CAST attr->value))) return false;
+                    }
+                    continue;
+                } else {
+                    ns = ensure_xml_ns(doc, pd, node);
+                    if (UNLIKELY(!ns)) return false;
+                }
                 break;
             case GUMBO_ATTR_NAMESPACE_XMLNS:
                 if (strncmp(aname, "xlink", 5) == 0) {
@@ -155,9 +138,11 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
                 break;
             default:
                 if (UNLIKELY(strncmp(aname, "xml:lang", 8) == 0)) {
-                    aname = "lang";
-                    ns = ensure_xml_ns(doc, pd, node);
-                    if (UNLIKELY(!ns)) return false;
+                    if (!added_lang) {
+                        added_lang = 1;
+                        if (UNLIKELY(!xmlNewNsPropEatName(node, ns, (xmlChar*)pd->lang_attribute, BAD_CAST attr->value))) return false;
+                    }
+                    continue;
                 } else if (UNLIKELY(strncmp("xmlns", aname, 5) == 0)) {
                     size_t len = strlen(aname);
                     if (len == 5) continue;  // ignore xmlns 
@@ -188,6 +173,12 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
             }
         }
         attr_name = xmlDictLookup(doc->dict, BAD_CAST aname, sanitize_name((char*)aname));  // we deliberately discard const, for performance
+        if (attr_name == pd->lang_attribute) {
+            if (added_lang == 2) continue;
+            added_lang = 2;
+            xmlSetNsProp(node, NULL, attr_name, BAD_CAST attr->value);
+            continue;
+        }
         if (UNLIKELY(!attr_name)) return false;
         if (UNLIKELY(!xmlNewNsPropEatName(node, ns, (xmlChar*)attr_name, BAD_CAST attr->value))) return false;
     }
@@ -362,6 +353,8 @@ convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **err
 
     parse_data.maybe_xhtml = opts->gumbo_opts.use_xhtml_rules;
     doc->_private = (void*)&parse_data;
+    parse_data.lang_attribute = xmlDictLookup(doc->dict, BAD_CAST "lang", 4);
+    if (!parse_data.lang_attribute) ABORT;
     while(stack->length > 0) {
         Stack_pop(stack, &gumbo, &parent);
         child = convert_node(doc, parent, gumbo, &elem, opts);
@@ -373,6 +366,15 @@ convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **err
             if (!push_children(child, elem, stack)) ABORT;
         }
 
+    }
+    if (parse_data.maybe_xhtml) {
+        // Add xml:lang to the root element if it has lang
+        xmlChar *root_lang = xmlGetNsProp(parse_data.root, parse_data.lang_attribute, NULL);
+        if (root_lang) {
+            ensure_xml_ns(doc, &parse_data, parse_data.root);
+            if (parse_data.xml) xmlNewNsPropEatName(parse_data.root, parse_data.xml, (xmlChar*)parse_data.lang_attribute, root_lang);
+            xmlFree(root_lang);
+        }
     }
 #undef ABORT
 end:

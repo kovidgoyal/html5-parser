@@ -9,7 +9,7 @@ import sys
 
 from html5_parser import parse
 
-from . import SVG, XHTML, XLINK, XML, TestCase
+from . import SVG, XHTML, XLINK, TestCase
 
 COMMENT = ' A -- comment -'
 DOCTYPE = '<!DOCTYPE html>'
@@ -34,9 +34,9 @@ class AdaptTest(TestCase):
         root = parse(HTML, treebuilder='etree', namespace_elements=True)
         self.ae(root.tag, '{%s}html' % XHTML)
         ns = {'h': XHTML, 's': SVG, 'x': XLINK}
-        self.ae(root.attrib, {'{%s}lang' % XML: 'en', 'lang': 'en'})
+        self.ae(root.attrib, {'lang': 'en', 'lang': 'en'})
         self.ae(root.find('./h:head/h:script', ns).text, 'a < & " b')
-        self.ae(root.find('./h:body', ns)[-1].attrib, {'{%s}lang' % XML: 'de'})
+        self.ae(root.find('./h:body', ns)[-1].attrib, {'lang': 'de'})
         self.ae(
             tostring(root.find('h:body/h:p', ns), method='text').decode('ascii'),
             'A test of text and tail\n')
@@ -56,7 +56,7 @@ class AdaptTest(TestCase):
             dict(root.attributes.itemsNS()),
             dict([((u'xmlns', u'xmlns'), 'http://www.w3.org/1999/xhtml'),
                   ((u'xmlns', u'xlink'), 'http://www.w3.org/1999/xlink'),
-                  ((u'http://www.w3.org/XML/1998/namespace', u'lang'), 'en')]))
+                  ((None, u'lang'), 'en')]))
         script = doc.getElementsByTagName('script')[0]
         self.ae(script.firstChild.nodeValue, 'a < & " b')
         p = doc.getElementsByTagName('p')[0]
@@ -64,7 +64,7 @@ class AdaptTest(TestCase):
         p = doc.getElementsByTagName('p')[-1]
         self.ae(
             dict(p.attributes.itemsNS()),
-            dict([((u'http://www.w3.org/XML/1998/namespace', u'lang'), 'de')]))
+            dict([((None, u'lang'), 'de')]))
         svg = doc.getElementsByTagName('svg')[0]
         self.ae(
             dict(svg.attributes.itemsNS()), {(None, 'viewBox'): 'v',
