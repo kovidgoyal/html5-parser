@@ -30,6 +30,7 @@
 typedef struct {
     unsigned int stack_size;
     bool keep_doctype, namespace_elements;
+    const void* line_number_attr;
     GumboOptions gumbo_opts;
 } Options;
 

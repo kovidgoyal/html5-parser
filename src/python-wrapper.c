@@ -78,9 +78,9 @@ parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
     opts.gumbo_opts = kGumboDefaultOptions;
     opts.gumbo_opts.max_errors = 0;  // We discard errors since we are not reporting them anyway
 
-    static char *kwlist[] = {"data", "namespace_elements", "keep_doctype", "maybe_xhtml", "stack_size", NULL};
+    static char *kwlist[] = {"data", "namespace_elements", "keep_doctype", "maybe_xhtml", "line_number_attr", "stack_size", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|OOOI", kwlist, &buffer, &sz, &ne, &kd, &mx, &(opts.stack_size))) return NULL;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|OOOzI", kwlist, &buffer, &sz, &ne, &kd, &mx, &(opts.line_number_attr), &(opts.stack_size))) return NULL;
     opts.namespace_elements = PyObject_IsTrue(ne);
     opts.keep_doctype = PyObject_IsTrue(kd);
     opts.gumbo_opts.use_xhtml_rules = PyObject_IsTrue(mx);

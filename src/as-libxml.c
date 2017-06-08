@@ -223,7 +223,7 @@ lookup_standard_tag(xmlDocPtr doc, ParseData *pd, GumboTag tag) {
 }
 
 static inline xmlNodePtr
-create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboElement *elem, bool namespace_elements) {
+create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboElement *elem, Options *opts) {
 #define ABORT { ok = false; goto end; }
     xmlNodePtr result = NULL;
     bool ok = true;
@@ -259,8 +259,12 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
     result = xmlNewDocNodeEatName(doc, NULL, (xmlChar*)tag_name, NULL);
     if (UNLIKELY(!result)) ABORT;
     result->line = elem->start_pos.line;
+    if (opts->line_number_attr) {
+        snprintf(buf, sizeof(buf) - 1, "%u", elem->start_pos.line);
+        if (UNLIKELY(!xmlNewNsPropEatName(result, NULL, (xmlChar*)opts->line_number_attr, BAD_CAST buf))) ABORT;
+    }
 
-    if (namespace_elements) {
+    if (opts->namespace_elements) {
         if (UNLIKELY(parent->type == GUMBO_NODE_DOCUMENT || elem->tag_namespace != parent->v.element.tag_namespace)) {
             // Default namespace has changed
             namespace = xmlNewNs(
@@ -291,7 +295,7 @@ convert_node(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode* node, GumboElement
         case GUMBO_NODE_ELEMENT:
         case GUMBO_NODE_TEMPLATE:
             *elem = &node->v.element;
-            ans = create_element(doc, xml_parent, node->parent, *elem, opts->namespace_elements);
+            ans = create_element(doc, xml_parent, node->parent, *elem, opts);
             break;
         case GUMBO_NODE_TEXT:
         case GUMBO_NODE_WHITESPACE:
@@ -317,7 +321,7 @@ convert_node(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode* node, GumboElement
 }
 
 static inline xmlDocPtr
-alloc_doc(void) {
+alloc_doc(Options *opts) {
     xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
     if (doc) {
         if (!doc->dict) {
@@ -326,6 +330,7 @@ alloc_doc(void) {
                 xmlFreeDoc(doc);
                 doc = NULL;
             }
+            opts->line_number_attr = xmlDictLookup(doc->dict, BAD_CAST opts->line_number_attr, -1);
         }
     }
     return doc;
@@ -344,7 +349,7 @@ convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **err
     Stack *stack = alloc_stack(opts->stack_size);
     if (stack == NULL) return NULL;
     stack_push(stack, root, NULL);
-    doc = alloc_doc();
+    doc = alloc_doc(opts);
     if (doc == NULL) ABORT;
 
     if (opts->keep_doctype) {

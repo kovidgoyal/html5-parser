@@ -118,6 +118,7 @@ def parse(
     keep_doctype=True,
     maybe_xhtml=False,
     return_root=True,
+    line_number_attr=None,
     stack_size=16 * 1024
 ):
     '''
@@ -155,6 +156,10 @@ def parse(
     :param return_root: If True, return the root node of the document, otherwise
         return the tree object for the document.
 
+    :param line_number_attr: The optional name of an attribute used to store the line number
+        of every element. If set, this attribute will be added to each element with the
+        element's line number.
+
     :param stack_size: The initial size (number of items) in the stack. The
         default is sufficient to avoid memory allocations for all but the
         largest documents.
@@ -170,6 +175,7 @@ def parse(
         namespace_elements=namespace_elements or maybe_xhtml,
         keep_doctype=keep_doctype,
         maybe_xhtml=maybe_xhtml,
+        line_number_attr=line_number_attr,
         stack_size=stack_size)
 
     ans = etree.adopt_external_document(capsule)
