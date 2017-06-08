@@ -79,3 +79,11 @@ class BasicTests(TestCase):
             html = '<html><head></head><body><{}/><p>xxx</p></body></html>'.format(tag)
             root = parse(html, maybe_xhtml=True)
             self.ae(len(root[1]), 2)
+
+    def test_line_numbers(self):
+        root = parse('<html>\n<head>\n<body>\n<p><span>')
+        self.ae(root.sourceline, 1)
+        self.ae(root[0].sourceline, 2)
+        self.ae(root[1].sourceline, 3)
+        self.ae(root[1][0].sourceline, 4)
+        self.ae(root[1][0][0].sourceline, 4)

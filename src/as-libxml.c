@@ -258,6 +258,7 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
     // we get a segfault.
     result = xmlNewDocNodeEatName(doc, NULL, (xmlChar*)tag_name, NULL);
     if (UNLIKELY(!result)) ABORT;
+    result->line = elem->start_pos.line;
 
     if (namespace_elements) {
         if (UNLIKELY(parent->type == GUMBO_NODE_DOCUMENT || elem->tag_namespace != parent->v.element.tag_namespace)) {
