@@ -49,5 +49,5 @@ def doit(name, func, num=20):
 
 doit(
     'html5-parser',
-    partial(html5_parser.parse, raw, transport_encoding="utf-8", namespace_elements=True))
+    partial(html5_parser.parse, raw, transport_encoding="utf-8", namespace_elements=True), num=100)
 doit('html5lib', partial(html5lib.parse, raw, transport_encoding="utf-8", treebuilder="lxml"))
