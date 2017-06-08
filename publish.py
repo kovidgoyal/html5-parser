@@ -2,8 +2,7 @@
 # vim:fileencoding=utf-8
 # License: Apache 2.0 Copyright: 2017, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import (absolute_import, division, print_function, unicode_literals)
 
 import glob
 import os
@@ -47,19 +46,24 @@ def build_release():
 
 def sign_release():
     for installer in glob.glob('dist/*'):
-        run(os.environ['PENV'] + '/gpg-as-kovid', '--armor', '--detach-sig',
-            installer)
+        run(os.environ['PENV'] + '/gpg-as-kovid', '--armor', '--detach-sig', installer)
 
 
 def tag_release():
+    run('git push')
     run('git tag -s "v{0}" -m "version-{0}"'.format(VERSION))
     run('git push origin "v{0}"'.format(VERSION))
 
 
 def upload_release():
     files = list(glob.glob('dist/*'))
-    run('twine', 'upload', '--config-file',
-        os.path.join(os.environ['PENV'], 'pypi'), *files)
+    run('twine', 'upload', '--config-file', os.path.join(os.environ['PENV'], 'pypi'), *files)
+
+
+try:
+    raw_input
+except NameError:
+    raw_input = input
 
 
 def main():
