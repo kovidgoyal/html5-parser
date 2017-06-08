@@ -104,6 +104,17 @@ find_namespace_by_prefix(xmlDocPtr doc, xmlNodePtr node, xmlNodePtr xml_parent, 
     return xmlSearchNs(doc, xml_parent, BAD_CAST prefix);
 }
 
+static inline size_t
+sanitize_name(char *name) {
+    if (UNLIKELY(name[0] == 0)) return 0;
+    if (UNLIKELY(!VALID_FIRST_CHAR(name[0]))) name[0] = '_';
+    size_t i = 1;
+    while (name[i] != 0) {
+        if (UNLIKELY(!VALID_CHAR(name[i]))) name[i] = '_';
+        i++;
+    }
+    return i;
+}
 
 static inline bool
 create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr xml_parent) {
@@ -166,7 +177,7 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
                             // existing namespace, but I dont care enough
                             continue;
                         } else {
-                            snprintf(buf, sizeof(buf) - 1, "xmlns-%s", aname + 6);
+                            snprintf(buf, sizeof(buf) - 1, "xmlns_%s", aname + 6);
                             aname = buf;
                         }
                     }
@@ -182,32 +193,20 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
                 aname = colon + 1;
             }
         }
-        attr_name = xmlDictLookup(doc->dict, BAD_CAST aname, -1);
+        attr_name = xmlDictLookup(doc->dict, BAD_CAST aname, sanitize_name((char*)aname));  // we deliberately discard const, for performance
         if (UNLIKELY(!attr_name)) return false;
         if (UNLIKELY(!xmlNewNsPropEatName(node, ns, (xmlChar*)attr_name, BAD_CAST attr->value))) return false;
     }
     return true;
 }
 
-static inline uint8_t
-copy_tag_name(GumboStringPiece *src, char* dest, size_t destsz) {
-    uint8_t i = 0;
-    for (; i < destsz && i < src->length; i++) {
-        char ch = src->data[i];
-        if (ch == ':') ch = '-';
-        dest[i] = ch;
-    }
-    return i;
-}
-
-
 static inline xmlNsPtr
-check_for_namespace_prefix(xmlDocPtr doc, GumboStringPiece *tag, xmlNodePtr parent, char **colon) {
+check_for_namespace_prefix(xmlDocPtr doc, char *name, const uint8_t sz, xmlNodePtr parent, char **colon) {
     xmlNsPtr ans = NULL;
-    *colon = memchr(tag->data, ':', tag->length);
-    if (!*colon || (size_t)(*colon + 1 - tag->data) >= tag->length) return NULL;
+    *colon = memchr(name, ':', sz);
+    if (!*colon || (size_t)(*colon + 1 - name) >= sz) return NULL;
     **colon = 0;
-    ans = xmlSearchNs(doc, parent, BAD_CAST tag->data);
+    ans = xmlSearchNs(doc, parent, BAD_CAST name);
     return ans;
 }
 
@@ -225,16 +224,15 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
     ParseData *pd = (ParseData*)doc->_private;
 
 
-    if (elem->tag == GUMBO_TAG_UNKNOWN) {
+    if (UNLIKELY(elem->tag == GUMBO_TAG_UNKNOWN)) {
         gumbo_tag_from_original_text(&(elem->original_tag));
-        if (namespace_elements && pd->maybe_xhtml && xml_parent && (namespace = check_for_namespace_prefix(doc, &(elem->original_tag), xml_parent, &colon))) {
+        tag_sz = MIN(sizeof(buf) - 1, elem->original_tag.length);
+        memcpy(buf, elem->original_tag.data, tag_sz);
+        if (pd->maybe_xhtml && xml_parent && (namespace = check_for_namespace_prefix(doc, buf, tag_sz, xml_parent, &colon))) {
             tag = colon + 1;
-            tag_sz = elem->original_tag.length - (tag - elem->original_tag.data);
-        } else {
-            tag_sz = copy_tag_name(&(elem->original_tag), buf, sizeof(buf));
-            tag = buf;
-        }
-    } else if (elem->tag_namespace == GUMBO_NAMESPACE_SVG) {
+        } else tag = buf;
+        tag_sz = sanitize_name((char*)tag);
+    } else if (UNLIKELY(elem->tag_namespace == GUMBO_NAMESPACE_SVG)) {
         gumbo_tag_from_original_text(&(elem->original_tag));
         tag = gumbo_normalize_svg_tagname(&(elem->original_tag), &tag_sz);
         if (tag == NULL) tag = gumbo_normalized_tagname_and_size(elem->tag, &tag_sz);

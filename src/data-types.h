@@ -24,8 +24,31 @@
 #define UNLIKELY(x) (x)
 #endif
 
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+
 typedef struct {
     unsigned int stack_size;
     bool keep_doctype, namespace_elements;
     GumboOptions gumbo_opts;
 } Options;
+
+
+// We only allow subset of the valid characters defined in the XML spec for
+// performance, as the following tests can be run directly on UTF-8 without
+// decoding. Also the other characters are never actually used successfully in
+// the wild.
+
+#define VALID_FIRST_CHAR(c) ( \
+        (c >= 'a' && c <= 'z') || \
+        (c >= 'A' && c <= 'Z') || \
+        c == '_'\
+)
+
+#define VALID_CHAR(c)  ( \
+        (c >= 'a' && c <= 'z') || \
+        (c >= '0' && c <= '9') || \
+        (c == '-') || \
+        (c >= 'A' && c <= 'Z') || \
+        (c == '_') || (c == '.') \
+)

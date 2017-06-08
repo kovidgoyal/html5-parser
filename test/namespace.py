@@ -64,7 +64,7 @@ class BasicTests(TestCase):
 
     def test_xmlns(self):
         root = parse('<html><p xmlns:foo="f">xxx<f:moo/>')
-        self.ae(tostring(root), '<html><head/><body><p xmlns-foo="f">xxx<f-moo/></p></body></html>')
+        self.ae(tostring(root), '<html><head/><body><p xmlns_foo="f">xxx<f_moo/></p></body></html>')
         root = parse('<p xmlns="x"><p xmlns:="y"><svg xmlns:xlink="xxx">')
         self.ae(
             tostring(root), '<html xmlns:xlink="http://www.w3.org/1999/xlink"><head/>'
