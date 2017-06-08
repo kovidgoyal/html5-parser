@@ -14,8 +14,9 @@ XLINK = "http://www.w3.org/1999/xlink"
 XML = "http://www.w3.org/XML/1998/namespace"
 
 
-def tostring(root):
-    return etree.tostring(root, encoding='unicode')
+def tostring(root, **kw):
+    kw['encoding'] = kw.get('encoding', 'unicode')
+    return etree.tostring(root, **kw)
 
 
 class TestCase(unittest.TestCase):

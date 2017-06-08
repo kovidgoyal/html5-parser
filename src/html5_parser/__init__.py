@@ -148,7 +148,9 @@ def parse(
         actually XHTML. Changes the HTML 5 parsing algorithm to be more
         suitable for XHTML. In particular handles self-closed CDATA elements.
         So a ``<title/>`` or ``<style/>`` in the HTML will not completely break
-        parsing.
+        parsing. Also preserves namespaced tags and attributes even for namespaces
+        not supported by HTML 5 (this works only with the ``lxml`` treebuilder).
+        Note that setting this also implicitly sets ``namespace_elements``.
 
     :param return_root: If True, return the root node of the document, otherwise
         return the tree object for the document.
@@ -165,7 +167,7 @@ def parse(
 
     capsule = html_parser.parse(
         data,
-        namespace_elements=namespace_elements,
+        namespace_elements=namespace_elements or maybe_xhtml,
         keep_doctype=keep_doctype,
         maybe_xhtml=maybe_xhtml,
         stack_size=stack_size)

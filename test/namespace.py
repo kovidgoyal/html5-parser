@@ -69,3 +69,17 @@ class BasicTests(TestCase):
         self.ae(
             tostring(root), '<html xmlns:xlink="http://www.w3.org/1999/xlink"><head/>'
             '<body><p/><p><svg/></p></body></html>')
+
+    def test_preserve_namespaces(self):
+        xparse = partial(parse, maybe_xhtml=True)
+        root = xparse(
+            '<html xmlns:a="1" a:x="x"><p xmlns:b="2" id="p"><a:one n="m" a:a="a" b:a="b"/>')
+        self.ae(root.nsmap, {None: XHTML, 'a': '1'})
+        self.ae(root.attrib, {'{1}x': 'x'})
+        p = root[-1][0]
+        self.ae(p.tag, '{%s}p' % XHTML)
+        self.ae(p.nsmap, {None: XHTML, 'a': '1', 'b': '2'})
+        self.ae(p.attrib, {'id': 'p'})
+        a = p[0]
+        self.ae(a.attrib, {'{1}a': 'a', '{2}a': 'b', 'n': 'm'})
+        self.ae(a.tag, '{1}one')

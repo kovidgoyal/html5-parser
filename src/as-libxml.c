@@ -96,8 +96,17 @@ ensure_xml_ns(xmlDocPtr doc, ParseData *pd, xmlNodePtr node) {
     return pd->xml;
 }
 
+static inline xmlNsPtr
+find_namespace_by_prefix(xmlDocPtr doc, xmlNodePtr node, xmlNodePtr xml_parent, const char* prefix) {
+    xmlNsPtr ans = xmlSearchNs(doc, node, BAD_CAST prefix);
+    if (ans) return ans;
+    if (!xml_parent) return NULL;
+    return xmlSearchNs(doc, xml_parent, BAD_CAST prefix);
+}
+
+
 static inline bool
-create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
+create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr xml_parent) {
     GumboAttribute* attr;
     const xmlChar *attr_name;
     const char *aname;
@@ -149,11 +158,29 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem) {
                     if (len == 5) continue;  // ignore xmlns 
                     if (aname[5] == ':') {
                         if (len == 6) continue; //ignore xmlns:
-                        snprintf(buf, sizeof(buf) - 1, "xmlns-%s", aname + 6);
-                        aname = buf;
+                        if (pd->maybe_xhtml) {
+                            xmlNewNs(node, BAD_CAST attr->value, BAD_CAST aname + 6);
+                            // We ignore failure to create the namespace as the most likely 
+                            // cause is the prefix already exists in this context and xmlNewNs
+                            // does not allow replacing prefixes. We could in theory find the 
+                            // existing namespace, but I dont care enough
+                            continue;
+                        } else {
+                            snprintf(buf, sizeof(buf) - 1, "xmlns-%s", aname + 6);
+                            aname = buf;
+                        }
                     }
                 }
                 break;
+        }
+
+        if (pd->maybe_xhtml) {
+            char *colon = strchr(aname, ':');
+            if (colon && strlen(colon + 1) > 0) {
+                *colon = 0;
+                ns = find_namespace_by_prefix(doc, node, xml_parent, aname);
+                aname = colon + 1;
+            }
         }
         attr_name = xmlDictLookup(doc->dict, BAD_CAST aname, -1);
         if (UNLIKELY(!attr_name)) return false;
@@ -174,6 +201,17 @@ copy_tag_name(GumboStringPiece *src, char* dest, size_t destsz) {
 }
 
 
+static inline xmlNsPtr
+check_for_namespace_prefix(xmlDocPtr doc, GumboStringPiece *tag, xmlNodePtr parent, char **colon) {
+    xmlNsPtr ans = NULL;
+    *colon = memchr(tag->data, ':', tag->length);
+    if (!*colon || (size_t)(*colon + 1 - tag->data) >= tag->length) return NULL;
+    **colon = 0;
+    ans = xmlSearchNs(doc, parent, BAD_CAST tag->data);
+    return ans;
+}
+
+
 static inline xmlNodePtr
 create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboElement *elem, bool namespace_elements) {
 #define ABORT { ok = false; goto end; }
@@ -182,14 +220,20 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
     const xmlChar *tag_name = NULL;
     const char *tag;
     uint8_t tag_sz;
-    char buf[50] = {0};
+    char buf[50] = {0}, *colon;
     xmlNsPtr namespace = NULL;
+    ParseData *pd = (ParseData*)doc->_private;
 
 
     if (elem->tag == GUMBO_TAG_UNKNOWN) {
         gumbo_tag_from_original_text(&(elem->original_tag));
-        tag_sz = copy_tag_name(&(elem->original_tag), buf, sizeof(buf));
-        tag = buf;
+        if (namespace_elements && pd->maybe_xhtml && xml_parent && (namespace = check_for_namespace_prefix(doc, &(elem->original_tag), xml_parent, &colon))) {
+            tag = colon + 1;
+            tag_sz = elem->original_tag.length - (tag - elem->original_tag.data);
+        } else {
+            tag_sz = copy_tag_name(&(elem->original_tag), buf, sizeof(buf));
+            tag = buf;
+        }
     } else if (elem->tag_namespace == GUMBO_NAMESPACE_SVG) {
         gumbo_tag_from_original_text(&(elem->original_tag));
         tag = gumbo_normalize_svg_tagname(&(elem->original_tag), &tag_sz);
@@ -211,13 +255,11 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
             namespace = xmlNewNs(
                     result, BAD_CAST kLegalXmlns[elem->tag_namespace], NULL);
             if (UNLIKELY(!namespace)) ABORT;
-            xmlSetNs(result, namespace);
-        } else {
-            xmlSetNs(result, xml_parent->ns);
         }
+        xmlSetNs(result, namespace ? namespace :xml_parent->ns);
     }
 
-    ok = create_attributes(doc, result, elem);
+    ok = create_attributes(doc, result, elem, xml_parent);
 #undef ABORT
 end:
     if (UNLIKELY(!ok)) { 

@@ -69,6 +69,36 @@ To use html5-parser in your code, after installing it simply do:
     print(tostring(root))
 
 
+.. _xhtml:
+
+XHTML
+------------
+
+html5-parser has the ability to parse XHTML documents as well. It will
+preserve namespace information even for namespaces not defined in the HTML 5
+spec. You can ask it to treat the input html as possibly XHTML by using the 
+``maybe_xhtml`` parameter to the :function:`parse` function. For example:
+
+.. code-block:: html
+
+    <p xmlns:n="my namespace"><n:tag n:attr="a" />
+
+becomes
+
+.. code-block:: html
+
+    <html>
+        <head/>
+        <body>
+            <p xmlns:n="my namespace">
+                <n:tag n:attr="a"/>
+            </p>
+        </body>
+    </html>
+
+This is useful when try to parse a XHTML document that is not well-formed and
+so cannot be parsed by a regular XML parser.
+
 API documentation
 ------------------
 
@@ -148,6 +178,10 @@ html5-parser is much easier to read and much closer to what an actual human
 would write. In particular, notice the unnecessary use of prefixes in
 the html5lib output, as well as the ugly ``ns0`` anonymous prefix for the svg
 namespace.
+
+html5-parser also has the ability to optionally preserve namespace information
+even for namespaces not defined in the HTML 5 standard. See the :ref:`XHTML`
+section for more information.
 
 
 .. |pypi| image:: https://img.shields.io/pypi/v/html5-parser.svg?label=version
