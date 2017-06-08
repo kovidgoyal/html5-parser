@@ -30,59 +30,52 @@ typedef struct {
 
 // Stack {{{
 
+#define Item1 GumboNode*
+#define Item2 xmlNodePtr
+#define StackItemClass StackItem
+#define StackClass Stack
+#include "stack.h"
+
+// }}}
+
 typedef struct {
-    GumboNode *gumbo;
-    xmlNodePtr xml;
-} StackItem;
+    xmlNsPtr *ns;
+    xmlNodePtr *node;
+} NamespaceItem;
 
 typedef struct {
     size_t length;
     size_t capacity;
-    StackItem *items;
-} Stack;
+    NamespaceItem *items;
+} AliasedNamespaces;
 
-static inline Stack*
-alloc_stack(size_t sz) {
-    Stack *ans = (Stack*)calloc(sizeof(Stack), 1);
+static inline AliasedNamespaces*
+alloc_aliased_namespaces() {
+    AliasedNamespaces *ans = (AliasedNamespaces*)calloc(sizeof(AliasedNamespaces), 1);
     if (ans) {
-        ans->items = (StackItem*)malloc(sizeof(StackItem) * sz);
-        if (ans->items) ans->capacity = sz;
+        ans->items = malloc(sizeof(NamespaceItem) * 1000);
+        if (ans->items) ans->capacity = 1000;
         else { free(ans); ans = NULL; }
     }
     return ans;
 }
 
 static inline void
-free_stack(Stack *s) { if (s) { free(s->items); free(s); } }
+free_aliased_namespaces(AliasedNamespaces *s) { if (s) { free(s->items); free(s); } }
 
-static inline void
-stack_pop(Stack *s, GumboNode **g, xmlNodePtr *x) { StackItem *si = &(s->items[--(s->length)]); *g = si->gumbo; *x = si->xml; }
-
-static inline void*
-safe_realloc(void *p, size_t sz) {
-    void *orig = p;
-    void *ans = realloc(p, sz);
-    if (ans == NULL) free(orig);
-    return ans;
-}
 
 static inline bool
-stack_push(Stack *s, GumboNode *g, xmlNodePtr x) {
-    if (s->length >= s->capacity) {
-        s->capacity *= 2;
-        s->items = (StackItem*)safe_realloc(s->items, s->capacity * sizeof(StackItem));
-        if (!s->items) return false;
+is_known_tag_namespace(const char *uri) {
+    for (size_t i = 0; i < sizeof(kLegalXmlns)/sizeof(kLegalXmlns[0]); i++) {
+        if (strcmp(uri, kLegalXmlns[i]) == 0) return true;
     }
-    StackItem *si = &(s->items[(s->length)++]);
-    si->gumbo = g; si->xml = x;
-    return true;
+    return false;
 }
-// }}}
 
 static inline bool
 push_children(xmlNodePtr parent, GumboElement *elem, Stack *stack) {
     for (int i = elem->children.length - 1; i >= 0; i--) {
-        if (!stack_push(stack, elem->children.data[i], parent)) return false;
+        if (!Stack_push(stack, elem->children.data[i], parent)) return false;
     }
     return true;
 }
@@ -201,13 +194,14 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
     return true;
 }
 
-static inline xmlNsPtr
-check_for_namespace_prefix(xmlDocPtr doc, char *name, const uint8_t sz, xmlNodePtr parent, char **colon) {
-    xmlNsPtr ans = NULL;
-    *colon = memchr(name, ':', sz);
-    if (!*colon || (size_t)(*colon + 1 - name) >= sz) return NULL;
-    **colon = 0;
-    ans = xmlSearchNs(doc, parent, BAD_CAST name);
+static inline char*
+check_for_namespace_prefix(char **tag, uint8_t *sz) {
+    char *colon = memchr(*tag, ':', *sz);
+    if (!colon || (size_t)(colon + 1 - *tag) >= *sz) return NULL;
+    *sz -= colon + 1 - *tag;
+    *colon = 0;
+    char *ans = *tag;
+    *tag = colon + 1;
     return ans;
 }
 
@@ -230,7 +224,8 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
     const xmlChar *tag_name = NULL;
     const char *tag;
     uint8_t tag_sz;
-    char buf[50] = {0}, *colon;
+    char buf[50] = {0};
+    char *nsprefix = NULL;
     xmlNsPtr namespace = NULL;
     ParseData *pd = (ParseData*)doc->_private;
 
@@ -239,9 +234,12 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
         gumbo_tag_from_original_text(&(elem->original_tag));
         tag_sz = MIN(sizeof(buf) - 1, elem->original_tag.length);
         memcpy(buf, elem->original_tag.data, tag_sz);
-        if (pd->maybe_xhtml && xml_parent && (namespace = check_for_namespace_prefix(doc, buf, tag_sz, xml_parent, &colon))) {
-            tag = colon + 1;
-        } else tag = buf;
+        tag = buf;
+        if (pd->maybe_xhtml) {
+            char *temp = buf;
+            nsprefix = check_for_namespace_prefix(&temp, &tag_sz);
+            tag = temp;
+        }
         tag_sz = sanitize_name((char*)tag);
         tag_name = xmlDictLookup(doc->dict, BAD_CAST tag, tag_sz);
     } else if (UNLIKELY(elem->tag_namespace == GUMBO_NAMESPACE_SVG)) {
@@ -274,7 +272,12 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
         xmlSetNs(result, namespace ? namespace :xml_parent->ns);
     }
 
-    ok = create_attributes(doc, result, elem, xml_parent);
+    if (UNLIKELY(!create_attributes(doc, result, elem, xml_parent))) ABORT;
+    if (UNLIKELY(nsprefix)) {
+        namespace = xmlSearchNs(doc, result, BAD_CAST nsprefix);
+        if (!namespace && xml_parent) namespace = xmlSearchNs(doc, xml_parent, BAD_CAST nsprefix);
+        if (namespace) xmlSetNs(result, namespace);
+    }
 #undef ABORT
 end:
     if (UNLIKELY(!ok)) { 
@@ -346,9 +349,9 @@ convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **err
     GumboElement *elem;
     bool ok = true;
     *errmsg = NULL;
-    Stack *stack = alloc_stack(opts->stack_size);
+    Stack *stack = Stack_alloc(opts->stack_size);
     if (stack == NULL) return NULL;
-    stack_push(stack, root, NULL);
+    Stack_push(stack, root, NULL);
     doc = alloc_doc(opts);
     if (doc == NULL) ABORT;
 
@@ -360,7 +363,7 @@ convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **err
     parse_data.maybe_xhtml = opts->gumbo_opts.use_xhtml_rules;
     doc->_private = (void*)&parse_data;
     while(stack->length > 0) {
-        stack_pop(stack, &gumbo, &parent);
+        Stack_pop(stack, &gumbo, &parent);
         child = convert_node(doc, parent, gumbo, &elem, opts);
         if (UNLIKELY(!child)) ABORT;
         if (LIKELY(parent)) {
@@ -374,7 +377,7 @@ convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **err
 #undef ABORT
 end:
     if (doc) doc->_private = NULL;
-    free_stack(stack);
+    Stack_free(stack);
     *errmsg = (char*)parse_data.errmsg;
     if (ok) xmlDocSetRootElement(doc, parse_data.root);
     else { if (parse_data.root) xmlFreeNode(parse_data.root); if (doc) xmlFreeDoc(doc); doc = NULL; }
