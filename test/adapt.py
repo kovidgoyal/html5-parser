@@ -9,7 +9,7 @@ import sys
 
 from html5_parser import parse
 
-from __init__ import SVG, XHTML, XLINK, XML, TestCase
+from . import SVG, XHTML, XLINK, XML, TestCase
 
 COMMENT = ' A -- comment -'
 DOCTYPE = '<!DOCTYPE html>'

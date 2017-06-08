@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from functools import partial
 
-from __init__ import TestCase, tostring, XHTML, XLINK, SVG, XML
+from . import TestCase, tostring, XHTML, XLINK, SVG, XML
 from html5_parser import parse
 
 nsparse = partial(parse, namespace_elements=True)

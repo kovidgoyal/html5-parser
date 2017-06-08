@@ -235,7 +235,7 @@ def build(args):
         shutil.copy2(mod, freeze_dir)
 
 
-TEST_COMMAND = ['-m', 'unittest', 'discover', '-v', 'test', '*.py']
+TEST_COMMAND = ['run_tests.py']
 
 
 def add_python_path(env, path):
@@ -268,7 +268,7 @@ def main():
         os.environ['ASAN_OPTIONS'] = 'leak_check_at_exit=0'
         add_python_path(os.environ, os.path.dirname(freeze_dir))
         print('\nrunning tests...')
-        os.execlp(TEST_EXE, TEST_EXE, *TEST_COMMAND)
+        os.execlp(TEST_EXE, TEST_EXE, 'run_tests.py', *args.rest)
     elif args.action == 'try':
         build(args)
         os.environ['ASAN_OPTIONS'] = 'leak_check_at_exit=0'
