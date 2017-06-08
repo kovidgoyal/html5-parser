@@ -25,6 +25,7 @@ typedef struct {
     xmlNodePtr root;
     bool maybe_xhtml;
     const char* errmsg;
+    const xmlChar* standard_tags[GUMBO_TAG_LAST];
 } ParseData;
 
 // Stack {{{
@@ -211,6 +212,16 @@ check_for_namespace_prefix(xmlDocPtr doc, char *name, const uint8_t sz, xmlNodeP
 }
 
 
+static inline const xmlChar*
+lookup_standard_tag(xmlDocPtr doc, ParseData *pd, GumboTag tag) {
+    if (UNLIKELY(!pd->standard_tags[tag])) {
+        uint8_t tag_sz;
+        const char *name = gumbo_normalized_tagname_and_size(tag, &tag_sz);
+        pd->standard_tags[tag] = xmlDictLookup(doc->dict, BAD_CAST name, tag_sz);
+    }
+    return pd->standard_tags[tag];
+}
+
 static inline xmlNodePtr
 create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboElement *elem, bool namespace_elements) {
 #define ABORT { ok = false; goto end; }
@@ -224,7 +235,7 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
     ParseData *pd = (ParseData*)doc->_private;
 
 
-    if (UNLIKELY(elem->tag == GUMBO_TAG_UNKNOWN)) {
+    if (UNLIKELY(elem->tag >= GUMBO_TAG_UNKNOWN)) {
         gumbo_tag_from_original_text(&(elem->original_tag));
         tag_sz = MIN(sizeof(buf) - 1, elem->original_tag.length);
         memcpy(buf, elem->original_tag.data, tag_sz);
@@ -232,13 +243,14 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
             tag = colon + 1;
         } else tag = buf;
         tag_sz = sanitize_name((char*)tag);
+        tag_name = xmlDictLookup(doc->dict, BAD_CAST tag, tag_sz);
     } else if (UNLIKELY(elem->tag_namespace == GUMBO_NAMESPACE_SVG)) {
         gumbo_tag_from_original_text(&(elem->original_tag));
         tag = gumbo_normalize_svg_tagname(&(elem->original_tag), &tag_sz);
-        if (tag == NULL) tag = gumbo_normalized_tagname_and_size(elem->tag, &tag_sz);
-    } else tag = gumbo_normalized_tagname_and_size(elem->tag, &tag_sz);
+        if (tag == NULL) tag_name = lookup_standard_tag(doc, pd, elem->tag);
+        else tag_name = xmlDictLookup(doc->dict, BAD_CAST tag, tag_sz);
+    } else tag_name = lookup_standard_tag(doc, pd, elem->tag);
 
-    tag_name = xmlDictLookup(doc->dict, BAD_CAST tag, tag_sz);
     if (UNLIKELY(!tag_name)) ABORT;
 
     // Must use xmlNewDocNodeEatName as we are using a dict string and without this
