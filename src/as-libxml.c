@@ -84,8 +84,10 @@ sanitize_name(char *name) {
     return i;
 }
 
+static GumboStringPiece REPROCESS = {"", 0};
+
 static inline bool
-create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr xml_parent) {
+create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr xml_parent, bool reprocess, bool *needs_reprocess) {
     GumboAttribute* attr;
     const xmlChar *attr_name;
     const char *aname;
@@ -97,6 +99,7 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
 
     for (unsigned int i = 0; i < elem->attributes.length; ++i) {
         attr = elem->attributes.data[i];
+        if (reprocess && attr->original_name.data != REPROCESS.data) continue;
         aname = attr->name;
         ns = NULL;
         switch (attr->attr_namespace) {
@@ -169,7 +172,15 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
             if (colon && strlen(colon + 1) > 0) {
                 *colon = 0;
                 ns = find_namespace_by_prefix(doc, node, xml_parent, aname);
-                aname = colon + 1;
+                *colon = ':';
+                if (!ns) {
+                    if (!reprocess) {
+                        attr->original_name.data = REPROCESS.data;
+                        *needs_reprocess = true;
+                        continue;
+                    }
+                    *colon = '_';
+                } else aname = colon + 1;
             }
         }
         attr_name = xmlDictLookup(doc->dict, BAD_CAST aname, sanitize_name((char*)aname));  // we deliberately discard const, for performance
@@ -263,7 +274,11 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
         xmlSetNs(result, namespace ? namespace :xml_parent->ns);
     }
 
-    if (UNLIKELY(!create_attributes(doc, result, elem, xml_parent))) ABORT;
+    bool needs_reprocess = false;
+    if (UNLIKELY(!create_attributes(doc, result, elem, xml_parent, false, &needs_reprocess))) ABORT;
+    if (UNLIKELY(needs_reprocess)) {
+        if (UNLIKELY(!create_attributes(doc, result, elem, xml_parent, true, &needs_reprocess))) ABORT;
+    }
     if (UNLIKELY(nsprefix)) {
         namespace = xmlSearchNs(doc, result, BAD_CAST nsprefix);
         if (!namespace && xml_parent) namespace = xmlSearchNs(doc, xml_parent, BAD_CAST nsprefix);

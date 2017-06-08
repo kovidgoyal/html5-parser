@@ -91,7 +91,7 @@ def namespaces(self, parse_function=partial(parse, maybe_xhtml=True), tostring=t
     ae(len(root.xpath('//*[@lang="en"]')), 2, err)
     ae(len(root.xpath('//*[@lang="de"]')), 1, err)
     ae(len(root.xpath('//*[@lang="es"]')), 1, err)
-    ae(len(XPath('//*[@xml:lang]')(root)), 0, err)
+    ae(len(XPath('//*[@xml:lang]')(root)), 1, err)
 
 
 class BasicTests(TestCase):
@@ -160,6 +160,9 @@ class BasicTests(TestCase):
         self.ae(
             tostring(root), '<html xmlns:xlink="http://www.w3.org/1999/xlink"><head/>'
             '<body><p/><p><svg/></p></body></html>')
+        root = parse("""<p a:a="1" xmlns:a="a">""", maybe_xhtml=True)
+        p = root[1][0]
+        self.ae(p.attrib, {'{a}a': '1'})
 
     def test_preserve_namespaces(self):
         xparse = partial(parse, maybe_xhtml=True)
