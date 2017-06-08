@@ -173,14 +173,14 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
             }
         }
         attr_name = xmlDictLookup(doc->dict, BAD_CAST aname, sanitize_name((char*)aname));  // we deliberately discard const, for performance
+        if (UNLIKELY(!attr_name)) return false;
         if (attr_name == pd->lang_attribute) {
             if (added_lang == 2) continue;
             added_lang = 2;
             xmlSetNsProp(node, NULL, attr_name, BAD_CAST attr->value);
-            continue;
+        } else {
+            if (UNLIKELY(!xmlNewNsPropEatName(node, ns, (xmlChar*)attr_name, BAD_CAST attr->value))) return false;
         }
-        if (UNLIKELY(!attr_name)) return false;
-        if (UNLIKELY(!xmlNewNsPropEatName(node, ns, (xmlChar*)attr_name, BAD_CAST attr->value))) return false;
     }
     return true;
 }
