@@ -84,7 +84,7 @@ def env_var(which, default='', split=os.pathsep):
 
 
 def include_dirs():
-    if iswindows:
+    if 'LIBXML_INCLUDE_DIRS' in os.environ:
         return env_var('LIBXML_INCLUDE_DIRS')
     return [x[2:] for x in pkg_config('libxml-2.0', '--cflags-only-I')]
 
@@ -92,11 +92,13 @@ def include_dirs():
 def libraries():
     if iswindows:
         return env_var('LIBXML_LIBS', 'libxml2')
+    if 'LIBXML_LIBS' in os.environ:
+        return env_var('LIBXML_LIBS')
     return [x[2:] for x in pkg_config('libxml-2.0', '--libs-only-l')]
 
 
 def library_dirs():
-    if iswindows:
+    if 'LIBXML_LIB_DIRS' in os.environ:
         return env_var('LIBXML_LIB_DIRS')
     return [x[2:] for x in pkg_config('libxml-2.0', '--libs-only-L')]
 
