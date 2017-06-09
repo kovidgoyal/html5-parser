@@ -8,7 +8,7 @@ from __future__ import (absolute_import, division, print_function,
 import os
 
 self_path = os.path.abspath(__file__)
-os.chdir(os.path.dirname(self_path))
+os.chdir(os.path.join(os.path.dirname(self_path), 'gumbo'))
 
 with open("tag_strings.h", "wb") as tag_strings, \
         open("tag_enum.h", "wb") as tag_enum, \
