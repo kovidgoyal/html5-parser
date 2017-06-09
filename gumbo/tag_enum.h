@@ -1,3 +1,6 @@
+// Do not edit
+// Generated from tag.in (see gentags.py)
+
 GUMBO_TAG_A,
 GUMBO_TAG_ABBR,
 GUMBO_TAG_ACRONYM,

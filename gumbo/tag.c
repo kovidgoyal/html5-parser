@@ -75,34 +75,30 @@ void gumbo_tag_from_original_text(GumboStringPiece* text) {
   }
 }
 
-/*
- * Override the `tolower` implementation in the perfect hash
- * to use ours. We need a custom `tolower` that only does ASCII
- * characters and is locale-independent to remain truthy to the
- * standard
- */
-#undef tolower
-#define tolower(c) gumbo_tolower(c)
 #include "tag_perf.h"
+#define TAG_MAP_SIZE (sizeof(kGumboTagMap) / sizeof(kGumboTagMap[0]))
 
-static int
-case_memcmp(const char *s1, const char *s2, int n)
-{
-	while (n--) {
-		unsigned char c1 = gumbo_tolower(*s1++);
-		unsigned char c2 = gumbo_tolower(*s2++);
-		if (c1 != c2)
-			return (int)c1 - (int)c2;
-	}
-	return 0;
+static int 
+case_memcmp(const char* s1, const char* s2, unsigned int n) {
+  while (n--) {
+    unsigned char c1 = gumbo_tolower(*s1++);
+    unsigned char c2 = gumbo_tolower(*s2++);
+    if (c1 != c2) return (int) c1 - (int) c2;
+  }
+  return 0;
 }
 
-GumboTag gumbo_tagn_enum(const char* tagname, int length) {
-  int position = perfhash((const unsigned char *)tagname, length);
-  if (position >= 0 &&
-      length == kGumboTagSizes[position] &&
-      !case_memcmp(tagname, kGumboTagNames[position], length))
-    return (GumboTag)position;
+GumboTag 
+gumbo_tagn_enum(const char* tagname, unsigned int length) {
+  if (length) {
+    unsigned int key = tag_hash(tagname, length);
+    if (key < TAG_MAP_SIZE) {
+      GumboTag tag = kGumboTagMap[key];
+      if (length == kGumboTagSizes[(int) tag] &&
+          !case_memcmp(tagname, kGumboTagNames[(int) tag], length))
+        return tag;
+    }
+  }
   return GUMBO_TAG_UNKNOWN;
 }
 

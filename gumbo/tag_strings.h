@@ -1,3 +1,6 @@
+// Do not edit
+// Generated from tag.in (see gentags.py)
+
 "a",
 "abbr",
 "acronym",
