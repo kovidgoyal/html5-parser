@@ -51,8 +51,8 @@ running the following commands in a Visual Studio 2015 Command prompt:
     python.exe win-ci.py test
 
 This will install all dependencies and html5-parser in the :file:`sw`
-sub-directory. You will need to add :file:`sw\bin` to :envvar:`PATH` and
-:file:`sw\python\Lib\site-packages` to :envvar:`PYTHONPATH`. Or copy the files
+sub-directory. You will need to add :file:`sw\\bin` to :envvar:`PATH` and
+:file:`sw\\python\\Lib\\site-packages` to :envvar:`PYTHONPATH`. Or copy the files
 into your system python's directories.
 
 
