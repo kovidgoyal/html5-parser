@@ -58,6 +58,7 @@ def generate_tag_perfect_hash(repetitions=200):
         flags=re.DOTALL | re.MULTILINE)
     with open('gumbo/tag_perf.h', 'wb') as f:
         f.write(processed.encode('utf-8'))
+        f.write(b'\n')
 
 
 def main():
