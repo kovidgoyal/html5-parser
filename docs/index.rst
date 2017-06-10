@@ -77,7 +77,7 @@ XHTML
 html5-parser has the ability to parse XHTML documents as well. It will
 preserve namespace information even for namespaces not defined in the HTML 5
 spec. You can ask it to treat the input html as possibly XHTML by using the 
-``maybe_xhtml`` parameter to the :function:`parse` function. For example:
+``maybe_xhtml`` parameter to the :func:`html5_parser.parse` function. For example:
 
 .. code-block:: html
 
