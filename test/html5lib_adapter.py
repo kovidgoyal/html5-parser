@@ -5,11 +5,13 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
+import re
 import unittest
 
+from lxml.etree import _Comment
 from html5_parser import parse
 
-from . import TestCase, XHTML, SVG, MATHML
+from . import MATHML, SVG, XHTML, XLINK, XML, TestCase
 
 self_path = os.path.abspath(__file__)
 base = os.path.dirname(self_path)
@@ -56,19 +58,48 @@ def serialize_construction_output(root):
     if tree.docinfo.doctype:
         lines.append('| ' + tree.docinfo.doctype)
 
-    NAMESPACE_PREFIXES = {XHTML: '', SVG: 'svg ', MATHML: 'math '}
+    NAMESPACE_PREFIXES = {XHTML: '', SVG: 'svg ', MATHML: 'math ', XLINK: 'xlink ', XML: 'xml '}
 
-    def serialize_tag(name):
+    def add(level, *a):
+        lines.append('|' + ' ' * level + ''.join(a))
+
+    def serialize_tag(name, level):
         ns = 'None '
         if name.startswith('{'):
             ns, name = name[1:].rpartition('}')[::2]
             ns = NAMESPACE_PREFIXES.get(ns, ns)
-        return '<' + ns + name + '>'
+        add(level, '<', ns, name, '>')
+
+    def serialize_attr(name, val, level):
+        ns = ''
+        if name.startswith('{'):
+            ns, name = name[1:].rpartition('}')[::2]
+            ns = NAMESPACE_PREFIXES.get(ns, ns)
+        elif name.startswith('xlink_') or name.startswith('xml_'):
+            name = name.replace('_', ':', 1)
+        level += 2
+        add(level, ns, name, '=', '"', val, '"')
+
+    def serialize_text(text, level):
+        level += 2
+        add(level, '"', text, '"')
+
+    def serialize_comment(node, level):
+        add(level, '<!-- ', node.text, ' -->')
 
     def serialize_node(node, level=1):
-        lines.append('|' + ' ' * level + serialize_tag(node.tag))
+        serialize_tag(node.tag, level)
+        for attr in sorted(node.keys()):
+            serialize_attr(attr, node.get(attr), level)
+        if node.text:
+            serialize_text(node.text, level)
         for child in node:
-            serialize_node(child, level + 2)
+            if isinstance(child, _Comment):
+                serialize_comment(child, level + 2)
+            else:
+                serialize_node(child, level + 2)
+            if child.tail:
+                serialize_text(child.tail, level)
 
     serialize_node(root)
     return '\n'.join(lines)
@@ -78,9 +109,12 @@ class ConstructionTests(TestCase):
 
     def implementation(self, inner_html, html, expected, errors):
         html = inner_html or html
+        noscript = re.search(r'^\| +<noscript>$', expected, flags=re.MULTILINE)
+        if noscript is not None:
+            raise unittest.SkipTest('<noscript> is always parsed with scripting off by gumbo')
 
         if inner_html:
-            raise NotImplementedError('TODO: Implement fragment parsing')
+            raise unittest.SkipTest('TODO: Implement fragment parsing')
         else:
             root = parse(html, namespace_elements=True)
 
