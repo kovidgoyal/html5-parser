@@ -74,15 +74,16 @@ parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
     Py_ssize_t sz = 0;
     Options opts = {0};
     opts.stack_size = 16 * 1024;
-    PyObject *kd = Py_True, *mx = Py_False, *ne = Py_False;
+    PyObject *kd = Py_True, *mx = Py_False, *ne = Py_False, *sn = Py_True;
     opts.gumbo_opts = kGumboDefaultOptions;
     opts.gumbo_opts.max_errors = 0;  // We discard errors since we are not reporting them anyway
 
-    static char *kwlist[] = {"data", "namespace_elements", "keep_doctype", "maybe_xhtml", "line_number_attr", "stack_size", NULL};
+    static char *kwlist[] = {"data", "namespace_elements", "keep_doctype", "maybe_xhtml", "line_number_attr", "sanitize_names", "stack_size", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|OOOzI", kwlist, &buffer, &sz, &ne, &kd, &mx, &(opts.line_number_attr), &(opts.stack_size))) return NULL;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|OOOzOI", kwlist, &buffer, &sz, &ne, &kd, &mx, &(opts.line_number_attr), &sn, &(opts.stack_size))) return NULL;
     opts.namespace_elements = PyObject_IsTrue(ne);
     opts.keep_doctype = PyObject_IsTrue(kd);
+    opts.sanitize_names = PyObject_IsTrue(sn);
     opts.gumbo_opts.use_xhtml_rules = PyObject_IsTrue(mx);
 
     doc = parse_with_options(buffer, (size_t)sz, &opts);

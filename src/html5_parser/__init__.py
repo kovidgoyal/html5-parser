@@ -119,6 +119,7 @@ def parse(
     maybe_xhtml=False,
     return_root=True,
     line_number_attr=None,
+    sanitize_names=True,
     stack_size=16 * 1024
 ):
     '''
@@ -160,6 +161,12 @@ def parse(
         of every element. If set, this attribute will be added to each element with the
         element's line number.
 
+    :param sanitize_names: Ensure tag and attributes contain only ASCII alphanumeric
+        charactes, underscores, hyphens and periods. This ensures that the resulting
+        tree is also valid XML. Any characters outside this set are replaced by
+        underscores. Note that this is not strictly HTML 5 spec compliant, so turn it
+        off if you need strict spec compliance.
+
     :param stack_size: The initial size (number of items) in the stack. The
         default is sufficient to avoid memory allocations for all but the
         largest documents.
@@ -176,6 +183,7 @@ def parse(
         keep_doctype=keep_doctype,
         maybe_xhtml=maybe_xhtml,
         line_number_attr=line_number_attr,
+        sanitize_names=sanitize_names,
         stack_size=stack_size)
 
     ans = etree.adopt_external_document(capsule)

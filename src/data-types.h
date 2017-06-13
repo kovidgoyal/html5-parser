@@ -29,7 +29,7 @@
 
 typedef struct {
     unsigned int stack_size;
-    bool keep_doctype, namespace_elements;
+    bool keep_doctype, namespace_elements, sanitize_names;
     const void* line_number_attr;
     GumboOptions gumbo_opts;
 } Options;

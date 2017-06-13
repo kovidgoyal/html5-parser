@@ -23,7 +23,7 @@ static const char* kLegalXmlns[] = {
 typedef struct {
     xmlNsPtr xlink, xml;
     xmlNodePtr root;
-    bool maybe_xhtml;
+    bool maybe_xhtml, sanitize_names;
     const char* errmsg;
     const xmlChar* standard_tags[GUMBO_TAG_LAST], *lang_attribute;
 } ParseData;
@@ -182,7 +182,7 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
                 } else aname = colon + 1;
             }
         }
-        attr_name = xmlDictLookup(doc->dict, BAD_CAST aname, sanitize_name((char*)aname));  // we deliberately discard const, for performance
+        attr_name = xmlDictLookup(doc->dict, BAD_CAST aname, (pd->sanitize_names ? sanitize_name((char*)aname) : strlen(aname)));  // we deliberately discard const, for performance
         if (UNLIKELY(!attr_name)) return false;
         if (UNLIKELY(pd->maybe_xhtml && attr_name == pd->lang_attribute)) {
             if (added_lang == 2) continue;
@@ -241,7 +241,7 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
             nsprefix = check_for_namespace_prefix(&temp, &tag_sz);
             tag = temp;
         }
-        tag_sz = sanitize_name((char*)tag);
+        tag_sz = pd->sanitize_names ? sanitize_name((char*)tag) : strlen(tag);
         tag_name = xmlDictLookup(doc->dict, BAD_CAST tag, tag_sz);
     } else if (UNLIKELY(elem->tag_namespace == GUMBO_NAMESPACE_SVG)) {
         gumbo_tag_from_original_text(&(elem->original_tag));
@@ -386,6 +386,7 @@ convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **err
     }
 
     parse_data.maybe_xhtml = opts->gumbo_opts.use_xhtml_rules;
+    parse_data.sanitize_names = opts->sanitize_names;
     doc->_private = (void*)&parse_data;
     parse_data.lang_attribute = xmlDictLookup(doc->dict, BAD_CAST "lang", 4);
     if (!parse_data.lang_attribute) ABORT;

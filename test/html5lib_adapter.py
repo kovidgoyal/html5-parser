@@ -75,8 +75,6 @@ def serialize_construction_output(root):
         if name.startswith('{'):
             ns, name = name[1:].rpartition('}')[::2]
             ns = NAMESPACE_PREFIXES.get(ns, ns)
-        elif name.startswith('xlink_') or name.startswith('xml_'):
-            name = name.replace('_', ':', 1)
         level += 2
         add(level, ns, name, '=', '"', val, '"')
 
@@ -120,7 +118,7 @@ class ConstructionTests(TestCase):
         if inner_html:
             raise unittest.SkipTest('TODO: Implement fragment parsing')
         else:
-            root = parse(html, namespace_elements=True)
+            root = parse(html, namespace_elements=True, sanitize_names=False)
 
         output = serialize_construction_output(root)
 
