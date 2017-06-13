@@ -143,7 +143,8 @@ def parse(
         Add XML namespaces when parsing so that the resulting tree is XHTML.
 
     :param treebuilder:
-        The type of tree to return. Supported values are:
+        The type of tree to return. Note that only the lxml treebuilder is fast, as all
+        other treebuilders are implemented in python, not C. Supported values are:
           * `lxml <http://lxml.de>`_  -- the default, and fastest
           * etree (the python stdlib :mod:`xml.etree.ElementTree`)
           * dom (the python stdlib :mod:`xml.dom.minidom`)
