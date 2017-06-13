@@ -31,6 +31,7 @@ class TestData(object):
             heading = self.is_section_heading(line)
             if heading:
                 if data and heading == 'data':
+                    data[key] = data[key][:-1]
                     yield self.normalize(data)
                     data = {}
                 key = heading
@@ -49,7 +50,12 @@ class TestData(object):
             return False
 
     def normalize(self, data):
-        return {k: v.rstrip('\n') for k, v in data.items()}
+        def n(x):
+            if x.endswith('\n'):
+                x = x[:-1]
+            return x
+
+        return {k: n(v) for k, v in data.items()}
 
 
 def serialize_construction_output(root):
