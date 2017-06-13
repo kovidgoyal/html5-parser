@@ -9,7 +9,7 @@ import re
 import unittest
 
 from lxml.etree import _Comment
-from html5_parser import parse, check_for_meta_charset
+from html5_parser import parse, check_for_meta_charset, check_bom
 
 from . import MATHML, SVG, XHTML, XLINK, XML, TestCase
 
@@ -187,10 +187,13 @@ class ConstructionTests(BaseTest):
 class EncodingTests(BaseTest):
 
     def implementation(self, inner_html, html, expected, errors, test_name):
-        raw = html.encode('utf-8')
-        output = check_for_meta_charset(raw) or 'windows-1252'
+        if '<!-- Starts with UTF-8 BOM -->' in html:
+            raw = b'\xef\xbb\xbf' + html[3:].encode('ascii')
+        else:
+            raw = html.encode('utf-8')
+        output = check_bom(raw) or check_for_meta_charset(raw) or 'windows-1252'
         error_msg = '\n'.join(map(type(''), [
-            '\n\nInput:', html, '\nExpected:', expected, '\nReceived:', output]))
+            '\n\nInput:', repr(html), '\nExpected:', expected, '\nReceived:', output]))
         self.ae(expected.lower(), output, error_msg + '\n')
 
 

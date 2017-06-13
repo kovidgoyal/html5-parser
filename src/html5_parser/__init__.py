@@ -46,7 +46,7 @@ def check_bom(data):
 
 def check_for_meta_charset(raw):
     from .encoding_parser import EncodingParser  # delay load
-    q = raw[:1024]
+    q = raw[:10 * 1024]
     parser = EncodingParser(q)
     encoding = parser()
     if encoding in ("utf-16", "utf-16be", "utf-16le"):

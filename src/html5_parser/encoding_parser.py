@@ -319,12 +319,12 @@ class EncodingParser(object):
         # Step 10
         if c in (b"'", b'"'):
             # 10.1
-            quoteChar = c
+            quote_char = c
             while True:
                 # 10.2
                 c = next(data)
                 # 10.3
-                if c == quoteChar:
+                if c == quote_char:
                     next(data)
                     return b"".join(attr_name), b"".join(attr_value)
                 # 10.4
