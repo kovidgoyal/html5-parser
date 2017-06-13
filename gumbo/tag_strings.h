@@ -43,6 +43,7 @@
 "cursor",
 "data",
 "datalist",
+"dialog",
 "dd",
 "defs",
 "del",
