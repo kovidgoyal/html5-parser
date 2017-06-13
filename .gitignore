@@ -4,3 +4,4 @@ build
 dist
 docs/_build
 test/large.html
+test/html5lib-tests

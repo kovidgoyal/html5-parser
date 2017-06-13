@@ -12,6 +12,7 @@ XHTML = "http://www.w3.org/1999/xhtml"
 SVG = "http://www.w3.org/2000/svg"
 XLINK = "http://www.w3.org/1999/xlink"
 XML = "http://www.w3.org/XML/1998/namespace"
+MATHML = "http://www.w3.org/1998/Math/MathML"
 
 
 def tostring(root, **kw):

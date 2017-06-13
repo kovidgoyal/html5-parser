@@ -12,6 +12,7 @@ import unittest
 
 self_path = os.path.abspath(__file__)
 base = os.path.dirname(self_path)
+html5lib_tests_path = os.path.join(base, 'test', 'html5lib-tests')
 
 
 def itertests(suite):
@@ -60,10 +61,12 @@ def find_tests():
     suites = []
     for f in os.listdir(os.path.join(base, 'test')):
         n, ext = os.path.splitext(f)
-        if ext == '.py' and n != '__init__':
+        if ext == '.py' and n not in ('__init__', 'html5lib_adapter'):
             m = importlib.import_module('test.' + n)
             suite = unittest.defaultTestLoader.loadTestsFromModule(m)
             suites.append(suite)
+    from test.html5lib_adapter import find_tests
+    suites.append(find_tests())
     return unittest.TestSuite(suites)
 
 
