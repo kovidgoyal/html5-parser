@@ -25,3 +25,4 @@ class TestCase(unittest.TestCase):
     ae = unittest.TestCase.assertEqual
     longMessage = True
     tb_locals = True
+    maxDiff = None
