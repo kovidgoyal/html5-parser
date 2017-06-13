@@ -67,7 +67,7 @@ To use html5-parser in your code, after installing it simply do:
 .. code-block:: python
     
     from html5_parser import parse
-    from lxml import tostring
+    from lxml.etree import tostring
     root = parse(some_html)
     print(tostring(root))
 
