@@ -27,7 +27,7 @@ if not hasattr(sys, 'generating_docs_via_sphinx'):
         LIBXML_VERSION = ((html_parser.LIBXML_VERSION // 10000) % 100,
                           (html_parser.LIBXML_VERSION // 100) % 100,
                           html_parser.LIBXML_VERSION % 100, )
-        if LIBXML_VERSION != etree.LIBXML_VERSION:
+        if LIBXML_VERSION[:2] != etree.LIBXML_VERSION[:2]:
             raise RuntimeError(
                 'html5-parser and lxml are using different versions of libxml2.'
                 ' This happens commonly when using pip installed versions of lxml.'
