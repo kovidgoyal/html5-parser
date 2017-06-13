@@ -360,7 +360,7 @@ convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **err
     doc = alloc_doc(opts);
     if (doc == NULL) ABORT;
 
-    if (opts->keep_doctype) {
+    if (opts->keep_doctype && output->document->v.document.has_doctype) {
         GumboDocument* doctype = & output->document->v.document;
         if(!xmlCreateIntSubset(doc, BAD_CAST doctype->name, BAD_CAST doctype->public_identifier, BAD_CAST doctype->system_identifier)) ABORT;
     }
