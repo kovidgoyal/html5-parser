@@ -117,7 +117,7 @@ class ConstructionTests(TestCase):
         if expected[2:].startswith('<!DOCTYPE html "-//W3C//DTD HTML 4.01//EN" "">'):
             raise unittest.SkipTest('Cannot be bothered with parsing of malformed DOCTYPE')
         if '<thisisasillytestelementnametomakesurecrazytagnamesareparsedcorrectly>' in expected:
-            raise unittest.SkipTest('gumbo unlike html5lib,does not lowercase unknown tag names')
+            raise unittest.SkipTest('gumbo unlike html5lib, does not lowercase unknown tag names')
         for line in errors:
             if 'expected-doctype-' in line or 'unknown-doctype' in line:
                 raise unittest.SkipTest('gumbo auto-corrects malformed doctypes')
