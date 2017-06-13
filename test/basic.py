@@ -57,18 +57,18 @@ class BasicTests(TestCase):
             if detected:
                 codecs.lookup(detected)
         t('', None)
-        t('<html><meta charset=ISO-8859-5>', 'iso8859-5')
-        t('<html><meta a="1" charset="ISO-8859-5" b="2">', 'iso8859-5')
-        t("<meta charset='ISO-8859-2'/>", 'iso8859-2')
+        t('<html><meta charset=ISO-8859-5>', 'iso-8859-5')
+        t('<html><meta a="1" charset="ISO-8859-5" b="2">', 'iso-8859-5')
+        t("<meta charset='ISO-8859-2'/>", 'iso-8859-2')
         t('<html><mEta Charset="ISO-8859-5>', None)
-        t("<!--<meta charset='ISO-8859-2'>--><meta charset=\"iso-8859-5\" />", 'iso8859-5')
+        t("<!--<meta charset='ISO-8859-2'>--><meta charset=\"iso-8859-5\" />", 'iso-8859-5')
         t("<meta http-equiv='moo' content='charset=iso-8859-5'>", None)
         t("<meta http-equiv='Content-Type' content='iso-8859-5'>", None)
-        t("<meta http-equiv='Content-Type' content='charset=iso-8859-5'>", 'iso8859-5')
-        t("<meta http-equiv='Content-Type' content='xxx charset=iso-8859-5'>", 'iso8859-5')
-        t("<meta http-equiv='Content-Type' content='xxx;charset=iso-8859-5'>", 'iso8859-5')
-        t("<meta http-equiv='Content-Type' content='xxxcharset=iso-8859-5'>", 'iso8859-5')
-        t("<meta http-equiv='Content-Type' content='xxxcharset =\n iso-8859-5'>", 'iso8859-5')
+        t("<meta http-equiv='Content-Type' content='charset=iso-8859-5'>", 'iso-8859-5')
+        t("<meta http-equiv='Content-Type' content='xxx charset=iso-8859-5'>", 'iso-8859-5')
+        t("<meta http-equiv='Content-Type' content='xxx;charset=iso-8859-5'>", 'iso-8859-5')
+        t("<meta http-equiv='Content-Type' content='xxxcharset=iso-8859-5'>", 'iso-8859-5')
+        t("<meta http-equiv='Content-Type' content='xxxcharset =\n iso-8859-5'>", 'iso-8859-5')
 
     def test_maybe_xhtml(self):
         for tag in 'title script style'.split():
