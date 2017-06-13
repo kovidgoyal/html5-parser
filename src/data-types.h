@@ -53,3 +53,8 @@ typedef struct {
         (c >= 'A' && c <= 'Z') || \
         (c == '_') || (c == '.') \
 )
+
+#define STRFY(x) #x
+#define STRFY2(x) STRFY(x)
+#define ERRMSG(x) ("File: " __FILE__ " Line: " STRFY2(__LINE__) ": " x)
+#define NOMEM (ERRMSG("Out of memory"))

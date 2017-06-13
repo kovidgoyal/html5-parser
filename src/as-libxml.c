@@ -322,7 +322,7 @@ convert_node(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode* node, GumboElement
             }
             break;
         default:
-            pd->errmsg =  "unknown gumbo node type";
+            pd->errmsg =  ERRMSG("unknown gumbo node type");
             break;
     }
     return ans;
@@ -344,6 +344,26 @@ alloc_doc(Options *opts) {
     return doc;
 }
 
+static inline bool
+add_root_comments(ParseData *pd, GumboDocument *document, GumboNode *root) {
+    GumboVector *root_nodes = &(document->children);
+    bool before_root = true;
+    for (unsigned int i = 0; i < root_nodes->length; i++) {
+        GumboNode *root_node = (GumboNode*)root_nodes->data[i];
+        if (root_node == root) { before_root = false; continue; }
+        if (root_node->type == GUMBO_NODE_COMMENT) {
+            xmlNodePtr comment = xmlNewComment(BAD_CAST root_node->v.text.text);
+            if (UNLIKELY(!comment)) { pd->errmsg = ERRMSG("Out of memory allocating comment");  return false; }
+            if (UNLIKELY(!(before_root ? xmlAddPrevSibling(pd->root, comment) : xmlAddSibling(pd->root, comment)))) {
+                pd->errmsg = ERRMSG("Failed to add sibling to root node"); 
+                xmlFreeNode(comment);
+                return false; 
+            }
+        }
+    }
+    return true;
+}
+
 libxml_doc*
 convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **errmsg) {
 #define ABORT { ok = false; goto end; }
@@ -360,9 +380,9 @@ convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **err
     doc = alloc_doc(opts);
     if (doc == NULL) ABORT;
 
+    GumboDocument* document = &(output->document->v.document);
     if (opts->keep_doctype && output->document->v.document.has_doctype) {
-        GumboDocument* doctype = & output->document->v.document;
-        if(!xmlCreateIntSubset(doc, BAD_CAST doctype->name, BAD_CAST doctype->public_identifier, BAD_CAST doctype->system_identifier)) ABORT;
+        if(!xmlCreateIntSubset(doc, BAD_CAST document->name, BAD_CAST document->public_identifier, BAD_CAST document->system_identifier)) ABORT;
     }
 
     parse_data.maybe_xhtml = opts->gumbo_opts.use_xhtml_rules;
@@ -390,13 +410,16 @@ convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **err
             xmlFree(root_lang);
         }
     }
+
+    xmlDocSetRootElement(doc, parse_data.root);
+    // Add any comments that are outside the root element
+    if (!add_root_comments(&parse_data, document, root)) ABORT;
 #undef ABORT
 end:
     if (doc) doc->_private = NULL;
     Stack_free(stack);
     *errmsg = (char*)parse_data.errmsg;
-    if (ok) xmlDocSetRootElement(doc, parse_data.root);
-    else { if (parse_data.root) xmlFreeNode(parse_data.root); if (doc) xmlFreeDoc(doc); doc = NULL; }
+    if(!ok) { if (parse_data.root) xmlFreeNode(parse_data.root); if (doc) xmlFreeDoc(doc); doc = NULL; }
     return doc;
 }
 
