@@ -69,8 +69,9 @@ def find_tests():
             m = importlib.import_module('test.' + n)
             suite = unittest.defaultTestLoader.loadTestsFromModule(m)
             suites.append(suite)
-    from test.html5lib_adapter import find_tests
-    suites.append(find_tests())
+    if 'SKIP_HTML5LIB' not in os.environ:
+        from test.html5lib_adapter import find_tests
+        suites.append(find_tests())
     return unittest.TestSuite(suites)
 
 
