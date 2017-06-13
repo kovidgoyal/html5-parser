@@ -72,7 +72,9 @@ To use html5-parser in your code, after installing it simply do:
     print(tostring(root))
 
 
-See the :func:`html5_parser.parse` function documentation for more details.
+See the :func:`html5_parser.parse` function documentation for more details on
+parsing. To learn how to use the parsed lxml tree in your program, see
+the `lxml tutorial <http://lxml.de/tutorial.html>`__.
 
 .. _xhtml:
 
