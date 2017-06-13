@@ -75,6 +75,7 @@ def serialize_construction_output(root):
             ns, name = name[1:].rpartition('}')[::2]
             ns = NAMESPACE_PREFIXES.get(ns, ns)
         add(level, '<', ns, name, '>')
+        return ns + name
 
     def serialize_attr(name, val, level):
         ns = ''
@@ -92,9 +93,12 @@ def serialize_construction_output(root):
         add(level, '<!-- ', node.text, ' -->')
 
     def serialize_node(node, level=1):
-        serialize_tag(node.tag, level)
+        name = serialize_tag(node.tag, level)
         for attr in sorted(node.keys()):
             serialize_attr(attr, node.get(attr), level)
+        if name == 'template':
+            level += 2
+            add(level, 'content')
         if node.text:
             serialize_text(node.text, level)
         for child in node:
