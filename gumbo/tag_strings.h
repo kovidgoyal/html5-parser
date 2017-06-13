@@ -218,6 +218,7 @@
 "semantics",
 "set",
 "small",
+"solidcolor",
 "source",
 "spacer",
 "span",

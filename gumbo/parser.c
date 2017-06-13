@@ -289,6 +289,7 @@ static const ReplacementEntry kSvgTagReplacements[] = {
   REPLACEMENT_ENTRY("glyphref", "glyphRef"),
   REPLACEMENT_ENTRY("lineargradient", "linearGradient"),
   REPLACEMENT_ENTRY("radialgradient", "radialGradient"),
+  REPLACEMENT_ENTRY("solidcolor", "solidcolor"),
   REPLACEMENT_ENTRY("textpath", "textPath"),
 };
 
