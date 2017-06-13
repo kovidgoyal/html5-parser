@@ -104,7 +104,7 @@ or a module name with a trailing period.
     tests = unittest.TestSuite(suites) if suites else tests
 
     r = unittest.TextTestRunner
-    result = r(verbosity=2).run(tests)
+    result = r().run(tests)
 
     if not result.wasSuccessful():
         raise SystemExit(1)
