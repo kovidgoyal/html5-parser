@@ -38,11 +38,15 @@ def filter_tests(suite, test_ok):
     return ans
 
 
-def filter_tests_by_name(suite, *names):
-    names = {x if x.startswith('test_') else 'test_' + x for x in names}
-
-    def q(test):
-        return test._testMethodName in names
+def filter_tests_by_name(suite, name):
+    if not name.startswith('test_'):
+        name = 'test_' + name
+    if name.endswith('_'):
+        def q(test):
+            return test._testMethodName.startswith(name)
+    else:
+        def q(test):
+            return test._testMethodName == name
 
     return filter_tests(suite, q)
 
@@ -81,7 +85,12 @@ or a module name with a trailing period.
     parser.add_argument(
         'test_name',
         nargs='*',
-        help='Test name (either a method name or a module name with a trailing period)')
+        help=(
+            'Test name (either a method name or a module name with a trailing period)'
+            '. Note that if the name ends with a trailing underscore all tests methods'
+            ' whose names start with the specified name are run.'
+        )
+    )
     args = parser.parse_args()
 
     tests = find_tests()
