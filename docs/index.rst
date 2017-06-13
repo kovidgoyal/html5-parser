@@ -6,9 +6,11 @@ html5-parser
 A fast implementation of the `HTML 5 parsing spec
 <https://www.w3.org/TR/html5/syntax.html#parsing>`_. Parsing is done in C using
 a variant of the `gumbo parser <https://github.com/google/gumbo-parser>`__. The
-gumbo parse tree is then transformed into an `lxml <http://lxml.de/>`__ tree, also
-in C, yielding parse times that can be **a thirtieth** of the html5lib parse
-times. That is a speedup of **30x**.
+gumbo parse tree is then transformed into an `lxml <http://lxml.de/>`__ tree,
+also in C, yielding parse times that can be **a thirtieth** of the html5lib
+parse times. That is a speedup of **30x**. This differs, for instance, from the
+gumbo python bindings, where the initial parsing is done in C but the
+transformation into the final tree is done in python. 
 
 
 Installation
@@ -17,7 +19,7 @@ Installation
 Unix
 ^^^^^^
 
-On a Unix-y system, with a working compiler, simply run:
+On a Unix-y system, with a working C99 compiler, simply run:
 
 .. code-block:: bash
 
