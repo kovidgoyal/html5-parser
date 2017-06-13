@@ -193,13 +193,14 @@ section for more information.
 Safety and correctness
 --------------------------
 
-The HTML parser is based on `gumbo parser <https://github.com/google/gumbo-parser>`__
-which has undergone a Google security review and been tested on 2.5 billion
-pages from the Google cache. In addition, html5-parser passes (almost) all the
-tests from the html5lib test suite. 
+The HTML parser is based on the `gumbo parser
+<https://github.com/google/gumbo-parser>`__ which has undergone a Google
+security review and been tested on 2.5 billion pages from the Google cache. In
+addition, html5-parser passes (almost) all the tests from the html5lib test
+suite. 
 
 Finally, html5-parser is compiled with ``-pedantic-errors -Wall -Werror`` and
-the test suite, consisting of thousands of tests is run using the address and
+the test suite, consisting of thousands of tests, is run using the address and
 undefined behavior sanitizers. Continuous integration testing is done on three
 major OSes and four different compilers.
 
