@@ -94,7 +94,7 @@ def namespaces(self, parse_function=partial(parse, maybe_xhtml=True), tostring=t
     ae(len(XPath('//*[@xml:lang]')(root)), 1, err)
 
 
-class BasicTests(TestCase):
+class NamespaceTests(TestCase):
 
     def test_single_namespace(self):
         root = nsparse('<p>xxx')
@@ -151,7 +151,7 @@ class BasicTests(TestCase):
         self.assertIn('{%s}lang' % XML, root.attrib)
         self.ae(root.xpath('//@xml:lang'), ['es'])
         root = nsparse('<html xml:lang="fr" lang="es"><svg xml:lang="1">xxx')
-        self.ae(root.xpath('//@lang'), ['es', '1'])
+        self.ae(root.xpath('//@lang'), ['es'])
 
     def test_xmlns(self):
         root = parse('<html><p xmlns:foo="f">xxx<f:moo/>')

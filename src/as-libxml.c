@@ -112,16 +112,15 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
                 ns = pd->xlink;
                 break;
             case GUMBO_ATTR_NAMESPACE_XML:
-                if (strcmp(aname, "lang") == 0) {
+                ns = ensure_xml_ns(doc, pd, node);
+                if (UNLIKELY(!ns)) return false;
+                if (UNLIKELY(pd->maybe_xhtml && strcmp(aname, "lang") == 0)) {
                     if (!added_lang) {
                         added_lang = 1;
                         if (UNLIKELY(!xmlNewNsPropEatName(node, NULL, (xmlChar*)pd->lang_attribute, BAD_CAST attr->value))) return false;
                     }
                     continue;
-                } else {
-                    ns = ensure_xml_ns(doc, pd, node);
-                    if (UNLIKELY(!ns)) return false;
-                }
+                } 
                 break;
             case GUMBO_ATTR_NAMESPACE_XMLNS:
                 if (strncmp(aname, "xlink", 5) == 0) {
@@ -140,7 +139,7 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
                 }
                 break;
             default:
-                if (UNLIKELY(strncmp(aname, "xml:lang", 8) == 0)) {
+                if (UNLIKELY(pd->maybe_xhtml && strncmp(aname, "xml:lang", 8) == 0)) {
                     if (!added_lang) {
                         added_lang = 1;
                         if (UNLIKELY(!xmlNewNsPropEatName(node, ns, (xmlChar*)pd->lang_attribute, BAD_CAST attr->value))) return false;
@@ -185,7 +184,7 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
         }
         attr_name = xmlDictLookup(doc->dict, BAD_CAST aname, sanitize_name((char*)aname));  // we deliberately discard const, for performance
         if (UNLIKELY(!attr_name)) return false;
-        if (attr_name == pd->lang_attribute) {
+        if (UNLIKELY(pd->maybe_xhtml && attr_name == pd->lang_attribute)) {
             if (added_lang == 2) continue;
             added_lang = 2;
             xmlSetNsProp(node, NULL, attr_name, BAD_CAST attr->value);

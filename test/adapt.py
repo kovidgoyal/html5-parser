@@ -34,9 +34,9 @@ class AdaptTest(TestCase):
         root = parse(HTML, treebuilder='etree', namespace_elements=True)
         self.ae(root.tag, '{%s}html' % XHTML)
         ns = {'h': XHTML, 's': SVG, 'x': XLINK}
-        self.ae(root.attrib, {'lang': 'en', 'lang': 'en'})
+        self.ae(root.attrib, {'lang': 'en', 'xml_lang': 'en'})
         self.ae(root.find('./h:head/h:script', ns).text, 'a < & " b')
-        self.ae(root.find('./h:body', ns)[-1].attrib, {'lang': 'de'})
+        self.ae(root.find('./h:body', ns)[-1].attrib, {'xml_lang': 'de'})
         self.ae(
             tostring(root.find('h:body/h:p', ns), method='text').decode('ascii'),
             'A test of text and tail\n')
@@ -56,6 +56,7 @@ class AdaptTest(TestCase):
             dict(root.attributes.itemsNS()),
             dict([((u'xmlns', u'xmlns'), 'http://www.w3.org/1999/xhtml'),
                   ((u'xmlns', u'xlink'), 'http://www.w3.org/1999/xlink'),
+                  ((None, u'xml_lang'), 'en'),
                   ((None, u'lang'), 'en')]))
         script = doc.getElementsByTagName('script')[0]
         self.ae(script.firstChild.nodeValue, 'a < & " b')
@@ -64,7 +65,7 @@ class AdaptTest(TestCase):
         p = doc.getElementsByTagName('p')[-1]
         self.ae(
             dict(p.attributes.itemsNS()),
-            dict([((None, u'lang'), 'de')]))
+            dict([((None, u'xml_lang'), 'de')]))
         svg = doc.getElementsByTagName('svg')[0]
         self.ae(
             dict(svg.attributes.itemsNS()), {(None, 'viewBox'): 'v',
@@ -92,8 +93,8 @@ class AdaptTest(TestCase):
         if soup_name != 'BeautifulSoup':
             self.ae(DOCTYPE, str(soup.contents[0]))
         self.ae(root.name, 'html')
-        self.ae(dict(root.attrs), {'lang': 'en'})
-        self.ae(dict(root.body.contents[-1].attrs), {'lang': 'de'})
+        self.ae(dict(root.attrs), {'xml_lang': 'en', 'lang': 'en'})
+        self.ae(dict(root.body.contents[-1].attrs), {'xml_lang': 'de'})
         self.ae(root.head.script.string, 'a < & " b')
         self.ae(str(root.find('p')), '<p>A <span>test</span> of text and tail\n</p>')
         svg = root.find('svg')
