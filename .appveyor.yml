@@ -23,4 +23,5 @@ build_script:
     - C:/Python36-x64/python.exe win-ci.py install_deps
 
 test_script:
+    - git clone --depth 1 "https://github.com/html5lib/html5lib-tests.git" test/html5lib-tests
     - C:/Python36-x64/python.exe win-ci.py test
