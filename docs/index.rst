@@ -5,7 +5,7 @@ html5-parser
 
 A fast implementation of the `HTML 5 parsing spec
 <https://www.w3.org/TR/html5/syntax.html#parsing>`_. Parsing is done in C using
-a variant of the `gumbo parser <https://github.com/google/gumbo-parser>`_. The
+a variant of the `gumbo parser <https://github.com/google/gumbo-parser>`__. The
 gumbo parse tree is then transformed into an `lxml <http://lxml.de/>`__ tree, also
 in C, yielding parse times that can be **a thirtieth** of the html5lib parse
 times. That is a speedup of **30x**.
@@ -184,6 +184,19 @@ html5-parser also has the ability to optionally preserve namespace information
 even for namespaces not defined in the HTML 5 standard. See the :ref:`XHTML`
 section for more information.
 
+
+Safety and correctness
+--------------------------
+
+The HTML parser is based on `gumbo parser <https://github.com/google/gumbo-parser>`__
+which has undergone a Google security review and been tested on 2.5 billion
+pages from the Google cache. In addition, html5-parser passes (almost) all the
+tests from the html5lib test suite. 
+
+Finally, html5-parser is compiled with ``-pedantic-errors -Wall -Werror`` and
+the test suite, consisting of thousands of tests is run using the address and
+undefined behavior sanitizers. Continuous integration testing is done on three
+major OSes and four different compilers.
 
 .. |pypi| image:: https://img.shields.io/pypi/v/html5-parser.svg?label=version
     :target: https://pypi.python.org/pypi/html5-parser
