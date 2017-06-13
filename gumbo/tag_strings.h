@@ -77,6 +77,7 @@
 "feoffset",
 "fepointlight",
 "fespectactualrlighting",
+"fespecularlighting",
 "fespotlight",
 "fetile",
 "feturbulence",
