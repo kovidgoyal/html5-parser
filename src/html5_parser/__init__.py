@@ -49,7 +49,7 @@ def check_for_meta_charset(raw):
     q = raw[:1024]
     parser = EncodingParser(q)
     encoding = parser()
-    if encoding in ("utf-16", "utf-16-be", "utf-16-le"):
+    if encoding in ("utf-16", "utf-16be", "utf-16le"):
         encoding = "utf-8"
     return encoding
 
@@ -94,7 +94,16 @@ def as_utf8(bytes_or_unicode, transport_encoding=None, fallback_encoding=None):
                     check_for_meta_charset(data) or detect_encoding(data) or fallback_encoding or
                     safe_get_preferred_encoding() or 'cp-1252')
                 if encoding and encoding.lower() not in passthrough_encodings:
-                    data = data.decode(encoding).encode('utf-8')
+                    if encoding == 'x-user-defined':
+                        # https://encoding.spec.whatwg.org/#x-user-defined
+                        buf = (b if b <= 0x7F else 0xF780 + b - 0x80 for b in bytearray(data))
+                        try:
+                            chr = unichr
+                        except NameError:
+                            pass
+                        data = ''.join(map(chr, buf))
+                    else:
+                        data = data.decode(encoding).encode('utf-8')
     else:
         data = bytes_or_unicode.encode('utf-8')
     return data

@@ -9,7 +9,7 @@ import re
 import unittest
 
 from lxml.etree import _Comment
-from html5_parser import parse
+from html5_parser import parse, check_for_meta_charset
 
 from . import MATHML, SVG, XHTML, XLINK, XML, TestCase
 
@@ -22,7 +22,11 @@ class TestData(object):
 
     def __init__(self, filename):
         with open(filename, 'rb') as f:
-            self.lines = f.read().decode('utf-8').splitlines()
+            raw = f.read()
+        encoding = 'utf-8'
+        if '/encoding/' in filename.replace(os.sep, '/'):
+            encoding = 'utf-8' if os.path.basename(filename) == 'test-yahoo-jp.dat' else 'latin1'
+        self.lines = raw.decode(encoding).splitlines()
 
     def __iter__(self):
         data = {}
@@ -126,7 +130,25 @@ def serialize_construction_output(root):
     return output
 
 
-class ConstructionTests(TestCase):
+class BaseTest(TestCase):
+
+    @classmethod
+    def add_single(cls, test_name, num, test, expected):
+
+        def test_func(
+            self,
+            inner_html=test.get('document-fragment'),
+            html=test.get('data'),
+            expected=test.get(expected),
+            errors=test.get('errors', '').split('\n')
+        ):
+            return self.implementation(inner_html, html, expected, errors, test_name)
+
+        test_func.__name__ = str('test_%s_%d' % (test_name, num))
+        setattr(cls, test_func.__name__, test_func)
+
+
+class ConstructionTests(BaseTest):
 
     def implementation(self, inner_html, html, expected, errors, test_name):
         html = inner_html or html
@@ -161,34 +183,33 @@ class ConstructionTests(TestCase):
         self.ae(expected, output, error_msg + '\n')
         # TODO: Check error messages, when there's full error support.
 
-    @classmethod
-    def add_single(cls, test_name, num, test):
 
-        def test_func(
-            self,
-            inner_html=test.get('document-fragment'),
-            html=test.get('data'),
-            expected=test.get('document'),
-            errors=test.get('errors', '').split('\n')
-        ):
-            return self.implementation(inner_html, html, expected, errors, test_name)
+class EncodingTests(BaseTest):
 
-        test_func.__name__ = str('test_%s_%d' % (test_name, num))
-        setattr(cls, test_func.__name__, test_func)
+    def implementation(self, inner_html, html, expected, errors, test_name):
+        raw = html.encode('utf-8')
+        output = check_for_meta_charset(raw) or 'windows-1252'
+        error_msg = '\n'.join(map(type(''), [
+            '\n\nInput:', html, '\nExpected:', expected, '\nReceived:', output]))
+        self.ae(expected.lower(), output, error_msg + '\n')
 
 
-def html5lib_construction_test_files():
+def html5lib_test_files(group):
     if os.path.exists(html5lib_tests_path):
-        base = os.path.join(html5lib_tests_path, 'tree-construction')
+        base = os.path.join(html5lib_tests_path, group)
         for x in os.listdir(base):
             if x.endswith('.dat'):
                 yield os.path.join(base, x)
 
 
+def load_suite(group, case_class, expected='document', data_class=TestData):
+    for path in html5lib_test_files(group):
+        test_name = os.path.basename(path).rpartition('.')[0]
+        for i, test in enumerate(data_class(path)):
+            case_class.add_single(test_name, i + 1, test, expected)
+    return unittest.defaultTestLoader.loadTestsFromTestCase(case_class)
+
+
 def find_tests():
-    for ct in html5lib_construction_test_files():
-        test_name = os.path.basename(ct).rpartition('.')[0]
-        for i, test in enumerate(TestData(ct)):
-            ConstructionTests.add_single(test_name, i + 1, test)
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(ConstructionTests)
-    return suite
+    yield load_suite('tree-construction', ConstructionTests)
+    yield load_suite('encoding', EncodingTests, expected='encoding')

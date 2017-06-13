@@ -71,7 +71,7 @@ def find_tests():
             suites.append(suite)
     if 'SKIP_HTML5LIB' not in os.environ:
         from test.html5lib_adapter import find_tests
-        suites.append(find_tests())
+        suites.extend(find_tests())
     return unittest.TestSuite(suites)
 
 
