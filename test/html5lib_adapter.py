@@ -84,7 +84,7 @@ def serialize_construction_output(root):
         level += 2
         add(level, '"', text, '"')
 
-    def serialize_comment(node, level):
+    def serialize_comment(node, level=1):
         add(level, '<!-- ', node.text, ' -->')
 
     def serialize_node(node, level=1):
@@ -101,7 +101,11 @@ def serialize_construction_output(root):
             if child.tail:
                 serialize_text(child.tail, level)
 
+    for c in root.itersiblings(preceding=True):
+        serialize_comment(c)
     serialize_node(root)
+    for c in root.itersiblings():
+        serialize_comment(c)
     return '\n'.join(lines)
 
 
