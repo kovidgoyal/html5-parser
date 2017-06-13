@@ -4,13 +4,14 @@ html5-parser
 |pypi| |unix_build| |windows_build|
 
 A fast implementation of the `HTML 5 parsing spec
-<https://www.w3.org/TR/html5/syntax.html#parsing>`_. Parsing is done in C using
-a variant of the `gumbo parser <https://github.com/google/gumbo-parser>`__. The
-gumbo parse tree is then transformed into an `lxml <http://lxml.de/>`__ tree,
-also in C, yielding parse times that can be **a thirtieth** of the html5lib
-parse times. That is a speedup of **30x**. This differs, for instance, from the
-gumbo python bindings, where the initial parsing is done in C but the
-transformation into the final tree is done in python. 
+<https://www.w3.org/TR/html5/syntax.html#parsing>`_ for Python. Parsing is done
+in C using a variant of the `gumbo parser
+<https://github.com/google/gumbo-parser>`__. The gumbo parse tree is then
+transformed into an `lxml <http://lxml.de/>`__ tree, also in C, yielding parse
+times that can be **a thirtieth** of the html5lib parse times. That is a
+speedup of **30x**. This differs, for instance, from the gumbo python bindings,
+where the initial parsing is done in C but the transformation into the final
+tree is done in python. 
 
 
 Installation
@@ -70,6 +71,8 @@ To use html5-parser in your code, after installing it simply do:
     root = parse(some_html)
     print(tostring(root))
 
+
+See the :func:`html5_parser.parse` function documentation for more details.
 
 .. _xhtml:
 
