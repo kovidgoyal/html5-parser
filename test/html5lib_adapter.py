@@ -4,12 +4,13 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import codecs
 import os
 import re
 import unittest
 
+from html5_parser import check_bom, check_for_meta_charset, parse
 from lxml.etree import _Comment
-from html5_parser import parse, check_for_meta_charset, check_bom
 
 from . import MATHML, SVG, XHTML, XLINK, XML, TestCase
 
@@ -189,11 +190,14 @@ class EncodingTests(BaseTest):
     def implementation(self, inner_html, html, expected, errors, test_name):
         if '<!-- Starts with UTF-8 BOM -->' in html:
             raw = b'\xef\xbb\xbf' + html[3:].encode('ascii')
-        else:
-            raw = html.encode('utf-8')
+            self.assertIs(check_bom(raw), codecs.BOM_UTF8)
+            return
+        if '''document.write('<meta charset="ISO-8859-' + '2">')''' in html:
+            raise unittest.SkipTest('buggy html5lib test')
+        raw = html.encode('utf-8')
         output = check_bom(raw) or check_for_meta_charset(raw) or 'windows-1252'
         error_msg = '\n'.join(map(type(''), [
-            '\n\nInput:', repr(html), '\nExpected:', expected, '\nReceived:', output]))
+            '\n\nInput:', html, '\nExpected:', expected, '\nReceived:', output]))
         self.ae(expected.lower(), output, error_msg + '\n')
 
 

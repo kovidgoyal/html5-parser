@@ -4,7 +4,6 @@
 
 from __future__ import (absolute_import, division, print_function, unicode_literals)
 
-import re
 import string
 
 from .encoding_names import encodings
@@ -15,8 +14,6 @@ ascii_letters_bytes = frozenset(item.encode("ascii") for item in string.ascii_le
 ascii_uppercase_bytes = frozenset(item.encode("ascii") for item in string.ascii_uppercase)
 spaces_angle_brackets = space_chars_bytes | frozenset((b">", b"<"))
 skip1 = space_chars_bytes | frozenset((b"/", ))
-ascii_punctuation_re = re.compile(
-    "[\u0009-\u000D\u0020-\u002F\u003A-\u0040\u005B-\u0060\u007B-\u007E]")
 
 
 PYTHON_NAMES = {
@@ -35,6 +32,7 @@ def codec_name(encoding):
         except UnicodeDecodeError:
             return
     if encoding:
+        encoding = encoding.strip('\t\n\f\r ')
         enc = encodings.get(encoding)
         if enc is not None:
             return PYTHON_NAMES.get(enc, enc)
