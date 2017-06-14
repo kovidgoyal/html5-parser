@@ -3,7 +3,10 @@ html5-parser
 
 |pypi| |unix_build| |windows_build| |docs|
 
-See `documentation <https://html5-parser.readthedocs.io>`_.
+A Fast, standards compliant, C based, HTML 5 parser for python. Over **thirty**
+times as fast as pure python based parsers, such as html5lib.
+
+See `documentation <https://html5-parser.readthedocs.io>`_ for details.
 
 .. |pypi| image:: https://img.shields.io/pypi/v/html5-parser.svg?label=version
     :target: https://pypi.python.org/pypi/html5-parser
