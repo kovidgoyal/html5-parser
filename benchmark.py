@@ -5,12 +5,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
+import textwrap
 from functools import partial
 
+import html5_parser
 import html5lib
 from bs4 import BeautifulSoup
-
-import html5_parser
 
 try:
     from time import monotonic
@@ -90,7 +90,7 @@ def row(*args):
 
 
 print()
-print(
+print(textwrap.fill(
     'Results are below. They show how much faster html5-parser is than'
     ' each specified parser. Note that there are two additional considerations:'
     ' what the final tree is and whether the parsing supports the HTML 5'
@@ -99,7 +99,7 @@ print(
     ' Note that in this case, we have the largest speedup. In all other cases,'
     ' speedup is less because of the overhead of building the final tree'
     ' in python instead of C or because the compared parser does not use'
-    ' the HTML 5 parsing algorithm or both.')
+    ' the HTML 5 parsing algorithm or both.'))
 print()
 row('Parser', 'Tree', 'Supports HTML 5', 'Speedup (factor)')
 print('=' * 79)
