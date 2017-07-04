@@ -8,8 +8,9 @@
 #include "as-python-tree.h"
 
 #define CALL_METHOD1(obj, name, arg) \
-    ret = PyObject_GetAttrString(obj, name); \
-    if (ret != NULL) ret = PyObject_CallMethodObjArgs(obj, ret, arg, NULL);
+    meth = PyObject_GetAttrString(obj, name); \
+    if (meth != NULL) { ret = PyObject_CallFunctionObjArgs(meth, arg, NULL); Py_DECREF(meth); } \
+    else ret = NULL;
 
 // Stack {{{
 
@@ -49,10 +50,12 @@ create_element(GumboElement *elem, PyObject *new_tag) {
         if (tag) {
             tag_name = PyUnicode_FromStringAndSize(tag, tag_sz);
         } else {
-            tag_name = PyUnicode_FromStringAndSize(gumbo_normalized_tagname_and_size(elem->tag, &tag_sz), tag_sz);
+            tag = gumbo_normalized_tagname_and_size(elem->tag, &tag_sz);
+            tag_name = PyUnicode_FromStringAndSize(tag, tag_sz);
         }
     } else {
-            tag_name = PyUnicode_FromStringAndSize(gumbo_normalized_tagname_and_size(elem->tag, &tag_sz), tag_sz);
+        tag = gumbo_normalized_tagname_and_size(elem->tag, &tag_sz);
+        tag_name = PyUnicode_FromStringAndSize(tag, tag_sz);
     }
     if (tag_name == NULL) return NULL;
     ret = PyObject_CallFunctionObjArgs(new_tag, tag_name, NULL);
@@ -96,7 +99,7 @@ as_python_tree(GumboOutput *gumbo_output, Options *opts, PyObject *new_tag, PyOb
     bool ok = true;
     GumboNode *gumbo;
     GumboElement *elem;
-    PyObject *parent, *child, *ans = NULL, *ret;
+    PyObject *parent, *child, *ans = NULL, *ret, *meth;
     Stack *stack = Stack_alloc(opts->stack_size);
     if (stack == NULL) return PyErr_NoMemory();
 

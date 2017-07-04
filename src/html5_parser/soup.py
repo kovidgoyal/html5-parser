@@ -47,16 +47,21 @@ def convert_element(elem, new_tag):
     return ans
 
 
-def adapt(src_tree, return_root=True, **kw):
+def init_soup():
     bs = soup_module()
     if bs.__version__.startswith('3.'):
         soup = bs.BeautifulSoup()
     else:
         soup = bs.BeautifulSoup('', 'lxml')
     Tag, Comment = bs.Tag, bs.Comment
+    new_tag = getattr(soup, 'new_tag', None) or (lambda x: Tag(soup, x))
+    return bs, soup, new_tag, Comment
+
+
+def adapt(src_tree, return_root=True, **kw):
+    bs, soup, new_tag, Comment = init_soup()
     if src_tree.docinfo.doctype and hasattr(bs, 'Doctype'):
         soup.append(bs.Doctype(src_tree.docinfo.doctype))
-    new_tag = getattr(soup, 'new_tag', None) or (lambda x: Tag(soup, x))
     src_root = src_tree.getroot()
     dest_root = convert_element(src_root, new_tag)
     soup.append(dest_root)
@@ -74,3 +79,13 @@ def adapt(src_tree, return_root=True, **kw):
                 dest.append(child.tail)
 
     return dest_root if return_root else soup
+
+
+def parse(utf8_data, return_root=True):
+    from . import html_parser
+    bs, soup, new_tag, Comment = init_soup()
+    if not isinstance(utf8_data, bytes):
+        utf8_data = utf8_data.encode('utf-8')
+    root = html_parser.parse_and_build(utf8_data, new_tag, Comment)
+    soup.append(root)
+    return root if return_root else soup
