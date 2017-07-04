@@ -6,11 +6,24 @@
  */
 #define NEEDS_SANITIZE_NAME 1
 #include "as-python-tree.h"
+static PyObject *KNOWN_TAG_NAMES;
 
 #define CALL_METHOD1(obj, name, arg) \
     meth = PyObject_GetAttrString(obj, name); \
     if (meth != NULL) { ret = PyObject_CallFunctionObjArgs(meth, arg, NULL); Py_DECREF(meth); } \
     else ret = NULL;
+
+bool
+set_known_tag_names(PyObject *val) {
+    PyObject *tag_name;
+    KNOWN_TAG_NAMES = val;
+    for (int i = 0; i < GUMBO_TAG_UNKNOWN; i++) {
+        tag_name = PyUnicode_FromString(gumbo_normalized_tagname(i));
+        if (tag_name == NULL) return false;
+        PyTuple_SET_ITEM(KNOWN_TAG_NAMES, i, tag_name);
+    }
+    return true;
+}
 
 // Stack {{{
 
@@ -50,16 +63,16 @@ create_element(GumboElement *elem, PyObject *new_tag) {
         if (tag) {
             tag_name = PyUnicode_FromStringAndSize(tag, tag_sz);
         } else {
-            tag = gumbo_normalized_tagname_and_size(elem->tag, &tag_sz);
-            tag_name = PyUnicode_FromStringAndSize(tag, tag_sz);
+            tag_name = PyTuple_GET_ITEM(KNOWN_TAG_NAMES, elem->tag);
+            Py_INCREF(tag_name);
         }
     } else {
-        tag = gumbo_normalized_tagname_and_size(elem->tag, &tag_sz);
-        tag_name = PyUnicode_FromStringAndSize(tag, tag_sz);
+        tag_name = PyTuple_GET_ITEM(KNOWN_TAG_NAMES, elem->tag);
+        Py_INCREF(tag_name);
     }
-    if (tag_name == NULL) return NULL;
+    if (UNLIKELY(tag_name == NULL)) return NULL;
     ret = PyObject_CallFunctionObjArgs(new_tag, tag_name, NULL);
-    if (ret == NULL) { Py_CLEAR(tag_name); return NULL; }
+    if (UNLIKELY(ret == NULL)) { Py_CLEAR(tag_name); return NULL; }
     return ret;
 }
 
@@ -110,11 +123,11 @@ as_python_tree(GumboOutput *gumbo_output, Options *opts, PyObject *new_tag, PyOb
         if (UNLIKELY(!child)) ABORT;
         if (LIKELY(parent)) {
             CALL_METHOD1(parent, "append", child);
-            if (ret == NULL) ABORT;
+            if (UNLIKELY(ret == NULL)) ABORT;
             Py_DECREF(ret);
         } else ans = child;
         if (elem != NULL) {
-            if (!push_children(child, elem, stack)) { PyErr_NoMemory(); ABORT; }
+            if (UNLIKELY(!push_children(child, elem, stack))) { PyErr_NoMemory(); ABORT; }
         }
     }
 
