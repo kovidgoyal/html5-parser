@@ -11,6 +11,7 @@
 
 #include "../gumbo/gumbo.h"
 #include "as-libxml.h"
+#include "as-python-tree.h"
 
 #define MAJOR 0
 #define MINOR 3
@@ -91,6 +92,28 @@ parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
     return encapsulate(doc);
 }
 
+
+static PyObject *
+parse_and_build(PyObject UNUSED *self, PyObject *args) {
+    const char *buffer = NULL;
+    Py_ssize_t sz = 0;
+    GumboOutput *output = NULL;
+    PyObject *new_tag, *new_comment, *ans;
+
+    if (!PyArg_ParseTuple(args, "s#OO", &buffer, &sz, &new_tag, &new_comment)) return NULL;
+    Options opts = {0};
+    opts.stack_size = 16 * 1024;
+    Py_BEGIN_ALLOW_THREADS;
+    output = gumbo_parse_with_options(&(opts.gumbo_opts), buffer, (size_t)sz);
+    Py_END_ALLOW_THREADS;
+    if (output == NULL) PyErr_NoMemory(); 
+
+    ans = as_python_tree(output, &opts, new_tag, new_comment);
+    gumbo_destroy_output(output);
+    return ans;
+}
+
+
 static PyObject *
 clone_doc(PyObject UNUSED *self, PyObject *capsule) {
     if (!PyCapsule_CheckExact(capsule)) { PyErr_SetString(PyExc_TypeError, "Must specify a capsule as the argument"); return NULL; }
@@ -105,6 +128,10 @@ static PyMethodDef
 methods[] = {
     {"parse", (PyCFunction)parse, METH_VARARGS | METH_KEYWORDS,
         "parse()\n\nParse specified bytestring which must be in the UTF-8 encoding."
+    },
+
+    {"parse_and_build", (PyCFunction)parse_and_build, METH_VARARGS,
+        "parse_and_build()\n\nParse specified bytestring which must be in the UTF-8 encoding and build a tree using the specified functions."
     },
 
     {"clone_doc", clone_doc, METH_O,

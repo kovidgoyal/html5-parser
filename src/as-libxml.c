@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <string.h>
 
+#define NEEDS_SANITIZE_NAME 1
 #include "as-libxml.h"
 #include <libxml/tree.h>
 #include <libxml/dict.h>
@@ -70,18 +71,6 @@ find_namespace_by_prefix(xmlDocPtr doc, xmlNodePtr node, xmlNodePtr xml_parent, 
     if (ans) return ans;
     if (!xml_parent) return NULL;
     return xmlSearchNs(doc, xml_parent, BAD_CAST prefix);
-}
-
-static inline size_t
-sanitize_name(char *name) {
-    if (UNLIKELY(name[0] == 0)) return 0;
-    if (UNLIKELY(!VALID_FIRST_CHAR(name[0]))) name[0] = '_';
-    size_t i = 1;
-    while (name[i] != 0) {
-        if (UNLIKELY(!VALID_CHAR(name[i]))) name[i] = '_';
-        i++;
-    }
-    return i;
 }
 
 static GumboStringPiece REPROCESS = {"", 0};
@@ -225,7 +214,7 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
     const xmlChar *tag_name = NULL;
     const char *tag;
     uint8_t tag_sz;
-    char buf[50] = {0};
+    char buf[MAX_TAG_NAME_SZ] = {0};
     char *nsprefix = NULL;
     xmlNsPtr namespace = NULL;
     ParseData *pd = (ParseData*)doc->_private;

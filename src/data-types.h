@@ -26,6 +26,7 @@
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define MAX_TAG_NAME_SZ 75
 
 typedef struct {
     unsigned int stack_size;
@@ -58,3 +59,17 @@ typedef struct {
 #define STRFY2(x) STRFY(x)
 #define ERRMSG(x) ("File: " __FILE__ " Line: " STRFY2(__LINE__) ": " x)
 #define NOMEM (ERRMSG("Out of memory"))
+
+#ifdef NEEDS_SANITIZE_NAME
+static inline size_t
+sanitize_name(char *name) {
+    if (UNLIKELY(name[0] == 0)) return 0;
+    if (UNLIKELY(!VALID_FIRST_CHAR(name[0]))) name[0] = '_';
+    size_t i = 1;
+    while (name[i] != 0) {
+        if (UNLIKELY(!VALID_CHAR(name[i]))) name[i] = '_';
+        i++;
+    }
+    return i;
+}
+#endif
