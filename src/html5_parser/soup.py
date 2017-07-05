@@ -81,11 +81,18 @@ def adapt(src_tree, return_root=True, **kw):
     return dest_root if return_root else soup
 
 
-def parse(utf8_data, return_root=True):
+def parse(utf8_data, stack_size=16 * 1024, keep_doctype=False, return_root=True):
     from . import html_parser
     bs, soup, new_tag, Comment = init_soup()
     if not isinstance(utf8_data, bytes):
         utf8_data = utf8_data.encode('utf-8')
-    root = html_parser.parse_and_build(utf8_data, new_tag, Comment)
+
+    def add_doctype(name, public_id, system_id):
+        public_id = (' PUBLIC ' + public_id + ' ') if public_id else ''
+        system_id = (' ' + system_id) if system_id else ''
+        soup.append(bs.Doctype('<!DOCTYPE {}{}{}>'.format(name, public_id, system_id)))
+
+    dt = add_doctype if keep_doctype and hasattr(bs, 'Doctype') else None
+    root = html_parser.parse_and_build(utf8_data, new_tag, Comment, dt, stack_size)
     soup.append(root)
     return root if return_root else soup

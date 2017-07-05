@@ -98,17 +98,24 @@ parse_and_build(PyObject UNUSED *self, PyObject *args) {
     const char *buffer = NULL;
     Py_ssize_t sz = 0;
     GumboOutput *output = NULL;
-    PyObject *new_tag, *new_comment, *ans;
-
-    if (!PyArg_ParseTuple(args, "s#OO", &buffer, &sz, &new_tag, &new_comment)) return NULL;
+    PyObject *new_tag, *new_comment, *ans, *new_doctype;
     Options opts = {0};
     opts.stack_size = 16 * 1024;
+
+    if (!PyArg_ParseTuple(args, "s#OOO|I", &buffer, &sz, &new_tag, &new_comment, &new_doctype, &(opts.stack_size))) return NULL;
     Py_BEGIN_ALLOW_THREADS;
     output = gumbo_parse_with_options(&(opts.gumbo_opts), buffer, (size_t)sz);
     Py_END_ALLOW_THREADS;
     if (output == NULL) PyErr_NoMemory(); 
+    GumboDocument* document = &(output->document->v.document);
 
     ans = as_python_tree(output, &opts, new_tag, new_comment);
+
+    if (new_doctype != Py_None && document->has_doctype) {
+        PyObject *ret = PyObject_CallFunction(new_doctype, "sss", document->name, document->public_identifier, document->system_identifier);
+        if (!ret) { Py_CLEAR(ans); }
+        Py_CLEAR(ret);
+    }
     gumbo_destroy_output(output);
     return ans;
 }
