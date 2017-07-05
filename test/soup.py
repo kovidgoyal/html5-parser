@@ -26,6 +26,7 @@ class SoupTest(TestCase):
         root = parse('<p a=1 b=2 ID=3><a a=a>')
         self.ae(dict(root.body.p.attrs), {'a': '1', 'b': '2', 'id': '3'})
         self.ae(dict(root.body.p.a.attrs), {'a': 'a'})
+        self.ae(type('')(root.find(name='a', a='a')), '<a a="a"></a>')
         root = parse('<p a=1><svg><image xlink:href="h">')
         self.ae(
             type('')(root),
