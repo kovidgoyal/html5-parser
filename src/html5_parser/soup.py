@@ -4,6 +4,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+unicode = type('')
+
 
 def soup_module():
     if soup_module.ans is None:
@@ -23,12 +25,87 @@ def set_soup_module(val):
     soup_module.ans = val
 
 
+def bs4_fast_append(self, new_child):
+    is_first = not self.contents
+    new_child.parent = self
+    previous_child = None
+    if is_first:
+        new_child.previous_sibling = None
+        new_child.previous_element = self
+    else:
+        previous_child = self.contents[-1]
+        new_child.previous_sibling = previous_child
+        previous_child.next_sibling = new_child
+        new_child.previous_element = previous_child._last_descendant(False)
+    if new_child.previous_element is not None:
+        new_child.previous_element.next_element = new_child
+
+    new_childs_last_element = new_child._last_descendant(False)
+
+    new_child.next_sibling = None
+
+    parent = self
+    parents_next_sibling = None
+    while parents_next_sibling is None and parent is not None:
+        parents_next_sibling = parent.next_sibling
+        parent = parent.parent
+        if parents_next_sibling is not None:
+            # We found the element that comes next in the document.
+            break
+    if parents_next_sibling is not None:
+        new_childs_last_element.next_element = parents_next_sibling
+    else:
+        # The last element of this tag is the last element in
+        # the document.
+        new_childs_last_element.next_element = None
+
+    if new_childs_last_element.next_element is not None:
+        new_childs_last_element.next_element.previous_element = new_childs_last_element
+    self.contents.append(new_child)
+
+
 def bs4_new_tag(Tag, soup):
 
     def new_tag(name, attrs):
         return Tag(soup, name=name, attrs=attrs)
 
     return new_tag
+
+
+def bs3_fast_append(self, newChild):
+    is_first = not self.contents
+    newChild.parent = self
+    previousChild = None
+    if is_first:
+        newChild.previousSibling = None
+        newChild.previous = self
+    else:
+        previousChild = self.contents[-1]
+        newChild.previousSibling = previousChild
+        newChild.previousSibling.nextSibling = newChild
+        newChild.previous = previousChild._lastRecursiveChild()
+    if newChild.previous:
+        newChild.previous.next = newChild
+
+    newChildsLastElement = newChild._lastRecursiveChild()
+
+    newChild.nextSibling = None
+
+    parent = self
+    parentsNextSibling = None
+    while not parentsNextSibling:
+        parentsNextSibling = parent.nextSibling
+        parent = parent.parent
+        if not parent:  # This is the last element in the document.
+            break
+    if parentsNextSibling:
+        newChildsLastElement.next = parentsNextSibling
+    else:
+        newChildsLastElement.next = None
+
+    if newChildsLastElement.next:
+        newChildsLastElement.next.previous = newChildsLastElement
+    self.contents.append(newChild)
 
 
 def bs3_new_tag(Tag, soup):
@@ -47,16 +124,17 @@ def init_soup():
     if bs.__version__.startswith('3.'):
         soup = bs.BeautifulSoup()
         new_tag = bs3_new_tag(bs.Tag, soup)
+        append = bs3_fast_append
     else:
         soup = bs.BeautifulSoup('', 'lxml')
         new_tag = bs4_new_tag(bs.Tag, soup)
-    Comment = bs.Comment
-    return bs, soup, new_tag, Comment
+        append = bs4_fast_append
+    return bs, soup, new_tag, bs.Comment, append, bs.NavigableString
 
 
 def parse(utf8_data, stack_size=16 * 1024, keep_doctype=False, return_root=True):
     from . import html_parser
-    bs, soup, new_tag, Comment = init_soup()
+    bs, soup, new_tag, Comment, append, NavigableString = init_soup()
     if not isinstance(utf8_data, bytes):
         utf8_data = utf8_data.encode('utf-8')
 
@@ -66,6 +144,7 @@ def parse(utf8_data, stack_size=16 * 1024, keep_doctype=False, return_root=True)
         soup.append(bs.Doctype('<!DOCTYPE {}{}{}>'.format(name, public_id, system_id)))
 
     dt = add_doctype if keep_doctype and hasattr(bs, 'Doctype') else None
-    root = html_parser.parse_and_build(utf8_data, new_tag, Comment, dt, stack_size)
+    root = html_parser.parse_and_build(
+        utf8_data, new_tag, Comment, NavigableString, append, dt, stack_size)
     soup.append(root)
     return root if return_root else soup

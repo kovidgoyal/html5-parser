@@ -32,11 +32,6 @@ static const uint8_t ATTR_SIZES[] = {
 #include "attr_perf.h"
 #define ATTR_MAP_SIZE (sizeof(HTML_ATTR_MAP) / sizeof(HTML_ATTR_MAP[0]))
 
-#define CALL_METHOD1(obj, name, arg) \
-    meth = PyObject_GetAttrString(obj, name); \
-    if (meth != NULL) { ret = PyObject_CallFunctionObjArgs(meth, arg, NULL); Py_DECREF(meth); } \
-    else ret = NULL;
-
 
 static inline HTMLAttr
 attr_num(const char *attr, unsigned int length) {
@@ -160,9 +155,15 @@ create_element(GumboElement *elem, PyObject *new_tag) {
 }
 
 static inline PyObject* 
-convert_node(GumboNode* node, GumboElement **elem, PyObject *new_tag, PyObject *new_comment) {
+convert_node(GumboNode* node, GumboElement **elem, PyObject *new_tag, PyObject *new_comment, PyObject *new_string) {
     PyObject *ans = NULL, *temp;
     *elem = NULL;
+
+#define STRING_LIKE(converter) \
+    temp = PyUnicode_FromString(node->v.text.text); \
+    if (UNLIKELY(temp == NULL)) break; \
+    ans = PyObject_CallFunctionObjArgs(converter, temp, NULL); \
+    Py_DECREF(temp); 
 
     switch (node->type) {
         case GUMBO_NODE_ELEMENT:
@@ -173,39 +174,37 @@ convert_node(GumboNode* node, GumboElement **elem, PyObject *new_tag, PyObject *
         case GUMBO_NODE_TEXT:
         case GUMBO_NODE_WHITESPACE:
         case GUMBO_NODE_CDATA:
-            ans = PyUnicode_FromString(node->v.text.text);
+            STRING_LIKE(new_string);
             break;
         case GUMBO_NODE_COMMENT:
-            temp = PyUnicode_FromString(node->v.text.text);
-            if (temp == NULL) break;
-            ans = PyObject_CallFunctionObjArgs(new_comment, temp, NULL);
-            Py_CLEAR(temp);
+            STRING_LIKE(new_comment);
             break;
         default:
             PyErr_SetString(PyExc_TypeError, "unknown gumbo node type");
             break;
     }
+#undef STRING_LIKE
     return ans;
 }
 
 
 PyObject*
-as_python_tree(GumboOutput *gumbo_output, Options *opts, PyObject *new_tag, PyObject *new_comment) {
+as_python_tree(GumboOutput *gumbo_output, Options *opts, PyObject *new_tag, PyObject *new_comment, PyObject *new_string, PyObject *append) {
 #define ABORT { ok = false; goto end; }
     bool ok = true;
     GumboNode *gumbo;
     GumboElement *elem;
-    PyObject *parent, *child, *ans = NULL, *ret, *meth;
+    PyObject *parent, *child, *ans = NULL, *ret;
     Stack *stack = Stack_alloc(opts->stack_size);
     if (stack == NULL) return PyErr_NoMemory();
 
     Stack_push(stack, gumbo_output->root, NULL);
     while(stack->length > 0) {
         Stack_pop(stack, &gumbo, &parent);
-        child = convert_node(gumbo, &elem, new_tag, new_comment);
+        child = convert_node(gumbo, &elem, new_tag, new_comment, new_string);
         if (UNLIKELY(!child)) ABORT;
         if (LIKELY(parent)) {
-            CALL_METHOD1(parent, "append", child);
+            ret = PyObject_CallFunctionObjArgs(append, parent, child, NULL);
             if (UNLIKELY(ret == NULL)) ABORT;
             Py_DECREF(ret);
         } else ans = child;

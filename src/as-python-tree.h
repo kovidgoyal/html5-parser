@@ -12,6 +12,6 @@
 #include "../gumbo/gumbo.h"
 
 PyObject*
-as_python_tree(GumboOutput *gumbo_output, Options *opts, PyObject *new_tag, PyObject *new_comment);
+as_python_tree(GumboOutput *gumbo_output, Options *opts, PyObject *new_tag, PyObject *new_comment, PyObject *new_string, PyObject *append);
 bool
 set_known_tag_names(PyObject *val, PyObject*);
