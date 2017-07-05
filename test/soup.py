@@ -23,8 +23,8 @@ class SoupTest(TestCase):
         self.ae(type('')(root), '<html><head></head><body><p><i><b></b></i></p></body></html>')
 
     def test_attr_soup(self):
-        root = parse('<p a=1 b=2 c=3><a a=a>')
-        self.ae(dict(root.body.p.attrs), {'a': '1', 'b': '2', 'c': '3'})
+        root = parse('<p a=1 b=2 ID=3><a a=a>')
+        self.ae(dict(root.body.p.attrs), {'a': '1', 'b': '2', 'id': '3'})
         self.ae(dict(root.body.p.a.attrs), {'a': 'a'})
         root = parse('<p a=1><svg><image xlink:href="h">')
         self.ae(
