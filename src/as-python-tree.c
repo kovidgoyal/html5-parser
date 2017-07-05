@@ -5,29 +5,6 @@
  * Distributed under terms of the GPL3 license.
  */
 #include "as-python-tree.h"
-static PyObject *KNOWN_TAG_NAMES;
-
-#define CALL_METHOD1(obj, name, arg) \
-    meth = PyObject_GetAttrString(obj, name); \
-    if (meth != NULL) { ret = PyObject_CallFunctionObjArgs(meth, arg, NULL); Py_DECREF(meth); } \
-    else ret = NULL;
-
-#define CALL_METHOD2(obj, name, a, b) \
-    meth = PyObject_GetAttrString(obj, name); \
-    if (meth != NULL) { ret = PyObject_CallFunctionObjArgs(meth, a, b, NULL); Py_DECREF(meth); } \
-    else ret = NULL;
-
-bool
-set_known_tag_names(PyObject *val) {
-    PyObject *tag_name;
-    KNOWN_TAG_NAMES = val;
-    for (int i = 0; i < GUMBO_TAG_UNKNOWN; i++) {
-        tag_name = PyUnicode_FromString(gumbo_normalized_tagname(i));
-        if (tag_name == NULL) return false;
-        PyTuple_SET_ITEM(KNOWN_TAG_NAMES, i, tag_name);
-    }
-    return true;
-}
 
 // Stack {{{
 
@@ -39,6 +16,64 @@ set_known_tag_names(PyObject *val) {
 
 // }}}
 
+static PyObject *KNOWN_TAG_NAMES, *KNOWN_ATTR_NAMES;
+
+const char* ATTR_NAMES[] = {
+#include "attr_strings.h"
+  "",                   // ATTR_LAST
+};
+
+static const uint8_t ATTR_SIZES[] = {
+#include "attr_sizes.h"
+  0, // ATTR_LAST
+};
+
+
+#include "attr_perf.h"
+#define ATTR_MAP_SIZE (sizeof(HTML_ATTR_MAP) / sizeof(HTML_ATTR_MAP[0]))
+
+#define CALL_METHOD1(obj, name, arg) \
+    meth = PyObject_GetAttrString(obj, name); \
+    if (meth != NULL) { ret = PyObject_CallFunctionObjArgs(meth, arg, NULL); Py_DECREF(meth); } \
+    else ret = NULL;
+
+#define CALL_METHOD2(obj, name, a, b) \
+    meth = PyObject_GetAttrString(obj, name); \
+    if (meth != NULL) { ret = PyObject_CallFunctionObjArgs(meth, a, b, NULL); Py_DECREF(meth); } \
+    else ret = NULL;
+
+static inline HTMLAttr
+attr_num(const char *attr, unsigned int length) {
+    if (LIKELY(length)) {
+        unsigned int key = attr_hash(attr, length);
+        if (key < ATTR_MAP_SIZE) {
+            HTMLAttr ans = HTML_ATTR_MAP[key];
+            if (LIKELY(length == ATTR_SIZES[(int) ans] && !strncmp(attr, ATTR_NAMES[(int) ans], length))) return ans;
+        }
+    }
+    return HTML_ATTR_LAST;
+}
+
+
+bool
+set_known_tag_names(PyObject *val, PyObject *attr_val) {
+    PyObject *tag_name;
+    KNOWN_TAG_NAMES = val;
+    for (int i = 0; i < GUMBO_TAG_UNKNOWN; i++) {
+        tag_name = PyUnicode_FromString(gumbo_normalized_tagname(i));
+        if (tag_name == NULL) return false;
+        PyTuple_SET_ITEM(KNOWN_TAG_NAMES, i, tag_name);
+    }
+    KNOWN_ATTR_NAMES = attr_val;
+    for (int i = 0; i < HTML_ATTR_LAST; i++) {
+        tag_name = PyUnicode_FromString(ATTR_NAMES[i]);
+        if (tag_name == NULL) return false;
+        PyTuple_SET_ITEM(KNOWN_ATTR_NAMES, i, tag_name);
+    }
+    return true;
+}
+
+
 static inline bool
 push_children(PyObject *parent, GumboElement *elem, Stack *stack) {
     for (int i = elem->children.length - 1; i >= 0; i--) {
@@ -47,9 +82,15 @@ push_children(PyObject *parent, GumboElement *elem, Stack *stack) {
     return true;
 }
 
+
 static inline PyObject*
 create_attr_name(const char *aname) {
-    return PyUnicode_FromString(aname);
+    size_t alen = strlen(aname);
+    HTMLAttr anum = attr_num(aname, alen);
+    if (anum >= HTML_ATTR_LAST) return PyUnicode_FromStringAndSize(aname, alen);
+    PyObject *ans = PyTuple_GET_ITEM(KNOWN_ATTR_NAMES, (int)anum);
+    Py_INCREF(ans);
+    return ans;
 }
 
 static inline bool

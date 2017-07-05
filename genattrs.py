@@ -32,7 +32,7 @@ def generate_attr_headers(attrs):
 
 def generate_attr_perfect_hash(attrs, repetitions=200):
     p = subprocess.Popen(
-        'gperf -LANSI-C --ignore-case -H attr_hash -m{} /dev/stdin'.format(repetitions).split(),
+        'gperf -LANSI-C -H attr_hash -m{} /dev/stdin'.format(repetitions).split(),
         stdout=subprocess.PIPE,
         stdin=subprocess.PIPE)
     stdout = p.communicate('\n'.join(attrs).encode('utf-8'))[0]

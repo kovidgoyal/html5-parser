@@ -14,4 +14,4 @@
 PyObject*
 as_python_tree(GumboOutput *gumbo_output, Options *opts, PyObject *new_tag, PyObject *new_comment);
 bool
-set_known_tag_names(PyObject *val);
+set_known_tag_names(PyObject *val, PyObject*);

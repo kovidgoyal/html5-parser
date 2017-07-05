@@ -35,6 +35,12 @@ typedef struct {
     GumboOptions gumbo_opts;
 } Options;
 
+typedef enum {
+#include "attr_enum.h"
+  // A marker value to indicate the end of the enum, for iterating over it.
+  HTML_ATTR_LAST,
+} HTMLAttr;
+
 
 // We only allow subset of the valid characters defined in the XML spec for
 // performance, as the following tests can be run directly on UTF-8 without

@@ -169,7 +169,7 @@ PyInit_html_parser(void) {
 EXPORTED PyMODINIT_FUNC
 inithtml_parser(void) {
 #endif
-    PyObject *m, *known_tag_names;
+    PyObject *m, *known_tag_names, *known_attr_names;
 #if PY_MAJOR_VERSION >= 3
     m = PyModule_Create(&moduledef);
 #else
@@ -182,8 +182,11 @@ inithtml_parser(void) {
     if (PyModule_AddIntConstant(m, "LIBXML_VERSION", get_libxml_version()) != 0) INITERROR;
     known_tag_names = PyTuple_New(GUMBO_TAG_UNKNOWN);
     if (known_tag_names == NULL) INITERROR;
-    if (!set_known_tag_names(known_tag_names)) { Py_CLEAR(known_tag_names); INITERROR; }
     if (PyModule_AddObject(m, "KNOWN_TAG_NAMES", known_tag_names) != 0) { Py_CLEAR(known_tag_names); INITERROR; }
+    known_attr_names = PyTuple_New(HTML_ATTR_LAST);
+    if (known_attr_names == NULL) INITERROR;
+    if (PyModule_AddObject(m, "KNOWN_ATTR_NAMES", known_attr_names) != 0) { Py_CLEAR(known_attr_names); INITERROR; }
+    if (!set_known_tag_names(known_tag_names, known_attr_names)) { Py_CLEAR(known_tag_names); Py_CLEAR(known_attr_names); INITERROR; }
 #if PY_MAJOR_VERSION >= 3
     return m;
 #endif
