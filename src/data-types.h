@@ -26,7 +26,7 @@
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
-#define MAX_TAG_NAME_SZ 75
+#define MAX_TAG_NAME_SZ 100
 
 typedef struct {
     unsigned int stack_size;

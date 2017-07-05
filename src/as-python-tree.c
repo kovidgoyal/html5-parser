@@ -4,13 +4,17 @@
  *
  * Distributed under terms of the GPL3 license.
  */
-#define NEEDS_SANITIZE_NAME 1
 #include "as-python-tree.h"
 static PyObject *KNOWN_TAG_NAMES;
 
 #define CALL_METHOD1(obj, name, arg) \
     meth = PyObject_GetAttrString(obj, name); \
     if (meth != NULL) { ret = PyObject_CallFunctionObjArgs(meth, arg, NULL); Py_DECREF(meth); } \
+    else ret = NULL;
+
+#define CALL_METHOD2(obj, name, a, b) \
+    meth = PyObject_GetAttrString(obj, name); \
+    if (meth != NULL) { ret = PyObject_CallFunctionObjArgs(meth, a, b, NULL); Py_DECREF(meth); } \
     else ret = NULL;
 
 bool
@@ -44,19 +48,57 @@ push_children(PyObject *parent, GumboElement *elem, Stack *stack) {
 }
 
 static inline PyObject*
+create_attr_name(const char *aname) {
+    return PyUnicode_FromString(aname);
+}
+
+static inline bool
+create_attributes(PyObject *tag_obj, GumboElement *elem) {
+    GumboAttribute* attr;
+    const char *aname;
+    char buf[MAX_TAG_NAME_SZ];
+    PyObject *ret, *meth, *attr_name, *attr_val;
+
+    for (unsigned int i = 0; i < elem->attributes.length; ++i) {
+        attr = elem->attributes.data[i];
+        aname = attr->name;
+        switch (attr->attr_namespace) {
+            case GUMBO_ATTR_NAMESPACE_XLINK:
+                snprintf(buf, MAX_TAG_NAME_SZ - 1, "xlink:%s", aname);
+                aname = buf;
+                break;
+            case GUMBO_ATTR_NAMESPACE_XML:
+                snprintf(buf, MAX_TAG_NAME_SZ - 1, "xml:%s", aname);
+                aname = buf;
+                break;
+            case GUMBO_ATTR_NAMESPACE_XMLNS:
+                snprintf(buf, MAX_TAG_NAME_SZ - 1, "xmlns:%s", aname);
+                aname = buf;
+                break;
+            default:
+                break;
+        }
+        attr_name = create_attr_name(aname);
+        if (attr_name == NULL) return false;
+        attr_val = PyUnicode_FromString(attr->value);
+        if (attr_val == NULL) { Py_CLEAR(attr_name); return false;}
+        CALL_METHOD2(tag_obj, "__setitem__", attr_name, attr_val);
+        Py_CLEAR(attr_name); Py_CLEAR(attr_val);
+        if (ret == NULL) return false;
+        Py_CLEAR(ret);
+    }
+    return true;
+}
+
+static inline PyObject*
 create_element(GumboElement *elem, PyObject *new_tag) {
-    PyObject *tag_name = NULL, *ret;
-    char buf[MAX_TAG_NAME_SZ] = {0};
+    PyObject *tag_name = NULL, *tag_obj;
     uint8_t tag_sz;
     const char *tag;
 
     if (UNLIKELY(elem->tag >= GUMBO_TAG_UNKNOWN)) {
         gumbo_tag_from_original_text(&(elem->original_tag));
-        tag_sz = MIN(sizeof(buf) - 1, elem->original_tag.length);
-        memcpy(buf, elem->original_tag.data, tag_sz);
-        tag = buf;
-        tag_sz = sanitize_name((char*)tag);
-        tag_name = PyUnicode_FromStringAndSize(tag, tag_sz);
+        tag_name = PyUnicode_FromStringAndSize(elem->original_tag.data, elem->original_tag.length);
     } else if (UNLIKELY(elem->tag_namespace == GUMBO_NAMESPACE_SVG)) {
         gumbo_tag_from_original_text(&(elem->original_tag));
         tag = gumbo_normalize_svg_tagname(&(elem->original_tag), &tag_sz);
@@ -71,9 +113,15 @@ create_element(GumboElement *elem, PyObject *new_tag) {
         Py_INCREF(tag_name);
     }
     if (UNLIKELY(tag_name == NULL)) return NULL;
-    ret = PyObject_CallFunctionObjArgs(new_tag, tag_name, NULL);
-    if (UNLIKELY(ret == NULL)) { Py_CLEAR(tag_name); return NULL; }
-    return ret;
+    tag_obj = PyObject_CallFunctionObjArgs(new_tag, tag_name, NULL);
+    Py_CLEAR(tag_name);
+    if (UNLIKELY(tag_obj == NULL)) return NULL;
+    else {
+        if (UNLIKELY(!create_attributes(tag_obj, elem))) {
+            Py_CLEAR(tag_obj);
+        }
+    }
+    return tag_obj;
 }
 
 static inline PyObject* 
