@@ -134,10 +134,32 @@ speedup of **37x**. The output from the script on my system is:
 
     Testing with HTML file of 5,956,815 bytes
     Parsing 100 times with html5-parser
-    html5-parser took an average of: 0.374 seconds to parse it
-    Parsing 20 times with html5lib
-    html5lib took an average of: 13.690 seconds to parse it
-    Speedup: 37x
+    html5-parser took an average of: 0.397 seconds to parse it
+    Parsing 10 times with html5-parser-to-soup
+    html5-parser-to-soup took an average of: 1.685 seconds to parse it
+    Parsing 10 times with html5lib
+    html5lib took an average of: 13.906 seconds to parse it
+    Parsing 10 times with BeautifulSoup-with-html5lib
+    BeautifulSoup-with-html5lib took an average of: 12.683 seconds to parse it
+    Parsing 10 times with BeautifulSoup-with-lxml
+    BeautifulSoup-with-lxml took an average of: 3.826 seconds to parse it
+
+    Results are below. They show how much faster html5-parser is than each
+    specified parser. Note that there are two additional considerations:
+    what the final tree is and whether the parsing supports the HTML 5
+    parsing algorithm. The most apples-to-apples comparison is when the
+    final tree is lxml and HTML 5 parsing is supported by the parser being
+    compared to. Note that in this case, we have the largest speedup. In
+    all other cases, speedup is less because of the overhead of building
+    the final tree in python instead of C or because the compared parser
+    does not use the HTML 5 parsing algorithm or both.
+
+    Parser            |Tree              |Supports HTML 5   |Speedup (factor)  |
+    ===============================================================================
+    html5lib          |lxml              |yes               |35                |
+    soup+html5lib     |BeautifulSoup     |yes               |8                 |
+    soup+lxml.html    |BeautifulSoup     |no                |2                 | 
+
 
 There is further potential for speedup. Currently the gumbo subsystem uses
 its own data structures to store parse results and these are converted to
