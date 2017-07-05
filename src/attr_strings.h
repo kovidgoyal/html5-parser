@@ -117,3 +117,5 @@
 "value",
 "width",
 "wrap",
+"xlink:href",
+"xml:lang",

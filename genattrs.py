@@ -23,7 +23,7 @@ def generate_attr_headers(attrs):
         for f in (attr_strings, attr_enum, attr_sizes):
             f.write(HEADER.encode('utf-8'))
         for attr in attrs:
-            attr_upper = attr.upper().replace('-', '_')
+            attr_upper = attr.upper().replace('-', '_').replace(':', '_')
             attr_strings.write(('"%s",\n' % attr).encode('utf-8'))
             attr_enum.write(('HTML_ATTR_%s,\n' % attr_upper).encode('utf-8'))
             attr_sizes.write(('%d, ' % len(attr)).encode('utf-8'))
@@ -51,7 +51,7 @@ def generate_attr_perfect_hash(attrs, repetitions=200):
     if wordlist is None:
         raise SystemExit('Failed to find wordlist')
     wordlist = [w.strip().replace('"', '') for w in wordlist.group(1).split(',')]
-    attrlist = ["\tHTML_ATTR_" + (w.upper().replace('-', '_') if w else 'LAST') for w in wordlist]
+    attrlist = ["\tHTML_ATTR_" + (w.upper().replace('-', '_').replace(':', '_') if w else 'LAST') for w in wordlist]
     processed = '\n'.join(lines) + '\n\n'
     processed += 'static const HTMLAttr HTML_ATTR_MAP[] = {\n%s\n};' % '\n,'.join(attrlist)
     processed = re.sub(
@@ -81,7 +81,7 @@ def get_attr_names():
 
 def main():
     os.chdir(os.path.dirname(self_path))
-    attrs = sorted(set(get_attr_names()) | {'data-reactid'})
+    attrs = sorted(set(get_attr_names()) | {'data-reactid', 'xlink:href', 'xml:lang'})
     generate_attr_headers(attrs)
     generate_attr_perfect_hash(attrs)
 
