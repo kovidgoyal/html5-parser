@@ -40,27 +40,11 @@ def bs4_fast_append(self, new_child):
     if new_child.previous_element is not None:
         new_child.previous_element.next_element = new_child
 
-    new_childs_last_element = new_child._last_descendant(False)
-
     new_child.next_sibling = None
-
-    parent = self
-    parents_next_sibling = None
-    while parents_next_sibling is None and parent is not None:
-        parents_next_sibling = parent.next_sibling
-        parent = parent.parent
-        if parents_next_sibling is not None:
-            # We found the element that comes next in the document.
-            break
-    if parents_next_sibling is not None:
-        new_childs_last_element.next_element = parents_next_sibling
-    else:
-        # The last element of this tag is the last element in
-        # the document.
-        new_childs_last_element.next_element = None
-
-    if new_childs_last_element.next_element is not None:
-        new_childs_last_element.next_element.previous_element = new_childs_last_element
+    new_childs_last_element = new_child._last_descendant(False)
+    # The last element of this tag is the last element in
+    # the document.
+    new_childs_last_element.next_element = None
     self.contents.append(new_child)
 
 
@@ -87,24 +71,9 @@ def bs3_fast_append(self, newChild):
     if newChild.previous:
         newChild.previous.next = newChild
 
-    newChildsLastElement = newChild._lastRecursiveChild()
-
     newChild.nextSibling = None
-
-    parent = self
-    parentsNextSibling = None
-    while not parentsNextSibling:
-        parentsNextSibling = parent.nextSibling
-        parent = parent.parent
-        if not parent:  # This is the last element in the document.
-            break
-    if parentsNextSibling:
-        newChildsLastElement.next = parentsNextSibling
-    else:
-        newChildsLastElement.next = None
-
-    if newChildsLastElement.next:
-        newChildsLastElement.next.previous = newChildsLastElement
+    newChildsLastElement = newChild._lastRecursiveChild()
+    newChildsLastElement.next = None
     self.contents.append(newChild)
 
 
