@@ -8,6 +8,8 @@ import os
 import re
 import subprocess
 
+from lxml import html
+
 self_path = os.path.abspath(__file__)
 HEADER = '''\
 // Do not edit
@@ -30,7 +32,7 @@ def generate_attr_headers(attrs):
         attr_sizes.write(b'\n')
 
 
-def generate_attr_perfect_hash(attrs, repetitions=200):
+def generate_attr_perfect_hash(attrs, repetitions=400):
     p = subprocess.Popen(
         'gperf -LANSI-C -H attr_hash -m{} /dev/stdin'.format(repetitions).split(),
         stdout=subprocess.PIPE,
@@ -51,7 +53,8 @@ def generate_attr_perfect_hash(attrs, repetitions=200):
     if wordlist is None:
         raise SystemExit('Failed to find wordlist')
     wordlist = [w.strip().replace('"', '') for w in wordlist.group(1).split(',')]
-    attrlist = ["\tHTML_ATTR_" + (w.upper().replace('-', '_').replace(':', '_') if w else 'LAST') for w in wordlist]
+    attrlist = ["\tHTML_ATTR_" + (w.upper().replace('-', '_').replace(':', '_') if w else 'LAST')
+                for w in wordlist]
     processed = '\n'.join(lines) + '\n\n'
     processed += 'static const HTMLAttr HTML_ATTR_MAP[] = {\n%s\n};' % '\n,'.join(attrlist)
     processed = re.sub(
@@ -65,10 +68,9 @@ def generate_attr_perfect_hash(attrs, repetitions=200):
 
 
 def get_attr_names():
-    # Attributes from
+    # HTML Attributes from
     # https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes
     raw = open('/t/Attributes', 'rb').read()
-    from lxml import html
     root = html.fromstring(raw)
     table = root.xpath('//table[@class="standard-table"]/tbody')[0]
     for tr in table.findall('tr'):
@@ -77,11 +79,19 @@ def get_attr_names():
         attr = code.text
         if attr and '*' not in attr:
             yield attr.strip()
+    # SVG Attributes from
+    # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute
+    raw = open('/t/Attribute', 'rb').read()
+    root = html.fromstring(raw)
+    h2 = root.xpath('//h2[@id="SVG_Attributes"]')[0]
+    for ul in h2.xpath('following-sibling::div[1]/ul'):
+        for attr in ul.xpath('./li/code/a/text()'):
+            yield attr.strip()
 
 
 def main():
     os.chdir(os.path.dirname(self_path))
-    attrs = sorted(set(get_attr_names()) | {'data-reactid', 'xlink:href', 'xml:lang'})
+    attrs = sorted(set(get_attr_names()) | {'data-reactid'})
     generate_attr_headers(attrs)
     generate_attr_perfect_hash(attrs)
 
