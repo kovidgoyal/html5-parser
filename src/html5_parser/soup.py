@@ -30,10 +30,7 @@ def set_soup_module(val):
     soup_module.ans = val
 
 
-def convert_element(elem, new_tag):
-    ans = new_tag(elem.tag)
-    if elem.text:
-        ans.append(elem.text)
+def attrs_iter(elem):
     rmap = None
     for name, val in elem.items():
         if name.startswith('{'):
@@ -43,18 +40,43 @@ def convert_element(elem, new_tag):
             prefix = rmap.get(uri)
             if prefix:
                 name = prefix + ':' + name
-        ans[name] = val
+        yield name, val
+
+
+def convert_element(elem, new_tag):
+    ans = new_tag(elem.tag, attrs_iter(elem))
+    if elem.text:
+        ans.append(elem.text)
     return ans
+
+
+def bs4_new_tag(Tag, soup):
+
+    def nt(name, attrs=None):
+        return Tag(soup, name=name, attrs=attrs)
+
+    return nt
+
+
+def bs3_new_tag(Tag, soup):
+
+    def nt(name, attrs=None):
+        ans = Tag(soup, name)
+        ans.attrs = None if attrs is None else list(attrs)
+        return ans
+
+    return nt
 
 
 def init_soup():
     bs = soup_module()
     if bs.__version__.startswith('3.'):
         soup = bs.BeautifulSoup()
+        new_tag = bs3_new_tag(bs.Tag, soup)
     else:
         soup = bs.BeautifulSoup('', 'lxml')
-    Tag, Comment = bs.Tag, bs.Comment
-    new_tag = getattr(soup, 'new_tag', None) or (lambda x: Tag(soup, x))
+        new_tag = bs4_new_tag(bs.Tag, soup)
+    Comment = bs.Comment
     return bs, soup, new_tag, Comment
 
 
