@@ -101,6 +101,8 @@ parse_and_build(PyObject UNUSED *self, PyObject *args) {
     PyObject *new_tag, *new_comment, *ans, *new_doctype;
     Options opts = {0};
     opts.stack_size = 16 * 1024;
+    opts.gumbo_opts = kGumboDefaultOptions;
+    opts.gumbo_opts.max_errors = 0;  // We discard errors since we are not reporting them anyway
 
     if (!PyArg_ParseTuple(args, "s#OOO|I", &buffer, &sz, &new_tag, &new_comment, &new_doctype, &(opts.stack_size))) return NULL;
     Py_BEGIN_ALLOW_THREADS;
