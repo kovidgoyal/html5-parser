@@ -26,16 +26,15 @@ def set_soup_module(val):
 
 
 def bs4_fast_append(self, new_child):
-    is_first = not self.contents
     new_child.parent = self
-    if is_first:
-        new_child.previous_sibling = None
-        new_child.previous_element = self
-    else:
+    if self.contents:
         previous_child = self.contents[-1]
         new_child.previous_sibling = previous_child
         previous_child.next_sibling = new_child
         new_child.previous_element = previous_child._last_descendant(False)
+    else:
+        new_child.previous_sibling = None
+        new_child.previous_element = self
     new_child.previous_element.next_element = new_child
     new_child.next_sibling = new_child.next_element = None
     self.contents.append(new_child)
@@ -50,16 +49,15 @@ def bs4_new_tag(Tag, soup):
 
 
 def bs3_fast_append(self, newChild):
-    is_first = not self.contents
     newChild.parent = self
-    if is_first:
-        newChild.previousSibling = None
-        newChild.previous = self
-    else:
+    if self.contents:
         previousChild = self.contents[-1]
         newChild.previousSibling = previousChild
-        newChild.previousSibling.nextSibling = newChild
+        previousChild.nextSibling = newChild
         newChild.previous = previousChild._lastRecursiveChild()
+    else:
+        newChild.previousSibling = None
+        newChild.previous = self
     newChild.previous.next = newChild
 
     newChild.nextSibling = newChild.next_element = None
