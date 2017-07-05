@@ -184,6 +184,10 @@ def parse(
     '''
     data = as_utf8(html or b'', transport_encoding, fallback_encoding)
     treebuilder = normalize_treebuilder(treebuilder)
+    if treebuilder == 'soup':
+        from .soup import parse
+        return parse(
+            data, return_root=return_root, keep_doctype=keep_doctype, stack_size=stack_size)
     if treebuilder not in NAMESPACE_SUPPORTING_BUILDERS:
         namespace_elements = False
 

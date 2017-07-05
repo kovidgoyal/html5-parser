@@ -37,10 +37,6 @@ static const uint8_t ATTR_SIZES[] = {
     if (meth != NULL) { ret = PyObject_CallFunctionObjArgs(meth, arg, NULL); Py_DECREF(meth); } \
     else ret = NULL;
 
-#define CALL_METHOD2(obj, name, a, b) \
-    meth = PyObject_GetAttrString(obj, name); \
-    if (meth != NULL) { ret = PyObject_CallFunctionObjArgs(meth, a, b, NULL); Py_DECREF(meth); } \
-    else ret = NULL;
 
 static inline HTMLAttr
 attr_num(const char *attr, unsigned int length) {
@@ -93,14 +89,17 @@ create_attr_name(const char *aname) {
     return ans;
 }
 
-static inline bool
-create_attributes(PyObject *tag_obj, GumboElement *elem) {
+static inline PyObject*
+create_attributes(GumboElement *elem) {
     GumboAttribute* attr;
     const char *aname;
     char buf[MAX_TAG_NAME_SZ];
-    PyObject *ret, *meth, *attr_name, *attr_val;
+    PyObject *attr_name = NULL, *attr_val = NULL, *ans;
+    ans = PyDict_New();
+    if (ans == NULL) return NULL;
 
     for (unsigned int i = 0; i < elem->attributes.length; ++i) {
+#define ABORT { Py_CLEAR(ans); Py_CLEAR(attr_name); Py_CLEAR(attr_val); break; }
         attr = elem->attributes.data[i];
         aname = attr->name;
         switch (attr->attr_namespace) {
@@ -120,20 +119,18 @@ create_attributes(PyObject *tag_obj, GumboElement *elem) {
                 break;
         }
         attr_name = create_attr_name(aname);
-        if (attr_name == NULL) return false;
         attr_val = PyUnicode_FromString(attr->value);
-        if (attr_val == NULL) { Py_CLEAR(attr_name); return false;}
-        CALL_METHOD2(tag_obj, "__setitem__", attr_name, attr_val);
+        if (UNLIKELY(attr_name == NULL || attr_val == NULL)) ABORT;
+        if (UNLIKELY(PyDict_SetItem(ans, attr_name, attr_val) != 0)) ABORT;
         Py_CLEAR(attr_name); Py_CLEAR(attr_val);
-        if (ret == NULL) return false;
-        Py_CLEAR(ret);
+#undef ABORT
     }
-    return true;
+    return ans;
 }
 
 static inline PyObject*
 create_element(GumboElement *elem, PyObject *new_tag) {
-    PyObject *tag_name = NULL, *tag_obj;
+    PyObject *tag_name = NULL, *tag_obj = NULL, *attributes = NULL;
     uint8_t tag_sz;
     const char *tag;
 
@@ -154,14 +151,11 @@ create_element(GumboElement *elem, PyObject *new_tag) {
         Py_INCREF(tag_name);
     }
     if (UNLIKELY(tag_name == NULL)) return NULL;
-    tag_obj = PyObject_CallFunctionObjArgs(new_tag, tag_name, NULL);
-    Py_CLEAR(tag_name);
+    attributes = create_attributes(elem);
+    if (UNLIKELY(attributes == NULL)) { Py_CLEAR(tag_name); return NULL; }
+    tag_obj = PyObject_CallFunctionObjArgs(new_tag, tag_name, attributes, NULL);
+    Py_CLEAR(tag_name); Py_CLEAR(attributes);
     if (UNLIKELY(tag_obj == NULL)) return NULL;
-    else {
-        if (UNLIKELY(!create_attributes(tag_obj, elem))) {
-            Py_CLEAR(tag_obj);
-        }
-    }
     return tag_obj;
 }
 

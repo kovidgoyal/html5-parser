@@ -93,8 +93,8 @@ class AdaptTest(TestCase):
         if soup_name != 'BeautifulSoup':
             self.ae(DOCTYPE, str(soup.contents[0]))
         self.ae(root.name, 'html')
-        self.ae(dict(root.attrs), {'xml_lang': 'en', 'lang': 'en'})
-        self.ae(dict(root.body.contents[-1].attrs), {'xml_lang': 'de'})
+        self.ae(dict(root.attrs), {'xml:lang': 'en', 'lang': 'en'})
+        self.ae(dict(root.body.contents[-1].attrs), {'xml:lang': 'de'})
         self.ae(root.head.script.string, 'a < & " b')
         self.ae(str(root.find('p')), '<p>A <span>test</span> of text and tail\n</p>')
         svg = root.find('svg')

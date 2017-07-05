@@ -44,7 +44,7 @@ def attrs_iter(elem):
 
 
 def convert_element(elem, new_tag):
-    ans = new_tag(elem.tag, attrs_iter(elem))
+    ans = new_tag(elem.tag, dict(attrs_iter(elem)))
     if elem.text:
         ans.append(elem.text)
     return ans
@@ -52,20 +52,21 @@ def convert_element(elem, new_tag):
 
 def bs4_new_tag(Tag, soup):
 
-    def nt(name, attrs=None):
+    def new_tag(name, attrs):
         return Tag(soup, name=name, attrs=attrs)
 
-    return nt
+    return new_tag
 
 
 def bs3_new_tag(Tag, soup):
 
-    def nt(name, attrs=None):
+    def new_tag(name, attrs):
         ans = Tag(soup, name)
-        ans.attrs = None if attrs is None else list(attrs)
+        ans.attrs = attrs.items()
+        ans.attrMap = attrs
         return ans
 
-    return nt
+    return new_tag
 
 
 def init_soup():
