@@ -28,7 +28,6 @@ def set_soup_module(val):
 def bs4_fast_append(self, new_child):
     is_first = not self.contents
     new_child.parent = self
-    previous_child = None
     if is_first:
         new_child.previous_sibling = None
         new_child.previous_element = self
@@ -40,11 +39,7 @@ def bs4_fast_append(self, new_child):
     if new_child.previous_element is not None:
         new_child.previous_element.next_element = new_child
 
-    new_child.next_sibling = None
-    new_childs_last_element = new_child._last_descendant(False)
-    # The last element of this tag is the last element in
-    # the document.
-    new_childs_last_element.next_element = None
+    new_child.next_sibling = new_child.next_element = None
     self.contents.append(new_child)
 
 
@@ -59,7 +54,6 @@ def bs4_new_tag(Tag, soup):
 def bs3_fast_append(self, newChild):
     is_first = not self.contents
     newChild.parent = self
-    previousChild = None
     if is_first:
         newChild.previousSibling = None
         newChild.previous = self
@@ -71,9 +65,7 @@ def bs3_fast_append(self, newChild):
     if newChild.previous:
         newChild.previous.next = newChild
 
-    newChild.nextSibling = None
-    newChildsLastElement = newChild._lastRecursiveChild()
-    newChildsLastElement.next = None
+    newChild.nextSibling = newChild.next_element = None
     self.contents.append(newChild)
 
 
