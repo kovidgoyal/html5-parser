@@ -36,9 +36,7 @@ def bs4_fast_append(self, new_child):
         new_child.previous_sibling = previous_child
         previous_child.next_sibling = new_child
         new_child.previous_element = previous_child._last_descendant(False)
-    if new_child.previous_element is not None:
-        new_child.previous_element.next_element = new_child
-
+    new_child.previous_element.next_element = new_child
     new_child.next_sibling = new_child.next_element = None
     self.contents.append(new_child)
 
@@ -62,8 +60,7 @@ def bs3_fast_append(self, newChild):
         newChild.previousSibling = previousChild
         newChild.previousSibling.nextSibling = newChild
         newChild.previous = previousChild._lastRecursiveChild()
-    if newChild.previous:
-        newChild.previous.next = newChild
+    newChild.previous.next = newChild
 
     newChild.nextSibling = newChild.next_element = None
     self.contents.append(newChild)
