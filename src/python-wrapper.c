@@ -111,13 +111,11 @@ parse_and_build(PyObject UNUSED *self, PyObject *args) {
     if (output == NULL) PyErr_NoMemory(); 
     GumboDocument* document = &(output->document->v.document);
 
-    ans = as_python_tree(output, &opts, new_tag, new_comment, new_string, append);
-
     if (new_doctype != Py_None && document->has_doctype) {
         PyObject *ret = PyObject_CallFunction(new_doctype, "sss", document->name, document->public_identifier, document->system_identifier);
-        if (!ret) { Py_CLEAR(ans); }
         Py_CLEAR(ret);
     }
+    ans = as_python_tree(output, &opts, new_tag, new_comment, new_string, append);
     gumbo_destroy_output(output);
     return ans;
 }
