@@ -98,7 +98,7 @@ parse_and_build(PyObject UNUSED *self, PyObject *args) {
     const char *buffer = NULL;
     Py_ssize_t sz = 0;
     GumboOutput *output = NULL;
-    PyObject *new_tag, *new_comment, *ans, *new_doctype, *append, *new_string;
+    PyObject *new_tag, *new_comment, *ans, *new_doctype, *append, *new_string, *ret;
     Options opts = {0};
     opts.stack_size = 16 * 1024;
     opts.gumbo_opts = kGumboDefaultOptions;
@@ -112,7 +112,8 @@ parse_and_build(PyObject UNUSED *self, PyObject *args) {
     GumboDocument* document = &(output->document->v.document);
 
     if (new_doctype != Py_None && document->has_doctype) {
-        PyObject *ret = PyObject_CallFunction(new_doctype, "sss", document->name, document->public_identifier, document->system_identifier);
+        ret = PyObject_CallFunction(new_doctype, "sss", document->name, document->public_identifier, document->system_identifier);
+        if (ret == NULL) { gumbo_destroy_output(output); return NULL; }
         Py_CLEAR(ret);
     }
     ans = as_python_tree(output, &opts, new_tag, new_comment, new_string, append);
