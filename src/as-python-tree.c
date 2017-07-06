@@ -117,7 +117,7 @@ create_attributes(GumboElement *elem) {
         attr_val = PyUnicode_FromString(attr->value);
         if (UNLIKELY(attr_name == NULL || attr_val == NULL)) ABORT;
         if (UNLIKELY(PyDict_SetItem(ans, attr_name, attr_val) != 0)) ABORT;
-        Py_CLEAR(attr_name); Py_CLEAR(attr_val);
+        Py_DECREF(attr_name); Py_DECREF(attr_val);
 #undef ABORT
     }
     return ans;
@@ -149,7 +149,7 @@ create_element(GumboElement *elem, PyObject *new_tag) {
     attributes = create_attributes(elem);
     if (UNLIKELY(attributes == NULL)) { Py_CLEAR(tag_name); return NULL; }
     tag_obj = PyObject_CallFunctionObjArgs(new_tag, tag_name, attributes, NULL);
-    Py_CLEAR(tag_name); Py_CLEAR(attributes);
+    Py_DECREF(tag_name); Py_DECREF(attributes);
     if (UNLIKELY(tag_obj == NULL)) return NULL;
     return tag_obj;
 }
@@ -205,6 +205,7 @@ as_python_tree(GumboOutput *gumbo_output, Options *opts, PyObject *new_tag, PyOb
         if (UNLIKELY(!child)) ABORT;
         if (LIKELY(parent)) {
             ret = PyObject_CallFunctionObjArgs(append, parent, child, NULL);
+            Py_DECREF(child);
             if (UNLIKELY(ret == NULL)) ABORT;
             Py_DECREF(ret);
         } else ans = child;

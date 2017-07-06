@@ -4,9 +4,16 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import gc
+
 from html5_parser.soup import parse
 
 from . import TestCase
+
+
+def collect():
+    for i in range(3):
+        gc.collect()
 
 
 class SoupTest(TestCase):
@@ -38,3 +45,18 @@ class SoupTest(TestCase):
         self.ae(dict(root.attrs), {'xml:lang': 'en', 'lang': 'fr'})
         root = parse('<p><x xmlns:a="b">')
         self.ae(type('')(root), '<html><head></head><body><p><x xmlns:a="b"></x></p></body></html>')
+
+    def test_soup_leak(self):
+        HTML = '<p a=1>\n<a b=2 id=3>y</a>z<x:x class=4>1</x:x>'
+        parse(HTML)  # So that BS and html_parser set up any internal objects
+
+        def do_parse(num):
+            collect()
+            before = len(gc.get_objects())
+            for i in range(num):
+                parse(HTML)
+            collect()
+            return len(gc.get_objects()) - before
+
+        for num in (1, 10, 100):
+            self.assertLess(do_parse(num), 2)
