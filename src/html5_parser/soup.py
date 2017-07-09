@@ -75,12 +75,17 @@ def bs3_new_tag(Tag, soup):
     return new_tag
 
 
+VOID_ELEMENTS = frozenset(
+    'area base br col embed hr img input keygen link menuitem meta param source track wbr'.split())
+
+
 def init_soup():
     bs = soup_module()
     if bs.__version__.startswith('3.'):
         soup = bs.BeautifulSoup()
         new_tag = bs3_new_tag(bs.Tag, soup)
         append = bs3_fast_append
+        soup.isSelfClosing = lambda self, name: name in VOID_ELEMENTS
     else:
         soup = bs.BeautifulSoup('', 'lxml')
         new_tag = bs4_new_tag(bs.Tag, soup)
