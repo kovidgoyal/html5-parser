@@ -17,9 +17,9 @@
 #include "string_buffer.h"
 
 #include <assert.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
 #include "string_piece.h"
 #include "util.h"
@@ -28,7 +28,8 @@
 // 99% of text nodes and 98% of attribute names/values fit in this initial size.
 static const size_t kDefaultStringBufferSize = 5;
 
-static void maybe_resize_string_buffer(size_t additional_chars, GumboStringBuffer* buffer) {
+static void maybe_resize_string_buffer(
+    size_t additional_chars, GumboStringBuffer* buffer) {
   size_t new_length = buffer->length + additional_chars;
   size_t new_capacity = buffer->capacity;
   while (new_capacity < new_length) {
@@ -46,7 +47,8 @@ void gumbo_string_buffer_init(GumboStringBuffer* output) {
   output->capacity = kDefaultStringBufferSize;
 }
 
-void gumbo_string_buffer_reserve(size_t min_capacity, GumboStringBuffer* output) {
+void gumbo_string_buffer_reserve(
+    size_t min_capacity, GumboStringBuffer* output) {
   maybe_resize_string_buffer(min_capacity - output->length, output);
 }
 
@@ -75,30 +77,27 @@ void gumbo_string_buffer_append_codepoint(int c, GumboStringBuffer* output) {
   }
 }
 
-void gumbo_string_buffer_put(GumboStringBuffer *buffer,
-  const char *data, size_t length)
-{
+void gumbo_string_buffer_put(
+    GumboStringBuffer* buffer, const char* data, size_t length) {
   maybe_resize_string_buffer(length, buffer);
   memcpy(buffer->data + buffer->length, data, length);
   buffer->length += length;
 }
 
-void gumbo_string_buffer_putv(GumboStringBuffer *buffer, int count, ...)
-{
+void gumbo_string_buffer_putv(GumboStringBuffer* buffer, int count, ...) {
   va_list ap;
   int i;
   size_t total_len = 0;
 
   va_start(ap, count);
-  for (i = 0; i < count; ++i)
-    total_len += strlen(va_arg(ap, const char *));
+  for (i = 0; i < count; ++i) total_len += strlen(va_arg(ap, const char*));
   va_end(ap);
 
   maybe_resize_string_buffer(total_len, buffer);
 
   va_start(ap, count);
   for (i = 0; i < count; ++i) {
-    const char *data = va_arg(ap, const char *);
+    const char* data = va_arg(ap, const char*);
     size_t length = strlen(data);
 
     memcpy(buffer->data + buffer->length, data, length);
@@ -107,12 +106,12 @@ void gumbo_string_buffer_putv(GumboStringBuffer *buffer, int count, ...)
   va_end(ap);
 }
 
-void gumbo_string_buffer_append_string(GumboStringPiece* str,
-    GumboStringBuffer* output) {
+void gumbo_string_buffer_append_string(
+    GumboStringPiece* str, GumboStringBuffer* output) {
   gumbo_string_buffer_put(output, str->data, str->length);
 }
 
-const char* gumbo_string_buffer_cstr(GumboStringBuffer *buffer) {
+const char* gumbo_string_buffer_cstr(GumboStringBuffer* buffer) {
   maybe_resize_string_buffer(1, buffer);
   /* do not increase length of the string */
   buffer->data[buffer->length] = 0;

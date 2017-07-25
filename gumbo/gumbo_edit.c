@@ -14,17 +14,16 @@
 //
 
 #include <assert.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 
 #include "attribute.h"
-#include "vector.h"
 #include "gumbo.h"
 #include "utf8.h"
 #include "util.h"
-
+#include "vector.h"
 
 /* main interface routine for editing in gumbo */
 /**
@@ -33,9 +32,12 @@
 
  * void gumbo_attribute_set_value(GumboAttribute *attr, const char *value);
  * void gumbo_destroy_attribute(GumboAttribute* attribute);
- * void gumbo_element_set_attribute(GumboElement *element, const char *name, const char *value);
- * void gumbo_element_remove_attribute_at(GumboElement *element, unsigned int pos);
- * void gumbo_element_remove_attribute(GumboElement *element, GumboAttribute *attr);
+ * void gumbo_element_set_attribute(GumboElement *element, const char *name,
+ const char *value);
+ * void gumbo_element_remove_attribute_at(GumboElement *element, unsigned int
+ pos);
+ * void gumbo_element_remove_attribute(GumboElement *element, GumboAttribute
+ *attr);
 
  * void gumbo_vector_init(size_t initial_capacity, GumboVector* vector);
  * void gumbo_vector_destroy(GumboVector* vector);
@@ -45,7 +47,8 @@
  * void gumbo_vector_remove(const void* element, GumboVector* vector);
  * void* gumbo_vector_remove_at(int index, GumboVector* vector);
  * int gumbo_vector_index_of(GumboVector* vector, const void* element);
- * void gumbo_vector_splice(int where, int n_to_remove, void **data, int n_to_insert, GumboVector* vector);
+ * void gumbo_vector_splice(int where, int n_to_remove, void **data, int
+ n_to_insert, GumboVector* vector);
 
  * GumboTag gumbo_tag_enum(const char* tagname);
  * GumboTag gumbo_tagn_enum(const char* tagname, int length);
@@ -54,8 +57,7 @@
  * extern void gumbo_destroy_node(GumboNode *node);
  */
 
-
-// used internally by gumbo_new_output init 
+// used internally by gumbo_new_output init
 static GumboNode* gumbo_new_document_node(void) {
   GumboNode* document_node = gumbo_create_node(GUMBO_NODE_DOCUMENT);
   gumbo_vector_init(1, &document_node->v.document.children);
@@ -67,9 +69,8 @@ static GumboNode* gumbo_new_document_node(void) {
   return document_node;
 }
 
-
 // create and initialize a completely new tree output area
-GumboOutput*  gumbo_new_output_init(void) {
+GumboOutput* gumbo_new_output_init(void) {
   GumboOutput* output = gumbo_malloc(sizeof(GumboOutput));
   output->root = NULL;
   output->document = gumbo_new_document_node();
@@ -77,13 +78,13 @@ GumboOutput*  gumbo_new_output_init(void) {
   return output;
 }
 
-
 // Creates an text node of specified type and returns it.
-// Types are GUMBO_NODE_TEXT, GUMBO_NODE_WHITESPACE, GUMBO_NODE_CDATA, and GUMBO_NODE_COMMENT
+// Types are GUMBO_NODE_TEXT, GUMBO_NODE_WHITESPACE, GUMBO_NODE_CDATA, and
+// GUMBO_NODE_COMMENT
 // No entities are allowed (replace them with their utf-8 character equivalents)
 // Note: CDATA and COMMENTS text should NOT include their respective delimiters
 // ie. No <-- --> and not CDATA[[ and ]]
-GumboNode*  gumbo_create_text_node(GumboNodeType type, const char * text) {
+GumboNode* gumbo_create_text_node(GumboNodeType type, const char* text) {
   assert(type != GUMBO_NODE_DOCUMENT);
   assert(type != GUMBO_NODE_TEMPLATE);
   assert(type != GUMBO_NODE_ELEMENT);
@@ -94,10 +95,12 @@ GumboNode*  gumbo_create_text_node(GumboNodeType type, const char * text) {
   return textnode;
 }
 
-
-// Creates an element node with the tag (enum) in the specified namespace and returns it.
-// Since no original text exists, any created element tag must already exist in the tag_enum.h
-// This is why we have expanded the set of recognized tags to include all svg and mathml tags 
+// Creates an element node with the tag (enum) in the specified namespace and
+// returns it.
+// Since no original text exists, any created element tag must already exist in
+// the tag_enum.h
+// This is why we have expanded the set of recognized tags to include all svg
+// and mathml tags
 GumboNode* gumbo_create_element_node(GumboTag tag, GumboNamespaceEnum gns) {
   GumboNode* node = gumbo_create_node(GUMBO_NODE_ELEMENT);
   GumboElement* element = &node->v.element;
@@ -111,7 +114,6 @@ GumboNode* gumbo_create_element_node(GumboTag tag, GumboNamespaceEnum gns) {
   element->end_pos = kGumboEmptySourcePosition;
   return node;
 }
-
 
 // Creates an template node and returns it.
 GumboNode* gumbo_create_template_node(void) {
@@ -128,14 +130,14 @@ GumboNode* gumbo_create_template_node(void) {
   return node;
 }
 
-
 // Appends a node to the end of its parent, setting the "parent" and
 // "index_within_parent" fields appropriately.
 void gumbo_append_node(GumboNode* parent, GumboNode* node) {
   assert(node->parent == NULL);
   assert(node->index_within_parent == UINT_MAX);
   GumboVector* children;
-  if (parent->type == GUMBO_NODE_ELEMENT || parent->type == GUMBO_NODE_TEMPLATE) {
+  if (parent->type == GUMBO_NODE_ELEMENT ||
+      parent->type == GUMBO_NODE_TEMPLATE) {
     children = &parent->v.element.children;
   } else {
     assert(parent->type == GUMBO_NODE_DOCUMENT);
@@ -147,11 +149,12 @@ void gumbo_append_node(GumboNode* parent, GumboNode* node) {
   assert(node->index_within_parent < children->length);
 }
 
-
-// Inserts a node at the specified index in the specified parent, 
-// updating the "parent" and "index_within_parent" fields of it and all its siblings.
+// Inserts a node at the specified index in the specified parent,
+// updating the "parent" and "index_within_parent" fields of it and all its
+// siblings.
 // If the index is -1, this simply calls gumbo_append_node.
-void gumbo_insert_node(GumboNode* node, GumboNode* target_parent, int target_index) {
+void gumbo_insert_node(
+    GumboNode* node, GumboNode* target_parent, int target_index) {
   assert(node->parent == NULL);
   assert(node->index_within_parent == UINT_MAX);
   GumboNode* parent = target_parent;
@@ -167,7 +170,7 @@ void gumbo_insert_node(GumboNode* node, GumboNode* target_parent, int target_ind
       assert(0);
     }
     assert(index >= 0);
-    assert((unsigned int)index < children->length);
+    assert((unsigned int) index < children->length);
     node->parent = parent;
     node->index_within_parent = index;
     gumbo_vector_insert_at((void*) node, index, children);
@@ -182,17 +185,16 @@ void gumbo_insert_node(GumboNode* node, GumboNode* target_parent, int target_ind
   }
 }
 
-
 void gumbo_remove_from_parent(GumboNode* node) {
   if (!node->parent) {
     return;
   }
-  assert(node->parent->type == GUMBO_NODE_ELEMENT || 
+  assert(node->parent->type == GUMBO_NODE_ELEMENT ||
          node->parent->type == GUMBO_NODE_TEMPLATE ||
          node->parent->type == GUMBO_NODE_DOCUMENT);
   GumboVector* children = &node->parent->v.element.children;
   if (node->parent->type == GUMBO_NODE_DOCUMENT) {
-      children = &node->parent->v.document.children;
+    children = &node->parent->v.document.children;
   }
   int index = gumbo_vector_index_of(children, node);
   assert(index != -1);
@@ -205,8 +207,8 @@ void gumbo_remove_from_parent(GumboNode* node) {
   }
 }
 
-
-// Clones attributes, tags, etc. of a node, but does not copy the content (its children).  
+// Clones attributes, tags, etc. of a node, but does not copy the content (its
+// children).
 // The clone shares no structure with the original node: all owned strings and
 // values are fresh copies.
 GumboNode* clone_element_node(const GumboNode* node) {

@@ -25,10 +25,10 @@
 
 struct GumboInternalParser;
 
-GumboAttribute* gumbo_get_attribute(
-    const GumboVector* attributes, const char* name) {
+GumboAttribute *gumbo_get_attribute(
+    const GumboVector *attributes, const char *name) {
   for (unsigned int i = 0; i < attributes->length; ++i) {
-    GumboAttribute* attr = attributes->data[i];
+    GumboAttribute *attr = attributes->data[i];
     if (!strcasecmp(attr->name, name)) {
       return attr;
     }
@@ -36,24 +36,22 @@ GumboAttribute* gumbo_get_attribute(
   return NULL;
 }
 
-void gumbo_attribute_set_value(GumboAttribute *attr, const char *value)
-{
-  gumbo_free((void *)attr->value);
+void gumbo_attribute_set_value(GumboAttribute *attr, const char *value) {
+  gumbo_free((void *) attr->value);
   attr->value = gumbo_strdup(value);
   attr->original_value = kGumboEmptyString;
   attr->value_start = kGumboEmptySourcePosition;
   attr->value_end = kGumboEmptySourcePosition;
 }
 
-void gumbo_destroy_attribute(GumboAttribute* attribute) {
-  gumbo_free((void*) attribute->name);
-  gumbo_free((void*) attribute->value);
-  gumbo_free((void*) attribute);
+void gumbo_destroy_attribute(GumboAttribute *attribute) {
+  gumbo_free((void *) attribute->name);
+  gumbo_free((void *) attribute->value);
+  gumbo_free((void *) attribute);
 }
 
 void gumbo_element_set_attribute(
-    GumboElement *element, const char *name, const char *value)
-{
+    GumboElement *element, const char *name, const char *value) {
   GumboVector *attributes = &element->attributes;
   GumboAttribute *attr = gumbo_get_attribute(attributes, name);
 
@@ -73,13 +71,15 @@ void gumbo_element_set_attribute(
   gumbo_attribute_set_value(attr, value);
 }
 
-void gumbo_element_remove_attribute_at(GumboElement *element, unsigned int pos) {
+void gumbo_element_remove_attribute_at(
+    GumboElement *element, unsigned int pos) {
   GumboAttribute *attr = element->attributes.data[pos];
   gumbo_vector_remove_at(pos, &element->attributes);
   gumbo_destroy_attribute(attr);
 }
 
-void gumbo_element_remove_attribute(GumboElement *element, GumboAttribute *attr) {
+void gumbo_element_remove_attribute(
+    GumboElement *element, GumboAttribute *attr) {
   int idx = gumbo_vector_index_of(&element->attributes, attr);
   if (idx >= 0) {
     gumbo_vector_remove_at(idx, &element->attributes);

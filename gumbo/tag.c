@@ -18,18 +18,18 @@
 #include "util.h"
 
 #include <assert.h>
-#include <string.h>    
+#include <string.h>
 
 const char* kGumboTagNames[] = {
-# include "tag_strings.h"
-  "",                   // TAG_UNKNOWN
-  "",                   // TAG_LAST
+#include "tag_strings.h"
+    "",  // TAG_UNKNOWN
+    "",  // TAG_LAST
 };
 
 static const uint8_t kGumboTagSizes[] = {
-# include "tag_sizes.h"
-  0, // TAG_UNKNOWN
-  0, // TAG_LAST
+#include "tag_sizes.h"
+    0,  // TAG_UNKNOWN
+    0,  // TAG_LAST
 };
 
 const char* gumbo_normalized_tagname(GumboTag tag) {
@@ -37,7 +37,7 @@ const char* gumbo_normalized_tagname(GumboTag tag) {
   return kGumboTagNames[tag];
 }
 
-const char* gumbo_normalized_tagname_and_size(GumboTag tag, uint8_t *sz) {
+const char* gumbo_normalized_tagname_and_size(GumboTag tag, uint8_t* sz) {
   assert(tag <= GUMBO_TAG_LAST);
   *sz = kGumboTagSizes[tag];
   return kGumboTagNames[tag];
@@ -54,11 +54,11 @@ void gumbo_tag_from_original_text(GumboStringPiece* text) {
   if (text->data[1] == '/') {
     // End tag.
     assert(text->length >= 3);
-    text->data += 2;    // Move past </
+    text->data += 2;  // Move past </
     text->length -= 3;
   } else {
     // Start tag.
-    text->data += 1;    // Move past <
+    text->data += 1;  // Move past <
     text->length -= 2;
     // strnchr is apparently not a standard C library function, so I loop
     // explicitly looking for whitespace or other illegal tag characters - as
@@ -77,8 +77,7 @@ void gumbo_tag_from_original_text(GumboStringPiece* text) {
 #include "tag_perf.h"
 #define TAG_MAP_SIZE (sizeof(kGumboTagMap) / sizeof(kGumboTagMap[0]))
 
-static int 
-case_memcmp(const char* s1, const char* s2, unsigned int n) {
+static int case_memcmp(const char* s1, const char* s2, unsigned int n) {
   while (n--) {
     unsigned char c1 = gumbo_tolower(*s1++);
     unsigned char c2 = gumbo_tolower(*s2++);
@@ -87,8 +86,7 @@ case_memcmp(const char* s1, const char* s2, unsigned int n) {
   return 0;
 }
 
-GumboTag 
-gumbo_tagn_enum(const char* tagname, unsigned int length) {
+GumboTag gumbo_tagn_enum(const char* tagname, unsigned int length) {
   if (length) {
     unsigned int key = tag_hash(tagname, length);
     if (key < TAG_MAP_SIZE) {
