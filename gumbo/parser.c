@@ -58,7 +58,7 @@ const GumboOptions kGumboDefaultOptions = {
   4,
   true,
   false,
-  -1,
+  50,  // limited to 50 max errors by default to avoid quadratic worst case performance
 };
 
 static const GumboStringPiece kDoctypeHtml = GUMBO_STRING("html");
