@@ -2329,39 +2329,46 @@ static bool handle_after_head(GumboParser* parser, GumboToken* token) {
   }
 }
 
-static void free_node(GumboNode* node) {
-  switch (node->type) {
-    case GUMBO_NODE_DOCUMENT:
-      {
-        GumboDocument* doc = &node->v.document;
-        for (unsigned int i = 0; i < doc->children.length; ++i) {
-          free_node(doc->children.data[i]);
+static void free_node(GumboNode* node_to_free) {
+  GumboNode* node;
+  GumboVector nodestack = kGumboEmptyVector;
+  gumbo_vector_init(10, &nodestack);
+  gumbo_vector_add((void *)node_to_free, &nodestack);
+  while((node = (GumboNode*) gumbo_vector_pop(&nodestack)) != NULL) {
+    switch (node->type) {
+        case GUMBO_NODE_DOCUMENT:
+        {
+            GumboDocument* doc = &node->v.document;
+            for (unsigned int i = 0; i < doc->children.length; ++i) {
+                gumbo_vector_add((void*)(doc->children.data[i]), &nodestack);
+            }
+            gumbo_free((void*) doc->children.data);
+            gumbo_free((void*) doc->name);
+            gumbo_free((void*) doc->public_identifier);
+            gumbo_free((void*) doc->system_identifier);
         }
-        gumbo_free((void*) doc->children.data);
-        gumbo_free((void*) doc->name);
-        gumbo_free((void*) doc->public_identifier);
-        gumbo_free((void*) doc->system_identifier);
-      }
-      break;
-    case GUMBO_NODE_TEMPLATE:
-    case GUMBO_NODE_ELEMENT:
-      for (unsigned int i = 0; i < node->v.element.attributes.length; ++i) {
-        gumbo_destroy_attribute(node->v.element.attributes.data[i]);
-      }
-      for (unsigned int i = 0; i < node->v.element.children.length; ++i) {
-        free_node(node->v.element.children.data[i]);
-      }
-      gumbo_free(node->v.element.attributes.data);
-      gumbo_free(node->v.element.children.data);
-      break;
-    case GUMBO_NODE_TEXT:
-    case GUMBO_NODE_CDATA:
-    case GUMBO_NODE_COMMENT:
-    case GUMBO_NODE_WHITESPACE:
-      gumbo_free((void*) node->v.text.text);
-      break;
+        break;
+        case GUMBO_NODE_TEMPLATE:
+        case GUMBO_NODE_ELEMENT:
+            for (unsigned int i = 0; i < node->v.element.attributes.length; ++i) {
+                gumbo_destroy_attribute(node->v.element.attributes.data[i]);
+            }
+            for (unsigned int i = 0; i < node->v.element.children.length; ++i) {
+                gumbo_vector_add((void*)(node->v.element.children.data[i]), &nodestack);
+            }
+            gumbo_free(node->v.element.attributes.data);
+            gumbo_free(node->v.element.children.data);
+        break;
+        case GUMBO_NODE_TEXT:
+        case GUMBO_NODE_CDATA:
+        case GUMBO_NODE_COMMENT:
+        case GUMBO_NODE_WHITESPACE:
+            gumbo_free((void*) node->v.text.text);
+        break;
+    }
+    gumbo_free(node);
   }
-  gumbo_free(node);
+  gumbo_vector_destroy(&nodestack);
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-inbody
