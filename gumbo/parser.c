@@ -16,7 +16,6 @@
 
 
 #include <assert.h>
-#include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -409,6 +408,22 @@ typedef struct GumboInternalParserState {
   bool _closed_body_tag;
   bool _closed_html_tag;
 } GumboParserState;
+
+static inline bool gumbo_isspace(unsigned char c) {
+    switch(c) {
+        case ' ':
+        case '\f':
+        case '\n':
+        case '\r':
+        case '\t':
+        case '\v':
+            return true;
+            break;
+        default:
+            return false;
+            break;
+    }
+}
 
 static bool token_has_attribute(const GumboToken* token, const char* name) {
   assert(token->type == GUMBO_TOKEN_START_TAG);
@@ -3168,7 +3183,7 @@ static bool handle_in_table_text(GumboParser* parser, GumboToken* token) {
     // of any one byte that is not whitespace means we flip the flag, so this
     // loop is still valid.
     for (unsigned int i = 0; i < buffer->length; ++i) {
-      if (!isspace((unsigned char)buffer->data[i]) || buffer->data[i] == '\v') {
+      if (!gumbo_isspace((unsigned char)buffer->data[i]) || buffer->data[i] == '\v') {
         state->_foster_parent_insertions = true;
         reconstruct_active_formatting_elements(parser);
         break;
