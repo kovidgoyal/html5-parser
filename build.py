@@ -182,7 +182,7 @@ def find_c_files(src_dir):
     ans, headers = [], []
     for x in os.listdir(src_dir):
         ext = os.path.splitext(x)[1]
-        if ext == '.c':
+        if ext == '.c' and not x.endswith('-check.c'):
             ans.append(os.path.join(src_dir, x))
         elif ext == '.h':
             headers.append(os.path.join(src_dir, x))
@@ -203,6 +203,7 @@ def build_obj(src, env, headers):
 
 
 TEST_EXE = os.path.join(build_dir, 'test')
+MEMLEAK_EXE = os.path.join(build_dir, 'mem-leak-check')
 if is_travis:
     TEST_EXE = os.path.join(os.path.dirname(os.path.abspath(sys.executable)), 'test-html5-parser')
 SRC_DIRS = 'src gumbo'.split()
@@ -218,7 +219,7 @@ def link(objects, env):
     return dest
 
 
-def build(args):
+def build(args, build_leak_check=False):
     debug_objects = []
     debug_env = init_env(debug=True, sanitize=True)
     for sdir in SRC_DIRS:
@@ -228,8 +229,13 @@ def build(args):
         debug_objects.extend(build_obj(c, debug_env, headers) for c in sources)
     link(debug_objects, debug_env)
     ldflags = add_python_flags(deepcopy(debug_env), return_libs=True)
-    cmd = ([debug_env.cc] + debug_env.cflags + ['test.c'] + ['-o', TEST_EXE] + ldflags)
     if newer(TEST_EXE, *debug_objects):
+        cmd = ([debug_env.cc] + debug_env.cflags + ['test.c'] + ['-o', TEST_EXE] + ldflags)
+        run_tool(cmd)
+    if build_leak_check and newer(MEMLEAK_EXE, 'mem-leak-check.c', *debug_objects):
+        cmd = ([debug_env.cc] + debug_env.cflags + ['mem-leak-check.c'] + [
+            '-o', MEMLEAK_EXE] + debug_objects + debug_env.ldflags)
+        cmd = [x for x in cmd if x not in {'-fPIC', '-pthread', '-shared'}]
         run_tool(cmd)
     for mod in glob.glob(os.path.join(build_dir, '*' + MOD_EXT)):
         shutil.copy2(mod, freeze_dir)
@@ -253,7 +259,7 @@ def option_parser():
         'action',
         nargs='?',
         default='test',
-        choices='build test try'.split(),
+        choices='build test try leak'.split(),
         help='Action to perform (default is build)')
     p.add_argument('rest', nargs='*')
     return p
@@ -277,6 +283,11 @@ def main():
         add_python_path(os.environ, os.path.dirname(freeze_dir))
         os.execlp(
             TEST_EXE, TEST_EXE, '-c', 'from html5_parser import *; ' + args.rest[0], *args.rest[1:])
+    elif args.action == 'leak':
+        build(args, build_leak_check=True)
+        p = subprocess.Popen([MEMLEAK_EXE], stdin=subprocess.PIPE)
+        p.communicate(('<p class="one">two<span>three</span>four' * 10).encode('utf-8'))
+        raise SystemExit(p.wait())
 
 
 if __name__ == '__main__':
