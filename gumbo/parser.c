@@ -2211,7 +2211,7 @@ static bool handle_in_head(GumboParser* parser, GumboToken* token) {
                      TAG(TITLE), TAG(XMP)})) {
     insert_element_from_token(parser, token);
     return true;
-  } else if (parser->_options->use_xhtml_rules &&
+  } else if (parser->_options->use_xhtml_rules && token->is_injected &&
              tag_in(token, kEndTag,
                  (gumbo_tagset){TAG(IFRAME), TAG(NOEMBED), TAG(NOFRAMES),
                      TAG(NOSCRIPT), TAG(SCRIPT), TAG(STYLE), TAG(TEXTAREA),
@@ -3207,7 +3207,7 @@ static bool handle_in_body(GumboParser* parser, GumboToken* token) {
           assert(state->_open_elements.length > 0);
           assert(
               node_html_tag_is(state->_open_elements.data[0], GUMBO_TAG_HTML));
-          if (parser->_options->use_xhtml_rules &&
+          if (parser->_options->use_xhtml_rules && token->is_injected &&
               tag_in(token, kEndTag, (gumbo_tagset){TAG(IFRAME), TAG(NOEMBED),
                                          TAG(TEXTAREA), TAG(XMP)})) {
             pop_current_node(parser);
@@ -4321,6 +4321,7 @@ GumboOutput* gumbo_parse_fragment(const GumboOptions* options,
   // XHTML5 parsing support
   bool inject_end = false;
   GumboToken injected_token = {0};
+  injected_token.is_injected = true;
 
   do {
     if (state->_reprocess_current_token) {

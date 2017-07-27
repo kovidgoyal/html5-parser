@@ -79,6 +79,11 @@ class BasicTests(TestCase):
             html = '<html><head></head><body><{}/><p>xxx</p></body></html>'.format(tag)
             root = parse(html, maybe_xhtml=True)
             self.ae(len(root[1]), 2)
+        root = parse('<title/><title>t</title></title><link href="h">', maybe_xhtml=True)
+        self.ae(
+            tostring(root),
+            '<html xmlns="http://www.w3.org/1999/xhtml"><head><title/>'
+            '<title>t</title><link href="h"/></head><body/></html>')
 
     def test_line_numbers(self):
         root = parse('<html>\n<head>\n<body>\n<p><span>', line_number_attr='ln')
