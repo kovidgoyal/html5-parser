@@ -39,14 +39,6 @@ typedef struct {
 
 // }}}
 
-/* static inline bool */
-/* is_known_tag_namespace(const char *uri) { */
-/*     for (size_t i = 0; i < sizeof(kLegalXmlns)/sizeof(kLegalXmlns[0]); i++) { */
-/*         if (strcmp(uri, kLegalXmlns[i]) == 0) return true; */
-/*     } */
-/*     return false; */
-/* } */
-
 static inline bool
 push_children(xmlNodePtr parent, GumboElement *elem, Stack *stack) {
     for (int i = elem->children.length - 1; i >= 0; i--) {
