@@ -79,7 +79,7 @@ class BasicTests(TestCase):
             html = '<html><head></head><body><{}/><p>xxx</p></body></html>'.format(tag)
             root = parse(html, maybe_xhtml=True)
             self.ae(len(root[1]), 2)
-        root = parse('<title/><title>t</title></title><link href="h">', maybe_xhtml=True)
+        root = parse('<title/><title>t</title></title></title><link href="h">', maybe_xhtml=True)
         self.ae(
             tostring(root),
             '<html xmlns="http://www.w3.org/1999/xhtml"><head><title/>'
