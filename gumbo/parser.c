@@ -2198,115 +2198,126 @@ static bool handle_in_body(GumboParser* parser, GumboToken* token);
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-inhead
 static bool handle_in_head(GumboParser* parser, GumboToken* token) {
-  if (token->type == GUMBO_TOKEN_WHITESPACE) {
-    insert_text_token(parser, token);
-    return true;
-  } else if (token->type == GUMBO_TOKEN_DOCTYPE) {
-    parser_add_parse_error(parser, token);
-    ignore_token(parser);
-    return false;
-  } else if (token->type == GUMBO_TOKEN_COMMENT) {
-    append_comment_node(parser, get_current_node(parser), token);
-    return true;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_HTML)) {
-    return handle_in_body(parser, token);
-  } else if (tag_in(token, kStartTag,
-                 (gumbo_tagset){TAG(BASE), TAG(BASEFONT), TAG(BGSOUND),
-                     TAG(MENUITEM), TAG(LINK)})) {
-    insert_element_from_token(parser, token);
-    pop_current_node(parser);
-    acknowledge_self_closing_tag(parser);
-    return true;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_META)) {
-    insert_element_from_token(parser, token);
-    pop_current_node(parser);
-    acknowledge_self_closing_tag(parser);
-    // NOTE(jdtang): Gumbo handles only UTF-8, so the encoding clause of the
-    // spec doesn't apply.  If clients want to handle meta-tag re-encoding, they
-    // should specifically look for that string in the document and re-encode it
-    // before passing to Gumbo.
-    return true;
-
-    // XHTML5 Parser support for cdata and rcdata in head to fix <title/> and
-    // etc
-  } else if (parser->_options->use_xhtml_rules &&
-             token->v.start_tag.is_self_closing &&
-             tag_in(token, kStartTag,
-                 (gumbo_tagset){TAG(IFRAME), TAG(NOEMBED), TAG(NOFRAMES),
-                     TAG(NOSCRIPT), TAG(SCRIPT), TAG(STYLE), TAG(TEXTAREA),
-                     TAG(TITLE), TAG(XMP)})) {
-    insert_element_from_token(parser, token);
-    return true;
-  } else if (parser->_options->use_xhtml_rules && token->is_injected &&
-             tag_in(token, kEndTag,
-                 (gumbo_tagset){TAG(IFRAME), TAG(NOEMBED), TAG(NOFRAMES),
-                     TAG(NOSCRIPT), TAG(SCRIPT), TAG(STYLE), TAG(TEXTAREA),
-                     TAG(TITLE), TAG(XMP)})) {
-    pop_current_node(parser);
-    return true;
-
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_TITLE)) {
-    run_generic_parsing_algorithm(parser, token, GUMBO_LEX_RCDATA);
-    return true;
-  } else if (tag_in(
-                 token, kStartTag, (gumbo_tagset){TAG(NOFRAMES), TAG(STYLE)})) {
-    run_generic_parsing_algorithm(parser, token, GUMBO_LEX_RAWTEXT);
-    return true;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_NOSCRIPT)) {
-    insert_element_from_token(parser, token);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_HEAD_NOSCRIPT);
-    return true;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_SCRIPT)) {
-    run_generic_parsing_algorithm(parser, token, GUMBO_LEX_SCRIPT);
-    return true;
-  } else if (tag_is(token, kEndTag, GUMBO_TAG_HEAD)) {
-    GumboNode* head = pop_current_node(parser);
-    AVOID_UNUSED_VARIABLE_WARNING(head);
-    assert(node_html_tag_is(head, GUMBO_TAG_HEAD));
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_AFTER_HEAD);
-    return true;
-  } else if (tag_in(token, kEndTag,
-                 (gumbo_tagset){TAG(BODY), TAG(HTML), TAG(BR)})) {
-    pop_current_node(parser);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_AFTER_HEAD);
-    parser->_parser_state->_reprocess_current_token = true;
-    return true;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_TEMPLATE)) {
-    insert_element_from_token(parser, token);
-    add_formatting_element(parser, &kActiveFormattingScopeMarker);
-    parser->_parser_state->_frameset_ok = false;
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TEMPLATE);
-    push_template_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TEMPLATE);
-    return true;
-  } else if (tag_is(token, kEndTag, GUMBO_TAG_TEMPLATE)) {
-    if (!has_open_element(parser, GUMBO_TAG_TEMPLATE)) {
+  switch (token->type) {
+    case GUMBO_TOKEN_WHITESPACE:
+      insert_text_token(parser, token);
+      return true;
+    case GUMBO_TOKEN_DOCTYPE:
       parser_add_parse_error(parser, token);
       ignore_token(parser);
       return false;
-    }
-    generate_all_implied_end_tags_thoroughly(parser);
-    bool success = true;
-    if (!node_html_tag_is(get_current_node(parser), GUMBO_TAG_TEMPLATE)) {
-      parser_add_parse_error(parser, token);
-      success = false;
-    }
-    while (!node_html_tag_is(pop_current_node(parser), GUMBO_TAG_TEMPLATE))
-      ;
-    clear_active_formatting_elements(parser);
-    pop_template_insertion_mode(parser);
-    reset_insertion_mode_appropriately(parser);
-    return success;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_HEAD) ||
-             (token->type == GUMBO_TOKEN_END_TAG)) {
-    parser_add_parse_error(parser, token);
-    ignore_token(parser);
-    return false;
-  } else {
-    pop_current_node(parser);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_AFTER_HEAD);
-    parser->_parser_state->_reprocess_current_token = true;
-    return true;
+    case GUMBO_TOKEN_COMMENT:
+      append_comment_node(parser, get_current_node(parser), token);
+      return true;
+    case GUMBO_TOKEN_START_TAG:
+      if (parser->_options->use_xhtml_rules &&
+          token->v.start_tag.is_self_closing &&
+          tag_in(token, kStartTag,
+              (gumbo_tagset){TAG(IFRAME), TAG(NOEMBED), TAG(NOFRAMES),
+                  TAG(NOSCRIPT), TAG(SCRIPT), TAG(STYLE), TAG(TEXTAREA),
+                  TAG(TITLE), TAG(XMP)})) {
+        insert_element_from_token(parser, token);
+        return true;
+      }
+      switch (token->v.start_tag.tag) {
+        default:
+          break;
+        case GUMBO_TAG_HTML:
+          return handle_in_body(parser, token);
+        case GUMBO_TAG_BASE:
+        case GUMBO_TAG_BASEFONT:
+        case GUMBO_TAG_BGSOUND:
+        case GUMBO_TAG_MENUITEM:
+        case GUMBO_TAG_LINK:
+        case GUMBO_TAG_META:
+          insert_element_from_token(parser, token);
+          pop_current_node(parser);
+          acknowledge_self_closing_tag(parser);
+          return true;
+        case GUMBO_TAG_TITLE:
+          run_generic_parsing_algorithm(parser, token, GUMBO_LEX_RCDATA);
+          return true;
+        case GUMBO_TAG_NOFRAMES:
+        case GUMBO_TAG_STYLE:
+          run_generic_parsing_algorithm(parser, token, GUMBO_LEX_RAWTEXT);
+          return true;
+        case GUMBO_TAG_NOSCRIPT:
+          insert_element_from_token(parser, token);
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_HEAD_NOSCRIPT);
+          return true;
+        case GUMBO_TAG_SCRIPT:
+          run_generic_parsing_algorithm(parser, token, GUMBO_LEX_SCRIPT);
+          return true;
+        case GUMBO_TAG_TEMPLATE:
+          insert_element_from_token(parser, token);
+          add_formatting_element(parser, &kActiveFormattingScopeMarker);
+          parser->_parser_state->_frameset_ok = false;
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TEMPLATE);
+          push_template_insertion_mode(
+              parser, GUMBO_INSERTION_MODE_IN_TEMPLATE);
+          return true;
+        case GUMBO_TAG_HEAD:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+      }
+      break;
+    case GUMBO_TOKEN_END_TAG:
+      if (parser->_options->use_xhtml_rules && token->is_injected &&
+          tag_in(token, kEndTag,
+              (gumbo_tagset){TAG(IFRAME), TAG(NOEMBED), TAG(NOFRAMES),
+                  TAG(NOSCRIPT), TAG(SCRIPT), TAG(STYLE), TAG(TEXTAREA),
+                  TAG(TITLE), TAG(XMP)})) {
+        pop_current_node(parser);
+        return true;
+      }
+      switch (token->v.end_tag) {
+        default:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+        case GUMBO_TAG_HEAD: {
+          GumboNode* head = pop_current_node(parser);
+          AVOID_UNUSED_VARIABLE_WARNING(head);
+          assert(node_html_tag_is(head, GUMBO_TAG_HEAD));
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_AFTER_HEAD);
+          return true;
+        }
+        case GUMBO_TAG_BODY:
+        case GUMBO_TAG_HTML:
+        case GUMBO_TAG_BR:
+          pop_current_node(parser);
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_AFTER_HEAD);
+          parser->_parser_state->_reprocess_current_token = true;
+          return true;
+        case GUMBO_TAG_TEMPLATE: {
+          if (!has_open_element(parser, GUMBO_TAG_TEMPLATE)) {
+            parser_add_parse_error(parser, token);
+            ignore_token(parser);
+            return false;
+          }
+          generate_all_implied_end_tags_thoroughly(parser);
+          bool success = true;
+          if (!node_html_tag_is(get_current_node(parser), GUMBO_TAG_TEMPLATE)) {
+            parser_add_parse_error(parser, token);
+            success = false;
+          }
+          while (
+              !node_html_tag_is(pop_current_node(parser), GUMBO_TAG_TEMPLATE))
+            ;
+          clear_active_formatting_elements(parser);
+          pop_template_insertion_mode(parser);
+          reset_insertion_mode_appropriately(parser);
+          return success;
+        }
+      }
+      break;
+    default:
+      break;
   }
+  pop_current_node(parser);
+  set_insertion_mode(parser, GUMBO_INSERTION_MODE_AFTER_HEAD);
+  parser->_parser_state->_reprocess_current_token = true;
   return true;
 }
 
