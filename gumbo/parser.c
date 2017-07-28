@@ -2077,66 +2077,66 @@ static void finish_parsing(GumboParser* parser) {
 
 static bool handle_initial(GumboParser* parser, GumboToken* token) {
   GumboDocument* document = &get_document_node(parser)->v.document;
-  switch(token->type) {
-      case GUMBO_TOKEN_WHITESPACE:
-        ignore_token(parser);
-        return true;
-      case GUMBO_TOKEN_COMMENT:
-        append_comment_node(parser, get_document_node(parser), token);
-        return true;
-      case GUMBO_TOKEN_DOCTYPE:
-        document->has_doctype = true;
-        document->name = token->v.doc_type.name;
-        document->public_identifier = token->v.doc_type.public_identifier;
-        document->system_identifier = token->v.doc_type.system_identifier;
-        document->doc_type_quirks_mode = compute_quirks_mode(&token->v.doc_type);
-        set_insertion_mode(parser, GUMBO_INSERTION_MODE_BEFORE_HTML);
-        return maybe_add_doctype_error(parser, token);
+  switch (token->type) {
+    case GUMBO_TOKEN_WHITESPACE:
+      ignore_token(parser);
+      return true;
+    case GUMBO_TOKEN_COMMENT:
+      append_comment_node(parser, get_document_node(parser), token);
+      return true;
+    case GUMBO_TOKEN_DOCTYPE:
+      document->has_doctype = true;
+      document->name = token->v.doc_type.name;
+      document->public_identifier = token->v.doc_type.public_identifier;
+      document->system_identifier = token->v.doc_type.system_identifier;
+      document->doc_type_quirks_mode = compute_quirks_mode(&token->v.doc_type);
+      set_insertion_mode(parser, GUMBO_INSERTION_MODE_BEFORE_HTML);
+      return maybe_add_doctype_error(parser, token);
     default:
-        parser_add_parse_error(parser, token);
-        document->doc_type_quirks_mode = GUMBO_DOCTYPE_QUIRKS;
-        set_insertion_mode(parser, GUMBO_INSERTION_MODE_BEFORE_HTML);
-        parser->_parser_state->_reprocess_current_token = true;
-        return true;
+      parser_add_parse_error(parser, token);
+      document->doc_type_quirks_mode = GUMBO_DOCTYPE_QUIRKS;
+      set_insertion_mode(parser, GUMBO_INSERTION_MODE_BEFORE_HTML);
+      parser->_parser_state->_reprocess_current_token = true;
+      return true;
   }
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#the-before-html-insertion-mode
 static bool handle_before_html(GumboParser* parser, GumboToken* token) {
   switch (token->type) {
-      case GUMBO_TOKEN_DOCTYPE:
-        parser_add_parse_error(parser, token);
-        ignore_token(parser);
-        return false;
-      case GUMBO_TOKEN_COMMENT:
-        append_comment_node(parser, get_document_node(parser), token);
+    case GUMBO_TOKEN_DOCTYPE:
+      parser_add_parse_error(parser, token);
+      ignore_token(parser);
+      return false;
+    case GUMBO_TOKEN_COMMENT:
+      append_comment_node(parser, get_document_node(parser), token);
+      return true;
+    case GUMBO_TOKEN_WHITESPACE:
+      ignore_token(parser);
+      return true;
+    case GUMBO_TOKEN_START_TAG:
+      if (token->v.start_tag.tag == GUMBO_TAG_HTML) {
+        GumboNode* html_node = insert_element_from_token(parser, token);
+        parser->_output->root = html_node;
+        set_insertion_mode(parser, GUMBO_INSERTION_MODE_BEFORE_HEAD);
         return true;
-      case GUMBO_TOKEN_WHITESPACE:
-        ignore_token(parser);
-        return true;
-      case GUMBO_TOKEN_START_TAG:
-        if (token->v.start_tag.tag == GUMBO_TAG_HTML) {
-            GumboNode* html_node = insert_element_from_token(parser, token);
-            parser->_output->root = html_node;
-            set_insertion_mode(parser, GUMBO_INSERTION_MODE_BEFORE_HEAD);
-            return true;
-        }
-        break;
-      case GUMBO_TOKEN_END_TAG:
-        switch (token->v.end_tag) {
-            case GUMBO_TAG_HEAD:
-            case GUMBO_TAG_BODY:
-            case GUMBO_TAG_HTML:
-            case GUMBO_TAG_BR:
-                break;
-            default:
-                parser_add_parse_error(parser, token);
-                ignore_token(parser);
-                return false;
-        }
-        break;
-      default:
-        break;
+      }
+      break;
+    case GUMBO_TOKEN_END_TAG:
+      switch (token->v.end_tag) {
+        case GUMBO_TAG_HEAD:
+        case GUMBO_TAG_BODY:
+        case GUMBO_TAG_HTML:
+        case GUMBO_TAG_BR:
+          break;
+        default:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+      }
+      break;
+    default:
+      break;
   }
   GumboNode* html_node = insert_element_of_tag_type(
       parser, GUMBO_TAG_HTML, GUMBO_INSERTION_IMPLIED);
@@ -2149,47 +2149,47 @@ static bool handle_before_html(GumboParser* parser, GumboToken* token) {
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#the-before-head-insertion-mode
 static bool handle_before_head(GumboParser* parser, GumboToken* token) {
-  switch(token->type) {
-      case GUMBO_TOKEN_DOCTYPE:
-        parser_add_parse_error(parser, token);
-        ignore_token(parser);
-        return false;
-      case GUMBO_TOKEN_COMMENT:
-        append_comment_node(parser, get_current_node(parser), token);
+  switch (token->type) {
+    case GUMBO_TOKEN_DOCTYPE:
+      parser_add_parse_error(parser, token);
+      ignore_token(parser);
+      return false;
+    case GUMBO_TOKEN_COMMENT:
+      append_comment_node(parser, get_current_node(parser), token);
+      return true;
+    case GUMBO_TOKEN_WHITESPACE:
+      ignore_token(parser);
+      return true;
+    case GUMBO_TOKEN_START_TAG:
+      if (token->v.start_tag.tag == GUMBO_TAG_HEAD) {
+        GumboNode* node = insert_element_from_token(parser, token);
+        set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_HEAD);
+        parser->_parser_state->_head_element = node;
         return true;
-      case GUMBO_TOKEN_WHITESPACE:
-        ignore_token(parser);
-        return true;
-      case GUMBO_TOKEN_START_TAG:
-        if (token->v.start_tag.tag == GUMBO_TAG_HEAD) {
-            GumboNode* node = insert_element_from_token(parser, token);
-            set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_HEAD);
-            parser->_parser_state->_head_element = node;
-            return true;
-        }
-        break;
-      case GUMBO_TOKEN_END_TAG:
-        switch (token->v.end_tag) {
-            case GUMBO_TAG_HEAD:
-            case GUMBO_TAG_BODY:
-            case GUMBO_TAG_HTML:
-            case GUMBO_TAG_BR:
-                break;
-            default:
-                parser_add_parse_error(parser, token);
-                ignore_token(parser);
-                return false;
-        }
-        break;
-      default:
-        break;
-  } 
-    GumboNode* node = insert_element_of_tag_type(
-        parser, GUMBO_TAG_HEAD, GUMBO_INSERTION_IMPLIED);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_HEAD);
-    parser->_parser_state->_head_element = node;
-    parser->_parser_state->_reprocess_current_token = true;
-    return true;
+      }
+      break;
+    case GUMBO_TOKEN_END_TAG:
+      switch (token->v.end_tag) {
+        case GUMBO_TAG_HEAD:
+        case GUMBO_TAG_BODY:
+        case GUMBO_TAG_HTML:
+        case GUMBO_TAG_BR:
+          break;
+        default:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+      }
+      break;
+    default:
+      break;
+  }
+  GumboNode* node = insert_element_of_tag_type(
+      parser, GUMBO_TAG_HEAD, GUMBO_INSERTION_IMPLIED);
+  set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_HEAD);
+  parser->_parser_state->_head_element = node;
+  parser->_parser_state->_reprocess_current_token = true;
+  return true;
 }
 
 // Forward declarations because of mutual dependencies.
