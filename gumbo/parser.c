@@ -2103,36 +2103,48 @@ static bool handle_initial(GumboParser* parser, GumboToken* token) {
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#the-before-html-insertion-mode
 static bool handle_before_html(GumboParser* parser, GumboToken* token) {
-  if (token->type == GUMBO_TOKEN_DOCTYPE) {
-    parser_add_parse_error(parser, token);
-    ignore_token(parser);
-    return false;
-  } else if (token->type == GUMBO_TOKEN_COMMENT) {
-    append_comment_node(parser, get_document_node(parser), token);
-    return true;
-  } else if (token->type == GUMBO_TOKEN_WHITESPACE) {
-    ignore_token(parser);
-    return true;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_HTML)) {
-    GumboNode* html_node = insert_element_from_token(parser, token);
-    parser->_output->root = html_node;
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_BEFORE_HEAD);
-    return true;
-  } else if (token->type == GUMBO_TOKEN_END_TAG &&
-             !tag_in(token, false,
-                 (gumbo_tagset){TAG(HEAD), TAG(BODY), TAG(HTML), TAG(BR)})) {
-    parser_add_parse_error(parser, token);
-    ignore_token(parser);
-    return false;
-  } else {
-    GumboNode* html_node = insert_element_of_tag_type(
-        parser, GUMBO_TAG_HTML, GUMBO_INSERTION_IMPLIED);
-    assert(html_node);
-    parser->_output->root = html_node;
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_BEFORE_HEAD);
-    parser->_parser_state->_reprocess_current_token = true;
-    return true;
+  switch (token->type) {
+      case GUMBO_TOKEN_DOCTYPE:
+        parser_add_parse_error(parser, token);
+        ignore_token(parser);
+        return false;
+      case GUMBO_TOKEN_COMMENT:
+        append_comment_node(parser, get_document_node(parser), token);
+        return true;
+      case GUMBO_TOKEN_WHITESPACE:
+        ignore_token(parser);
+        return true;
+      case GUMBO_TOKEN_START_TAG:
+        if (token->v.start_tag.tag == GUMBO_TAG_HTML) {
+            GumboNode* html_node = insert_element_from_token(parser, token);
+            parser->_output->root = html_node;
+            set_insertion_mode(parser, GUMBO_INSERTION_MODE_BEFORE_HEAD);
+            return true;
+        }
+        break;
+      case GUMBO_TOKEN_END_TAG:
+        switch (token->v.end_tag) {
+            case GUMBO_TAG_HEAD:
+            case GUMBO_TAG_BODY:
+            case GUMBO_TAG_HTML:
+            case GUMBO_TAG_BR:
+                break;
+            default:
+                parser_add_parse_error(parser, token);
+                ignore_token(parser);
+                return false;
+        }
+        break;
+      default:
+        break;
   }
+  GumboNode* html_node = insert_element_of_tag_type(
+      parser, GUMBO_TAG_HTML, GUMBO_INSERTION_IMPLIED);
+  assert(html_node);
+  parser->_output->root = html_node;
+  set_insertion_mode(parser, GUMBO_INSERTION_MODE_BEFORE_HEAD);
+  parser->_parser_state->_reprocess_current_token = true;
+  return true;
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#the-before-head-insertion-mode
