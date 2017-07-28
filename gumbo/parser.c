@@ -3336,24 +3336,29 @@ static bool handle_in_body(GumboParser* parser, GumboToken* token) {
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-incdata
 static bool handle_text(GumboParser* parser, GumboToken* token) {
-  if (token->type == GUMBO_TOKEN_CHARACTER ||
-      token->type == GUMBO_TOKEN_WHITESPACE) {
-    insert_text_token(parser, token);
-  } else {
-    // We provide only bare-bones script handling that doesn't involve any of
-    // the parser-pause/already-started/script-nesting flags or re-entrant
-    // invocations of the tokenizer.  Because the intended usage of this library
-    // is mostly for templating, refactoring, and static-analysis libraries, we
-    // provide the script body as a text-node child of the <script> element.
-    // This behavior doesn't support document.write of partial HTML elements,
-    // but should be adequate for almost all other scripting support.
-    if (token->type == GUMBO_TOKEN_EOF) {
+  switch (token->type) {
+    case GUMBO_TOKEN_CHARACTER:
+    case GUMBO_TOKEN_WHITESPACE:
+      insert_text_token(parser, token);
+      return true;
+    case GUMBO_TOKEN_EOF:
+      // We provide only bare-bones script handling that doesn't involve any of
+      // the parser-pause/already-started/script-nesting flags or re-entrant
+      // invocations of the tokenizer.  Because the intended usage of this
+      // library
+      // is mostly for templating, refactoring, and static-analysis libraries,
+      // we
+      // provide the script body as a text-node child of the <script> element.
+      // This behavior doesn't support document.write of partial HTML elements,
+      // but should be adequate for almost all other scripting support.
       parser_add_parse_error(parser, token);
       parser->_parser_state->_reprocess_current_token = true;
-    }
-    pop_current_node(parser);
-    set_insertion_mode(parser, parser->_parser_state->_original_insertion_mode);
+      break;
+    default:
+      break;
   }
+  pop_current_node(parser);
+  set_insertion_mode(parser, parser->_parser_state->_original_insertion_mode);
   return true;
 }
 
