@@ -3618,52 +3618,67 @@ static bool handle_in_caption(GumboParser* parser, GumboToken* token) {
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-incolgroup
 static bool handle_in_column_group(GumboParser* parser, GumboToken* token) {
-  if (token->type == GUMBO_TOKEN_WHITESPACE) {
-    insert_text_token(parser, token);
-    return true;
-  } else if (token->type == GUMBO_TOKEN_DOCTYPE) {
-    parser_add_parse_error(parser, token);
-    ignore_token(parser);
-    return false;
-  } else if (token->type == GUMBO_TOKEN_COMMENT) {
-    append_comment_node(parser, get_current_node(parser), token);
-    return true;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_HTML)) {
-    return handle_in_body(parser, token);
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_COL)) {
-    insert_element_from_token(parser, token);
-    pop_current_node(parser);
-    acknowledge_self_closing_tag(parser);
-    return true;
-  } else if (tag_is(token, kEndTag, GUMBO_TAG_COLGROUP)) {
-    if (!node_html_tag_is(get_current_node(parser), GUMBO_TAG_COLGROUP)) {
+  switch (token->type) {
+    case GUMBO_TOKEN_WHITESPACE:
+      insert_text_token(parser, token);
+      return true;
+    case GUMBO_TOKEN_DOCTYPE:
       parser_add_parse_error(parser, token);
       ignore_token(parser);
       return false;
-    }
-    pop_current_node(parser);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
-    return false;
-  } else if (tag_is(token, kEndTag, GUMBO_TAG_COL)) {
-    parser_add_parse_error(parser, token);
-    ignore_token(parser);
-    return false;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_TEMPLATE) ||
-             tag_is(token, kEndTag, GUMBO_TAG_TEMPLATE)) {
-    return handle_in_head(parser, token);
-  } else if (token->type == GUMBO_TOKEN_EOF) {
-    return handle_in_body(parser, token);
-  } else {
-    if (!node_html_tag_is(get_current_node(parser), GUMBO_TAG_COLGROUP)) {
-      parser_add_parse_error(parser, token);
-      ignore_token(parser);
-      return false;
-    }
-    pop_current_node(parser);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
-    parser->_parser_state->_reprocess_current_token = true;
-    return true;
+    case GUMBO_TOKEN_COMMENT:
+      append_comment_node(parser, get_current_node(parser), token);
+      return true;
+    case GUMBO_TOKEN_EOF:
+      return handle_in_body(parser, token);
+    case GUMBO_TOKEN_START_TAG:
+      switch (token->v.start_tag.tag) {
+        case GUMBO_TAG_HTML:
+          return handle_in_body(parser, token);
+        case GUMBO_TAG_COL:
+          insert_element_from_token(parser, token);
+          pop_current_node(parser);
+          acknowledge_self_closing_tag(parser);
+          return true;
+        case GUMBO_TAG_TEMPLATE:
+          return handle_in_head(parser, token);
+        default:
+          break;
+      }
+      break;
+    case GUMBO_TOKEN_END_TAG:
+      switch (token->v.end_tag) {
+        case GUMBO_TAG_COLGROUP:
+          if (!node_html_tag_is(get_current_node(parser), GUMBO_TAG_COLGROUP)) {
+            parser_add_parse_error(parser, token);
+            ignore_token(parser);
+            return false;
+          }
+          pop_current_node(parser);
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
+          return false;
+        case GUMBO_TAG_COL:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+        case GUMBO_TAG_TEMPLATE:
+          return handle_in_head(parser, token);
+        default:
+          break;
+      }
+      break;
+    default:
+      break;
   }
+  if (!node_html_tag_is(get_current_node(parser), GUMBO_TAG_COLGROUP)) {
+    parser_add_parse_error(parser, token);
+    ignore_token(parser);
+    return false;
+  }
+  pop_current_node(parser);
+  set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
+  parser->_parser_state->_reprocess_current_token = true;
+  return true;
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-intbody
