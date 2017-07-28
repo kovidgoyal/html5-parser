@@ -2323,39 +2323,60 @@ static bool handle_in_head(GumboParser* parser, GumboToken* token) {
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-inheadnoscript
 static bool handle_in_head_noscript(GumboParser* parser, GumboToken* token) {
-  if (token->type == GUMBO_TOKEN_DOCTYPE) {
-    parser_add_parse_error(parser, token);
-    return false;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_HTML)) {
-    return handle_in_body(parser, token);
-  } else if (tag_is(token, kEndTag, GUMBO_TAG_NOSCRIPT)) {
-    const GumboNode* node = pop_current_node(parser);
-    assert(node_html_tag_is(node, GUMBO_TAG_NOSCRIPT));
-    AVOID_UNUSED_VARIABLE_WARNING(node);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_HEAD);
-    return true;
-  } else if (token->type == GUMBO_TOKEN_WHITESPACE ||
-             token->type == GUMBO_TOKEN_COMMENT ||
-             tag_in(token, kStartTag,
-                 (gumbo_tagset){TAG(BASEFONT), TAG(BGSOUND), TAG(LINK),
-                     TAG(META), TAG(NOFRAMES), TAG(STYLE)})) {
-    return handle_in_head(parser, token);
-  } else if (tag_in(
-                 token, kStartTag, (gumbo_tagset){TAG(HEAD), TAG(NOSCRIPT)}) ||
-             (token->type == GUMBO_TOKEN_END_TAG &&
-                 !tag_is(token, kEndTag, GUMBO_TAG_BR))) {
-    parser_add_parse_error(parser, token);
-    ignore_token(parser);
-    return false;
-  } else {
-    parser_add_parse_error(parser, token);
-    const GumboNode* node = pop_current_node(parser);
-    assert(node_html_tag_is(node, GUMBO_TAG_NOSCRIPT));
-    AVOID_UNUSED_VARIABLE_WARNING(node);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_HEAD);
-    parser->_parser_state->_reprocess_current_token = true;
-    return false;
+  switch (token->type) {
+    case GUMBO_TOKEN_DOCTYPE:
+      parser_add_parse_error(parser, token);
+      return false;
+    case GUMBO_TOKEN_WHITESPACE:
+    case GUMBO_TOKEN_COMMENT:
+      return handle_in_head(parser, token);
+    case GUMBO_TOKEN_START_TAG:
+      switch (token->v.start_tag.tag) {
+        case GUMBO_TAG_BASEFONT:
+        case GUMBO_TAG_BGSOUND:
+        case GUMBO_TAG_LINK:
+        case GUMBO_TAG_META:
+        case GUMBO_TAG_NOFRAMES:
+        case GUMBO_TAG_STYLE:
+          return handle_in_head(parser, token);
+        case GUMBO_TAG_HTML:
+          return handle_in_body(parser, token);
+        case GUMBO_TAG_HEAD:
+        case GUMBO_TAG_NOSCRIPT:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+        default:
+          break;
+      }
+      break;
+    case GUMBO_TOKEN_END_TAG:
+      switch (token->v.end_tag) {
+        case GUMBO_TAG_NOSCRIPT: {
+          const GumboNode* node = pop_current_node(parser);
+          assert(node_html_tag_is(node, GUMBO_TAG_NOSCRIPT));
+          AVOID_UNUSED_VARIABLE_WARNING(node);
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_HEAD);
+          return true;
+        }
+        case GUMBO_TAG_BR:
+          break;
+        default:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+      }
+      break;
+    default:
+      break;
   }
+  parser_add_parse_error(parser, token);
+  const GumboNode* node = pop_current_node(parser);
+  assert(node_html_tag_is(node, GUMBO_TAG_NOSCRIPT));
+  AVOID_UNUSED_VARIABLE_WARNING(node);
+  set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_HEAD);
+  parser->_parser_state->_reprocess_current_token = true;
+  return false;
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#the-after-head-insertion-mode
