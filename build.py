@@ -287,6 +287,7 @@ def main():
         build(args, build_leak_check=True)
         os.environ['MEMLEAK_EXE'] = os.path.abspath(MEMLEAK_EXE)
         os.environ['ASAN_OPTIONS'] = 'leak_check_at_exit=0'
+        add_python_path(os.environ, os.path.dirname(freeze_dir))
         os.execlp(TEST_EXE, TEST_EXE, 'run_tests.py')
 
 
