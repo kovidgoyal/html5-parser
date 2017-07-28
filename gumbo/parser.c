@@ -3370,7 +3370,8 @@ static bool handle_in_table(GumboParser* parser, GumboToken* token) {
     case GUMBO_TOKEN_WHITESPACE:
       // The "pending table character tokens" list described in the spec is
       // nothing more than the TextNodeBufferState.  We accumulate text tokens
-      // as normal, except that when we go to flush them in the handle_in_table_text,
+      // as normal, except that when we go to flush them in the
+      // handle_in_table_text,
       // we set _foster_parent_insertions if there're non-whitespace characters
       // in the buffer.
       assert(state->_text_node._buffer.length == 0);
@@ -3500,36 +3501,38 @@ static bool handle_in_table(GumboParser* parser, GumboToken* token) {
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-intabletext
 static bool handle_in_table_text(GumboParser* parser, GumboToken* token) {
-  if (token->type == GUMBO_TOKEN_NULL) {
-    parser_add_parse_error(parser, token);
-    ignore_token(parser);
-    return false;
-  } else if (token->type == GUMBO_TOKEN_CHARACTER ||
-             token->type == GUMBO_TOKEN_WHITESPACE) {
-    insert_text_token(parser, token);
-    return true;
-  } else {
-    GumboParserState* state = parser->_parser_state;
-    GumboStringBuffer* buffer = &state->_text_node._buffer;
-    // Can't use strspn for this because GumboStringBuffers are not
-    // null-terminated.
-    // Note that TextNodeBuffer may contain UTF-8 characters, but the presence
-    // of any one byte that is not whitespace means we flip the flag, so this
-    // loop is still valid.
-    for (unsigned int i = 0; i < buffer->length; ++i) {
-      if (!gumbo_isspace((unsigned char) buffer->data[i]) ||
-          buffer->data[i] == '\v') {
-        state->_foster_parent_insertions = true;
-        reconstruct_active_formatting_elements(parser);
-        break;
-      }
-    }
-    maybe_flush_text_node_buffer(parser);
-    state->_foster_parent_insertions = false;
-    state->_reprocess_current_token = true;
-    state->_insertion_mode = state->_original_insertion_mode;
-    return true;
+  switch (token->type) {
+    case GUMBO_TOKEN_NULL:
+      parser_add_parse_error(parser, token);
+      ignore_token(parser);
+      return false;
+    case GUMBO_TOKEN_CHARACTER:
+    case GUMBO_TOKEN_WHITESPACE:
+      insert_text_token(parser, token);
+      return true;
+    default:
+      break;
   }
+  GumboParserState* state = parser->_parser_state;
+  GumboStringBuffer* buffer = &state->_text_node._buffer;
+  // Can't use strspn for this because GumboStringBuffers are not
+  // null-terminated.
+  // Note that TextNodeBuffer may contain UTF-8 characters, but the presence
+  // of any one byte that is not whitespace means we flip the flag, so this
+  // loop is still valid.
+  for (unsigned int i = 0; i < buffer->length; ++i) {
+    if (!gumbo_isspace((unsigned char) buffer->data[i]) ||
+        buffer->data[i] == '\v') {
+      state->_foster_parent_insertions = true;
+      reconstruct_active_formatting_elements(parser);
+      break;
+    }
+  }
+  maybe_flush_text_node_buffer(parser);
+  state->_foster_parent_insertions = false;
+  state->_reprocess_current_token = true;
+  state->_insertion_mode = state->_original_insertion_mode;
+  return true;
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-incaption
