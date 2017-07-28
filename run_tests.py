@@ -75,8 +75,21 @@ def find_tests():
     return unittest.TestSuite(suites)
 
 
+def run_memleak_tests():
+    tests = find_tests()
+
+    tests = filter_tests_by_name(tests, 'asan_memleak')
+    r = unittest.TextTestRunner
+    result = r(verbosity=4).run(tests)
+
+    if not result.wasSuccessful():
+        raise SystemExit(1)
+
+
 def main():
     sys.path.insert(0, base)
+    if 'MEMLEAK_EXE' in os.environ:
+        return run_memleak_tests()
     parser = argparse.ArgumentParser(
         description='''\
 Run the specified tests, or all tests if none are specified. Tests

@@ -285,9 +285,9 @@ def main():
             TEST_EXE, TEST_EXE, '-c', 'from html5_parser import *; ' + args.rest[0], *args.rest[1:])
     elif args.action == 'leak':
         build(args, build_leak_check=True)
-        p = subprocess.Popen([MEMLEAK_EXE], stdin=subprocess.PIPE)
-        p.communicate(('<p class="one">two<span>three</span>four' * 10).encode('utf-8'))
-        raise SystemExit(p.wait())
+        os.environ['MEMLEAK_EXE'] = os.path.abspath(MEMLEAK_EXE)
+        os.environ['ASAN_OPTIONS'] = 'leak_check_at_exit=0'
+        os.execlp(TEST_EXE, TEST_EXE, 'run_tests.py')
 
 
 if __name__ == '__main__':

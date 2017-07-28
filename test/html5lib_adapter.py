@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import codecs
 import os
 import re
+import subprocess
 import unittest
 
 from html5_parser import check_bom, check_for_meta_charset, parse
@@ -55,6 +56,7 @@ class TestData(object):
             return False
 
     def normalize(self, data):
+
         def n(x):
             if x.endswith('\n'):
                 x = x[:-1]
@@ -134,15 +136,20 @@ def serialize_construction_output(root):
 class BaseTest(TestCase):
 
     @classmethod
+    def data_for_test(cls, test, expected='document'):
+        return test.get('document-fragment'), test.get('data'), test.get(expected), test.get(
+            'errors', '').split('\n')
+
+    @classmethod
     def add_single(cls, test_name, num, test, expected):
+        inner_html, html, expected, errors = cls.data_for_test(test, expected)
 
         def test_func(
-            self,
-            inner_html=test.get('document-fragment'),
-            html=test.get('data'),
-            expected=test.get(expected),
-            errors=test.get('errors', '').split('\n')
-        ):
+                self,
+                inner_html=inner_html,
+                html=html,
+                expected=expected,
+                errors=errors):
             return self.implementation(inner_html, html, expected, errors, test_name)
 
         test_func.__name__ = str('test_%s_%d' % (test_name, num))
@@ -151,28 +158,34 @@ class BaseTest(TestCase):
 
 class ConstructionTests(BaseTest):
 
-    def implementation(self, inner_html, html, expected, errors, test_name):
-        html = inner_html or html
+    @classmethod
+    def check_test(cls, inner_html, html, expected, errors, test_name):
         if test_name == 'isindex' or html == '<!doctype html><isindex type="hidden">':
-            raise unittest.SkipTest('gumbo and html5lib differ on <isindex> parsing'
-                                    ' and I cannot be bothered to figure out who is right')
+            return (
+                'gumbo and html5lib differ on <isindex> parsing'
+                ' and I cannot be bothered to figure out who is right')
         if test_name == 'menuitem-element':
-            raise unittest.SkipTest('gumbo and html5lib differ on <menuitem> parsing'
-                                    ' and I cannot be bothered to figure out who is right')
+            return (
+                'gumbo and html5lib differ on <menuitem> parsing'
+                ' and I cannot be bothered to figure out who is right')
         noscript = re.search(r'^\| +<noscript>$', expected, flags=re.MULTILINE)
         if noscript is not None:
-            raise unittest.SkipTest('<noscript> is always parsed with scripting off by gumbo')
+            return '<noscript> is always parsed with scripting off by gumbo'
         if '<thisisasillytestelementnametomakesurecrazytagnamesareparsedcorrectly>' in expected:
-            raise unittest.SkipTest('gumbo unlike html5lib, does not lowercase unknown tag names')
+            return 'gumbo unlike html5lib, does not lowercase unknown tag names'
         for line in errors:
             if 'expected-doctype-name-but' in line or 'unknown-doctype' in line:
-                raise unittest.SkipTest('gumbo auto-corrects malformed doctypes')
-
+                return 'gumbo auto-corrects malformed doctypes'
         if inner_html:
-            raise unittest.SkipTest('TODO: Implement fragment parsing')
-        else:
-            root = parse(html, namespace_elements=True, sanitize_names=False)
+            return 'TODO: Implement fragment parsing'
 
+    def implementation(self, inner_html, html, expected, errors, test_name):
+        html = inner_html or html
+        bad = self.check_test(inner_html, html, expected, errors, test_name)
+        if bad is not None:
+            raise unittest.SkipTest(bad)
+
+        root = parse(html, namespace_elements=True, sanitize_names=False)
         output = serialize_construction_output(root)
 
         # html5lib doesn't yet support the template tag, but it appears in the
@@ -196,8 +209,8 @@ class EncodingTests(BaseTest):
             raise unittest.SkipTest('buggy html5lib test')
         raw = html.encode('utf-8')
         output = check_bom(raw) or check_for_meta_charset(raw) or 'windows-1252'
-        error_msg = '\n'.join(map(type(''), [
-            '\n\nInput:', html, '\nExpected:', expected, '\nReceived:', output]))
+        error_msg = '\n'.join(
+            map(type(''), ['\n\nInput:', html, '\nExpected:', expected, '\nReceived:', output]))
         self.ae(expected.lower(), output, error_msg + '\n')
 
 
@@ -217,6 +230,26 @@ def load_suite(group, case_class, expected='document', data_class=TestData):
     return unittest.defaultTestLoader.loadTestsFromTestCase(case_class)
 
 
+class MemLeak(BaseTest):
+
+    @unittest.skipUnless('MEMLEAK_EXE' in os.environ, 'memleak check exe not available')
+    def test_asan_memleak(self):
+        MEMLEAK_EXE = os.environ['MEMLEAK_EXE']
+        env = os.environ.copy()
+        env.pop('ASAN_OPTIONS', None)
+        for path in html5lib_test_files('tree-construction'):
+            test_name = os.path.basename(path).rpartition('.')[0]
+            for i, test in enumerate(TestData(path)):
+                inner_html, html, expected, errors = ConstructionTests.data_for_test(test)
+                bad = ConstructionTests.check_test(inner_html, html, expected, errors, test_name)
+                if bad is not None:
+                    continue
+                p = subprocess.Popen([MEMLEAK_EXE], stdin=subprocess.PIPE, env=env)
+                p.communicate(html.encode('utf-8'))
+                self.ae(p.wait(), 0, 'The test {}-{} failed'.format(test_name, i))
+
+
 def find_tests():
     yield load_suite('tree-construction', ConstructionTests)
     yield load_suite('encoding', EncodingTests, expected='encoding')
+    yield unittest.defaultTestLoader.loadTestsFromTestCase(MemLeak)

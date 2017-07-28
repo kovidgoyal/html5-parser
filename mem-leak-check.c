@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <libxml/xmlmemory.h>
 #include "src/as-libxml.h"
 
 static inline libxml_doc*
@@ -36,13 +37,15 @@ int main(int UNUSED argc, char UNUSED **argv) {
     Options opts = {0};
     opts.gumbo_opts = kGumboDefaultOptions;
     opts.stack_size = 16 * 1024;
-    opts.gumbo_opts = kGumboDefaultOptions;
     opts.gumbo_opts.max_errors = 0;  
-    opts.namespace_elements = 1;
     opts.keep_doctype = 1;
-    opts.sanitize_names = 1;
-    opts.gumbo_opts.use_xhtml_rules = 1;
+    xmlInitParser();
     ssize_t sz = read(STDIN_FILENO, buf, (sizeof(buf) / sizeof(buf[0])) - 1);
     parse_with_options(buf, (size_t)sz, &opts);
+    opts.namespace_elements = 1;
+    opts.sanitize_names = 1;
+    opts.gumbo_opts.use_xhtml_rules = 1;
+    parse_with_options(buf, (size_t)sz, &opts);
+    xmlCleanupParser();
     return 0;
 }

@@ -42,3 +42,4 @@ install:
 
 script:
     - python $BUILDER test
+    - if [[ $BUILDER == "build.py" ]]; then python $BUILDER leak; fi
