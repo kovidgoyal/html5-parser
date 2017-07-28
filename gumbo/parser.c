@@ -3536,50 +3536,84 @@ static bool handle_in_table_text(GumboParser* parser, GumboToken* token) {
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-incaption
-static bool handle_in_caption(GumboParser* parser, GumboToken* token) {
-  if (tag_is(token, kEndTag, GUMBO_TAG_CAPTION)) {
-    if (!has_an_element_in_table_scope(parser, GUMBO_TAG_CAPTION)) {
-      parser_add_parse_error(parser, token);
-      ignore_token(parser);
-      return false;
-    } else {
-      generate_implied_end_tags(parser, GUMBO_TAG_LAST);
-      bool result = true;
-      if (!node_html_tag_is(get_current_node(parser), GUMBO_TAG_CAPTION)) {
-        parser_add_parse_error(parser, token);
-      }
-      while (!node_html_tag_is(pop_current_node(parser), GUMBO_TAG_CAPTION))
-        ;
-      clear_active_formatting_elements(parser);
-      set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
-      return result;
-    }
-  } else if (tag_in(token, kStartTag,
-                 (gumbo_tagset){TAG(CAPTION), TAG(COL), TAG(COLGROUP),
-                     TAG(TBODY), TAG(TD), TAG(TFOOT), TAG(TH), TAG(THEAD),
-                     TAG(TR)}) ||
-             (tag_is(token, kEndTag, GUMBO_TAG_TABLE))) {
-    if (!has_an_element_in_table_scope(parser, GUMBO_TAG_CAPTION)) {
-      parser_add_parse_error(parser, token);
-      ignore_token(parser);
-      return false;
-    }
-    while (!node_html_tag_is(pop_current_node(parser), GUMBO_TAG_CAPTION))
-      ;
-    clear_active_formatting_elements(parser);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
-    parser->_parser_state->_reprocess_current_token = true;
-    return true;
-  } else if (tag_in(token, kEndTag,
-                 (gumbo_tagset){TAG(BODY), TAG(COL), TAG(COLGROUP), TAG(HTML),
-                     TAG(TBODY), TAG(TD), TAG(TFOOT), TAG(TH), TAG(THEAD),
-                     TAG(TR)})) {
+
+static inline bool process_end_table_in_caption(
+    GumboParser* parser, GumboToken* token) {
+  if (!has_an_element_in_table_scope(parser, GUMBO_TAG_CAPTION)) {
     parser_add_parse_error(parser, token);
     ignore_token(parser);
     return false;
-  } else {
-    return handle_in_body(parser, token);
   }
+  while (!node_html_tag_is(pop_current_node(parser), GUMBO_TAG_CAPTION))
+    ;
+  clear_active_formatting_elements(parser);
+  set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
+  parser->_parser_state->_reprocess_current_token = true;
+  return true;
+}
+
+static bool handle_in_caption(GumboParser* parser, GumboToken* token) {
+  switch (token->type) {
+    case GUMBO_TOKEN_START_TAG:
+      switch (token->v.start_tag.tag) {
+        case GUMBO_TAG_CAPTION:
+        case GUMBO_TAG_COL:
+        case GUMBO_TAG_COLGROUP:
+        case GUMBO_TAG_TBODY:
+        case GUMBO_TAG_TD:
+        case GUMBO_TAG_TFOOT:
+        case GUMBO_TAG_TH:
+        case GUMBO_TAG_THEAD:
+        case GUMBO_TAG_TR:
+          return process_end_table_in_caption(parser, token);
+        default:
+          break;
+      }
+      break;
+    case GUMBO_TOKEN_END_TAG:
+      switch (token->v.end_tag) {
+        case GUMBO_TAG_CAPTION:
+          if (!has_an_element_in_table_scope(parser, GUMBO_TAG_CAPTION)) {
+            parser_add_parse_error(parser, token);
+            ignore_token(parser);
+            return false;
+          } else {
+            generate_implied_end_tags(parser, GUMBO_TAG_LAST);
+            bool result = true;
+            if (!node_html_tag_is(
+                    get_current_node(parser), GUMBO_TAG_CAPTION)) {
+              parser_add_parse_error(parser, token);
+            }
+            while (
+                !node_html_tag_is(pop_current_node(parser), GUMBO_TAG_CAPTION))
+              ;
+            clear_active_formatting_elements(parser);
+            set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
+            return result;
+          }
+        case GUMBO_TAG_TABLE:
+          return process_end_table_in_caption(parser, token);
+        case GUMBO_TAG_BODY:
+        case GUMBO_TAG_COL:
+        case GUMBO_TAG_COLGROUP:
+        case GUMBO_TAG_HTML:
+        case GUMBO_TAG_TBODY:
+        case GUMBO_TAG_TD:
+        case GUMBO_TAG_TFOOT:
+        case GUMBO_TAG_TH:
+        case GUMBO_TAG_THEAD:
+        case GUMBO_TAG_TR:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+        default:
+          break;
+      }
+      break;
+    default:
+      break;
+  }
+  return handle_in_body(parser, token);
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-incolgroup
