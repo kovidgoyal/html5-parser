@@ -2382,55 +2382,79 @@ static bool handle_in_head_noscript(GumboParser* parser, GumboToken* token) {
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#the-after-head-insertion-mode
 static bool handle_after_head(GumboParser* parser, GumboToken* token) {
   GumboParserState* state = parser->_parser_state;
-  if (token->type == GUMBO_TOKEN_WHITESPACE) {
-    insert_text_token(parser, token);
-    return true;
-  } else if (token->type == GUMBO_TOKEN_DOCTYPE) {
-    parser_add_parse_error(parser, token);
-    ignore_token(parser);
-    return false;
-  } else if (token->type == GUMBO_TOKEN_COMMENT) {
-    append_comment_node(parser, get_current_node(parser), token);
-    return true;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_HTML)) {
-    return handle_in_body(parser, token);
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_BODY)) {
-    insert_element_from_token(parser, token);
-    state->_frameset_ok = false;
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_BODY);
-    return true;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_FRAMESET)) {
-    insert_element_from_token(parser, token);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_FRAMESET);
-    return true;
-  } else if (tag_in(token, kStartTag,
-                 (gumbo_tagset){TAG(BASE), TAG(BASEFONT), TAG(BGSOUND),
-                     TAG(LINK), TAG(META), TAG(NOFRAMES), TAG(SCRIPT),
-                     TAG(STYLE), TAG(TEMPLATE), TAG(TITLE)})) {
-    parser_add_parse_error(parser, token);
-    assert(state->_head_element != NULL);
-    // This must be flushed before we push the head element on, as there may be
-    // pending character tokens that should be attached to the root.
-    maybe_flush_text_node_buffer(parser);
-    gumbo_vector_add(state->_head_element, &state->_open_elements);
-    bool result = handle_in_head(parser, token);
-    gumbo_vector_remove(state->_head_element, &state->_open_elements);
-    return result;
-  } else if (tag_is(token, kEndTag, GUMBO_TAG_TEMPLATE)) {
-    return handle_in_head(parser, token);
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_HEAD) ||
-             (token->type == GUMBO_TOKEN_END_TAG &&
-                 !tag_in(token, kEndTag,
-                     (gumbo_tagset){TAG(BODY), TAG(HTML), TAG(BR)}))) {
-    parser_add_parse_error(parser, token);
-    ignore_token(parser);
-    return false;
-  } else {
-    insert_element_of_tag_type(parser, GUMBO_TAG_BODY, GUMBO_INSERTION_IMPLIED);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_BODY);
-    state->_reprocess_current_token = true;
-    return true;
+  switch (token->type) {
+    case GUMBO_TOKEN_WHITESPACE:
+      insert_text_token(parser, token);
+      return true;
+    case GUMBO_TOKEN_DOCTYPE:
+      parser_add_parse_error(parser, token);
+      ignore_token(parser);
+      return false;
+    case GUMBO_TOKEN_COMMENT:
+      append_comment_node(parser, get_current_node(parser), token);
+      return true;
+    case GUMBO_TOKEN_START_TAG:
+      switch (token->v.start_tag.tag) {
+        case GUMBO_TAG_HTML:
+          return handle_in_body(parser, token);
+        case GUMBO_TAG_BODY:
+          insert_element_from_token(parser, token);
+          state->_frameset_ok = false;
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_BODY);
+          return true;
+        case GUMBO_TAG_FRAMESET:
+          insert_element_from_token(parser, token);
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_FRAMESET);
+          return true;
+        case GUMBO_TAG_BASE:
+        case GUMBO_TAG_BASEFONT:
+        case GUMBO_TAG_BGSOUND:
+        case GUMBO_TAG_LINK:
+        case GUMBO_TAG_META:
+        case GUMBO_TAG_NOFRAMES:
+        case GUMBO_TAG_SCRIPT:
+        case GUMBO_TAG_STYLE:
+        case GUMBO_TAG_TEMPLATE:
+        case GUMBO_TAG_TITLE:
+          parser_add_parse_error(parser, token);
+          assert(state->_head_element != NULL);
+          // This must be flushed before we push the head element on, as there
+          // may be
+          // pending character tokens that should be attached to the root.
+          maybe_flush_text_node_buffer(parser);
+          gumbo_vector_add(state->_head_element, &state->_open_elements);
+          bool result = handle_in_head(parser, token);
+          gumbo_vector_remove(state->_head_element, &state->_open_elements);
+          return result;
+        case GUMBO_TAG_HEAD:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+        default:
+          break;
+      }
+      break;
+    case GUMBO_TOKEN_END_TAG:
+      switch (token->v.end_tag) {
+        case GUMBO_TAG_TEMPLATE:
+          return handle_in_head(parser, token);
+        case GUMBO_TAG_BODY:
+        case GUMBO_TAG_HTML:
+        case GUMBO_TAG_BR:
+          break;
+        default:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+      }
+      break;
+    default:
+      break;
   }
+  insert_element_of_tag_type(parser, GUMBO_TAG_BODY, GUMBO_INSERTION_IMPLIED);
+  set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_BODY);
+  state->_reprocess_current_token = true;
+  return true;
 }
 
 static void free_node(GumboNode* node_to_free) {
