@@ -4037,31 +4037,55 @@ static bool handle_in_select(GumboParser* parser, GumboToken* token) {
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-inselectintable
 static bool handle_in_select_in_table(GumboParser* parser, GumboToken* token) {
-  if (tag_in(token, kStartTag,
-          (gumbo_tagset){TAG(CAPTION), TAG(TABLE), TAG(TBODY), TAG(TFOOT),
-              TAG(THEAD), TAG(TR), TAG(TD), TAG(TH)})) {
-    parser_add_parse_error(parser, token);
-    close_current_select(parser);
-    parser->_parser_state->_reprocess_current_token = true;
-    return false;
-  } else if (tag_in(token, kEndTag,
-                 (gumbo_tagset){TAG(CAPTION), TAG(TABLE), TAG(TBODY),
-                     TAG(TFOOT), TAG(THEAD), TAG(TR), TAG(TD), TAG(TH)})) {
-    parser_add_parse_error(parser, token);
-    if (!has_an_element_in_table_scope(parser, token->v.end_tag)) {
-      ignore_token(parser);
-      return false;
-    } else {
-      close_current_select(parser);
-      // close_current_select already does the
-      // reset_insertion_mode_appropriately
-      // reset_insertion_mode_appropriately(parser);
-      parser->_parser_state->_reprocess_current_token = true;
-      return false;
-    }
-  } else {
-    return handle_in_select(parser, token);
+  switch (token->type) {
+    case GUMBO_TOKEN_START_TAG:
+      switch (token->v.start_tag.tag) {
+        case GUMBO_TAG_CAPTION:
+        case GUMBO_TAG_TABLE:
+        case GUMBO_TAG_TBODY:
+        case GUMBO_TAG_TFOOT:
+        case GUMBO_TAG_THEAD:
+        case GUMBO_TAG_TR:
+        case GUMBO_TAG_TD:
+        case GUMBO_TAG_TH:
+          parser_add_parse_error(parser, token);
+          close_current_select(parser);
+          parser->_parser_state->_reprocess_current_token = true;
+          return false;
+        default:
+          break;
+      }
+      break;
+    case GUMBO_TOKEN_END_TAG:
+      switch (token->v.end_tag) {
+        case GUMBO_TAG_CAPTION:
+        case GUMBO_TAG_TABLE:
+        case GUMBO_TAG_TBODY:
+        case GUMBO_TAG_TFOOT:
+        case GUMBO_TAG_THEAD:
+        case GUMBO_TAG_TR:
+        case GUMBO_TAG_TD:
+        case GUMBO_TAG_TH:
+          parser_add_parse_error(parser, token);
+          if (!has_an_element_in_table_scope(parser, token->v.end_tag)) {
+            ignore_token(parser);
+            return false;
+          } else {
+            close_current_select(parser);
+            // close_current_select already does the
+            // reset_insertion_mode_appropriately
+            // reset_insertion_mode_appropriately(parser);
+            parser->_parser_state->_reprocess_current_token = true;
+            return false;
+          }
+        default:
+          break;
+      }
+      break;
+    default:
+      break;
   }
+  return handle_in_select(parser, token);
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/multipage/tree-construction.html#parsing-main-intemplate
