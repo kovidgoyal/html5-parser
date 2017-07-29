@@ -4091,69 +4091,87 @@ static bool handle_in_select_in_table(GumboParser* parser, GumboToken* token) {
 // http://www.whatwg.org/specs/web-apps/current-work/multipage/tree-construction.html#parsing-main-intemplate
 static bool handle_in_template(GumboParser* parser, GumboToken* token) {
   GumboParserState* state = parser->_parser_state;
-  if (token->type == GUMBO_TOKEN_WHITESPACE ||
-      token->type == GUMBO_TOKEN_CHARACTER ||
-      token->type == GUMBO_TOKEN_COMMENT ||
-      token->type == GUMBO_TOKEN_DOCTYPE) {
-    return handle_in_body(parser, token);
-  } else if (tag_in(token, kStartTag,
-                 (gumbo_tagset){TAG(BASE), TAG(BASEFONT), TAG(BGSOUND),
-                     TAG(LINK), TAG(META), TAG(NOFRAMES), TAG(SCRIPT),
-                     TAG(STYLE), TAG(TEMPLATE), TAG(TITLE)}) ||
-             tag_is(token, kEndTag, GUMBO_TAG_TEMPLATE)) {
-    return handle_in_head(parser, token);
-  } else if (tag_in(
-                 token, kStartTag, (gumbo_tagset){TAG(CAPTION), TAG(COLGROUP),
-                                       TAG(TBODY), TAG(TFOOT), TAG(THEAD)})) {
-    pop_template_insertion_mode(parser);
-    push_template_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
-    state->_reprocess_current_token = true;
-    return true;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_COL)) {
-    pop_template_insertion_mode(parser);
-    push_template_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_COLUMN_GROUP);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_COLUMN_GROUP);
-    state->_reprocess_current_token = true;
-    return true;
-  } else if (tag_is(token, kStartTag, GUMBO_TAG_TR)) {
-    pop_template_insertion_mode(parser);
-    push_template_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE_BODY);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE_BODY);
-    state->_reprocess_current_token = true;
-    return true;
-  } else if (tag_in(token, kStartTag, (gumbo_tagset){TAG(TD), TAG(TH)})) {
-    pop_template_insertion_mode(parser);
-    push_template_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_ROW);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_ROW);
-    state->_reprocess_current_token = true;
-    return true;
-  } else if (token->type == GUMBO_TOKEN_START_TAG) {
-    pop_template_insertion_mode(parser);
-    push_template_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_BODY);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_BODY);
-    state->_reprocess_current_token = true;
-    return true;
-  } else if (token->type == GUMBO_TOKEN_END_TAG) {
-    parser_add_parse_error(parser, token);
-    ignore_token(parser);
-    return false;
-  } else if (token->type == GUMBO_TOKEN_EOF) {
-    if (!has_open_element(parser, GUMBO_TAG_TEMPLATE)) {
-      // Stop parsing.
-      return true;
-    }
-    parser_add_parse_error(parser, token);
-    while (!node_html_tag_is(pop_current_node(parser), GUMBO_TAG_TEMPLATE))
-      ;
-    clear_active_formatting_elements(parser);
-    pop_template_insertion_mode(parser);
-    reset_insertion_mode_appropriately(parser);
-    state->_reprocess_current_token = true;
-    return false;
-  } else {
-    assert(0);
-    return false;
+  switch (token->type) {
+    case GUMBO_TOKEN_WHITESPACE:
+    case GUMBO_TOKEN_CHARACTER:
+    case GUMBO_TOKEN_COMMENT:
+    case GUMBO_TOKEN_DOCTYPE:
+      return handle_in_body(parser, token);
+    case GUMBO_TOKEN_EOF:
+      if (!has_open_element(parser, GUMBO_TAG_TEMPLATE)) {
+        // Stop parsing.
+        return true;
+      }
+      parser_add_parse_error(parser, token);
+      while (!node_html_tag_is(pop_current_node(parser), GUMBO_TAG_TEMPLATE))
+        ;
+      clear_active_formatting_elements(parser);
+      pop_template_insertion_mode(parser);
+      reset_insertion_mode_appropriately(parser);
+      state->_reprocess_current_token = true;
+      return false;
+    case GUMBO_TOKEN_START_TAG:
+      switch (token->v.start_tag.tag) {
+        case GUMBO_TAG_BASE:
+        case GUMBO_TAG_BASEFONT:
+        case GUMBO_TAG_BGSOUND:
+        case GUMBO_TAG_LINK:
+        case GUMBO_TAG_META:
+        case GUMBO_TAG_NOFRAMES:
+        case GUMBO_TAG_SCRIPT:
+        case GUMBO_TAG_STYLE:
+        case GUMBO_TAG_TEMPLATE:
+        case GUMBO_TAG_TITLE:
+          return handle_in_head(parser, token);
+        case GUMBO_TAG_CAPTION:
+        case GUMBO_TAG_COLGROUP:
+        case GUMBO_TAG_TBODY:
+        case GUMBO_TAG_TFOOT:
+        case GUMBO_TAG_THEAD:
+          pop_template_insertion_mode(parser);
+          push_template_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
+          state->_reprocess_current_token = true;
+          return true;
+        case GUMBO_TAG_COL:
+          pop_template_insertion_mode(parser);
+          push_template_insertion_mode(
+              parser, GUMBO_INSERTION_MODE_IN_COLUMN_GROUP);
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_COLUMN_GROUP);
+          state->_reprocess_current_token = true;
+          return true;
+        case GUMBO_TAG_TR:
+          pop_template_insertion_mode(parser);
+          push_template_insertion_mode(
+              parser, GUMBO_INSERTION_MODE_IN_TABLE_BODY);
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE_BODY);
+          state->_reprocess_current_token = true;
+          return true;
+        case GUMBO_TAG_TD:
+        case GUMBO_TAG_TH:
+          pop_template_insertion_mode(parser);
+          push_template_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_ROW);
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_ROW);
+          state->_reprocess_current_token = true;
+          return true;
+        default:
+          pop_template_insertion_mode(parser);
+          push_template_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_BODY);
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_BODY);
+          state->_reprocess_current_token = true;
+          return true;
+      }
+    case GUMBO_TOKEN_END_TAG:
+      switch (token->v.end_tag) {
+        case GUMBO_TAG_TEMPLATE:
+          return handle_in_head(parser, token);
+        default:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+      }
+    default:
+      return false;
   }
 }
 
