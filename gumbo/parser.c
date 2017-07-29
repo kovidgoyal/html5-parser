@@ -3852,45 +3852,73 @@ static bool handle_in_row(GumboParser* parser, GumboToken* token) {
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-intd
 static bool handle_in_cell(GumboParser* parser, GumboToken* token) {
-  if (tag_in(token, kEndTag, (gumbo_tagset){TAG(TD), TAG(TH)})) {
-    GumboTag token_tag = token->v.end_tag;
-    if (!has_an_element_in_table_scope(parser, token_tag)) {
-      parser_add_parse_error(parser, token);
-      ignore_token(parser);
-      return false;
-    }
-    return close_table_cell(parser, token, token_tag);
-  } else if (tag_in(token, kStartTag,
-                 (gumbo_tagset){TAG(CAPTION), TAG(COL), TAG(COLGROUP),
-                     TAG(TBODY), TAG(TD), TAG(TFOOT), TAG(TH), TAG(THEAD),
-                     TAG(TR)})) {
-    gumbo_debug("Handling <td> in cell.\n");
-    if (!has_an_element_in_table_scope(parser, GUMBO_TAG_TH) &&
-        !has_an_element_in_table_scope(parser, GUMBO_TAG_TD)) {
-      gumbo_debug("Bailing out because there's no <td> or <th> in scope.\n");
-      parser_add_parse_error(parser, token);
-      ignore_token(parser);
-      return false;
-    }
-    parser->_parser_state->_reprocess_current_token = true;
-    return close_current_cell(parser, token);
-  } else if (tag_in(token, kEndTag, (gumbo_tagset){TAG(BODY), TAG(CAPTION),
-                                        TAG(COL), TAG(COLGROUP), TAG(HTML)})) {
-    parser_add_parse_error(parser, token);
-    ignore_token(parser);
-    return false;
-  } else if (tag_in(token, kEndTag, (gumbo_tagset){TAG(TABLE), TAG(TBODY),
-                                        TAG(TFOOT), TAG(THEAD), TAG(TR)})) {
-    if (!has_an_element_in_table_scope(parser, token->v.end_tag)) {
-      parser_add_parse_error(parser, token);
-      ignore_token(parser);
-      return false;
-    }
-    parser->_parser_state->_reprocess_current_token = true;
-    return close_current_cell(parser, token);
-  } else {
-    return handle_in_body(parser, token);
+  switch (token->type) {
+    case GUMBO_TOKEN_START_TAG:
+      switch (token->v.start_tag.tag) {
+        case GUMBO_TAG_CAPTION:
+        case GUMBO_TAG_COL:
+        case GUMBO_TAG_COLGROUP:
+        case GUMBO_TAG_TBODY:
+        case GUMBO_TAG_TD:
+        case GUMBO_TAG_TFOOT:
+        case GUMBO_TAG_TH:
+        case GUMBO_TAG_THEAD:
+        case GUMBO_TAG_TR:
+          gumbo_debug("Handling <td> in cell.\n");
+          if (!has_an_element_in_table_scope(parser, GUMBO_TAG_TH) &&
+              !has_an_element_in_table_scope(parser, GUMBO_TAG_TD)) {
+            gumbo_debug(
+                "Bailing out because there's no <td> or <th> in scope.\n");
+            parser_add_parse_error(parser, token);
+            ignore_token(parser);
+            return false;
+          }
+          parser->_parser_state->_reprocess_current_token = true;
+          return close_current_cell(parser, token);
+        default:
+          break;
+      }
+      break;
+    case GUMBO_TOKEN_END_TAG:
+      switch (token->v.end_tag) {
+        case GUMBO_TAG_TD:
+        case GUMBO_TAG_TH: {
+          GumboTag token_tag = token->v.end_tag;
+          if (!has_an_element_in_table_scope(parser, token_tag)) {
+            parser_add_parse_error(parser, token);
+            ignore_token(parser);
+            return false;
+          }
+          return close_table_cell(parser, token, token_tag);
+        }
+        case GUMBO_TAG_BODY:
+        case GUMBO_TAG_CAPTION:
+        case GUMBO_TAG_COL:
+        case GUMBO_TAG_COLGROUP:
+        case GUMBO_TAG_HTML:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+        case GUMBO_TAG_TABLE:
+        case GUMBO_TAG_TBODY:
+        case GUMBO_TAG_TFOOT:
+        case GUMBO_TAG_THEAD:
+        case GUMBO_TAG_TR:
+          if (!has_an_element_in_table_scope(parser, token->v.end_tag)) {
+            parser_add_parse_error(parser, token);
+            ignore_token(parser);
+            return false;
+          }
+          parser->_parser_state->_reprocess_current_token = true;
+          return close_current_cell(parser, token);
+        default:
+          break;
+      }
+      break;
+    default:
+      break;
   }
+  return handle_in_body(parser, token);
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-inselect
