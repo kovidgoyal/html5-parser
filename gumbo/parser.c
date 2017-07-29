@@ -3679,55 +3679,86 @@ static bool handle_in_column_group(GumboParser* parser, GumboToken* token) {
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-intbody
-static bool handle_in_table_body(GumboParser* parser, GumboToken* token) {
-  if (tag_is(token, kStartTag, GUMBO_TAG_TR)) {
-    clear_stack_to_table_body_context(parser);
-    insert_element_from_token(parser, token);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_ROW);
-    return true;
-  } else if (tag_in(token, kStartTag, (gumbo_tagset){TAG(TD), TAG(TH)})) {
-    parser_add_parse_error(parser, token);
-    clear_stack_to_table_body_context(parser);
-    insert_element_of_tag_type(parser, GUMBO_TAG_TR, GUMBO_INSERTION_IMPLIED);
-    parser->_parser_state->_reprocess_current_token = true;
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_ROW);
-    return false;
-  } else if (tag_in(token, kEndTag,
-                 (gumbo_tagset){TAG(TBODY), TAG(TFOOT), TAG(THEAD)})) {
-    if (!has_an_element_in_table_scope(parser, token->v.end_tag)) {
-      parser_add_parse_error(parser, token);
-      ignore_token(parser);
-      return false;
-    }
-    clear_stack_to_table_body_context(parser);
-    pop_current_node(parser);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
-    return true;
-  } else if (tag_in(token, kStartTag,
-                 (gumbo_tagset){TAG(CAPTION), TAG(COL), TAG(COLGROUP),
-                     TAG(TBODY), TAG(TFOOT), TAG(THEAD)}) ||
-             tag_is(token, kEndTag, GUMBO_TAG_TABLE)) {
-    if (!(has_an_element_in_table_scope(parser, GUMBO_TAG_TBODY) ||
-            has_an_element_in_table_scope(parser, GUMBO_TAG_THEAD) ||
-            has_an_element_in_table_scope(parser, GUMBO_TAG_TFOOT))) {
-      parser_add_parse_error(parser, token);
-      ignore_token(parser);
-      return false;
-    }
-    clear_stack_to_table_body_context(parser);
-    pop_current_node(parser);
-    set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
-    parser->_parser_state->_reprocess_current_token = true;
-    return true;
-  } else if (tag_in(token, kEndTag,
-                 (gumbo_tagset){TAG(BODY), TAG(CAPTION), TAG(COL), TAG(TR),
-                     TAG(COLGROUP), TAG(HTML), TAG(TD), TAG(TH)})) {
+static inline bool reprocess_in_table_body(
+    GumboParser* parser, GumboToken* token) {
+  if (!(has_an_element_in_table_scope(parser, GUMBO_TAG_TBODY) ||
+          has_an_element_in_table_scope(parser, GUMBO_TAG_THEAD) ||
+          has_an_element_in_table_scope(parser, GUMBO_TAG_TFOOT))) {
     parser_add_parse_error(parser, token);
     ignore_token(parser);
     return false;
-  } else {
-    return handle_in_table(parser, token);
   }
+  clear_stack_to_table_body_context(parser);
+  pop_current_node(parser);
+  set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
+  parser->_parser_state->_reprocess_current_token = true;
+  return true;
+}
+
+static bool handle_in_table_body(GumboParser* parser, GumboToken* token) {
+  switch (token->type) {
+    case GUMBO_TOKEN_START_TAG:
+      switch (token->v.start_tag.tag) {
+        case GUMBO_TAG_TR:
+          clear_stack_to_table_body_context(parser);
+          insert_element_from_token(parser, token);
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_ROW);
+          return true;
+        case GUMBO_TAG_TD:
+        case GUMBO_TAG_TH:
+          parser_add_parse_error(parser, token);
+          clear_stack_to_table_body_context(parser);
+          insert_element_of_tag_type(
+              parser, GUMBO_TAG_TR, GUMBO_INSERTION_IMPLIED);
+          parser->_parser_state->_reprocess_current_token = true;
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_ROW);
+          return false;
+        case GUMBO_TAG_CAPTION:
+        case GUMBO_TAG_COL:
+        case GUMBO_TAG_COLGROUP:
+        case GUMBO_TAG_TBODY:
+        case GUMBO_TAG_TFOOT:
+        case GUMBO_TAG_THEAD:
+          return reprocess_in_table_body(parser, token);
+        default:
+          break;
+      }
+      break;
+    case GUMBO_TOKEN_END_TAG:
+      switch (token->v.end_tag) {
+        case GUMBO_TAG_TBODY:
+        case GUMBO_TAG_TFOOT:
+        case GUMBO_TAG_THEAD:
+          if (!has_an_element_in_table_scope(parser, token->v.end_tag)) {
+            parser_add_parse_error(parser, token);
+            ignore_token(parser);
+            return false;
+          }
+          clear_stack_to_table_body_context(parser);
+          pop_current_node(parser);
+          set_insertion_mode(parser, GUMBO_INSERTION_MODE_IN_TABLE);
+          return true;
+        case GUMBO_TAG_BODY:
+        case GUMBO_TAG_CAPTION:
+        case GUMBO_TAG_COL:
+        case GUMBO_TAG_TR:
+        case GUMBO_TAG_COLGROUP:
+        case GUMBO_TAG_HTML:
+        case GUMBO_TAG_TD:
+        case GUMBO_TAG_TH:
+          parser_add_parse_error(parser, token);
+          ignore_token(parser);
+          return false;
+        case GUMBO_TAG_TABLE:
+          return reprocess_in_table_body(parser, token);
+        default:
+          break;
+      }
+      break;
+    default:
+      break;
+  }
+  return handle_in_table(parser, token);
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-intr
