@@ -404,12 +404,9 @@ static inline bool gumbo_isspace(unsigned char c) {
     case '\n':
     case '\r':
     case '\t':
-    case '\v':
       return true;
-      break;
     default:
       return false;
-      break;
   }
 }
 
