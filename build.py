@@ -180,7 +180,7 @@ def newer(dest, *sources):
 
 def find_c_files(src_dir):
     ans, headers = [], []
-    for x in os.listdir(src_dir):
+    for x in sorted(os.listdir(src_dir)):
         ext = os.path.splitext(x)[1]
         if ext == '.c' and not x.endswith('-check.c'):
             ans.append(os.path.join(src_dir, x))
