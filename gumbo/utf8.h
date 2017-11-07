@@ -20,7 +20,7 @@
 // 1. Decoding errors are parse errors.
 // 2. Certain other codepoints (eg. control characters) are parse errors.
 // 3. Carriage returns and CR/LF groups are converted to line feeds.
-// http://www.whatwg.org/specs/web-apps/current-work/multipage/infrastructure.html#decoded-as-utf-8,-with-error-handling
+// https://encoding.spec.whatwg.org/#utf-8-decode
 //
 // Also, we want to keep track of source positions for error handling.  As a
 // result, we fold all that functionality into this decoder, and can't use an

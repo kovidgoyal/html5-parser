@@ -32,7 +32,7 @@ const int kUtf8ReplacementChar = 0xFFFD;
 // Wikipedia: http://en.wikipedia.org/wiki/UTF-8#Description
 // RFC 3629: http://tools.ietf.org/html/rfc3629
 // HTML5 Unicode handling:
-// http://www.whatwg.org/specs/web-apps/current-work/multipage/syntax.html#preprocessing-the-input-stream
+// https://html.spec.whatwg.org/multipage/parsing.html#preprocessing-the-input-stream
 //
 // This implementation is based on a DFA-based decoder by Bjoern Hoehrmann
 // <bjoern@hoehrmann.de>.  We wrap the inner table-based decoder routine in our
@@ -141,7 +141,7 @@ static void read_char(Utf8Iterator* iter) {
       // the HTML5 spec.  Since we're looking for particular 7-bit literal
       // characters, we operate in terms of chars and only need a check for iter
       // overrun, instead of having to read in a full next code point.
-      // http://www.whatwg.org/specs/web-apps/current-work/multipage/parsing.html#preprocessing-the-input-stream
+      // https://html.spec.whatwg.org/multipage/parsing.html#preprocessing-the-input-stream
       if (code_point == '\r') {
         assert(iter->_width == 1);
         const char* next = c + 1;
