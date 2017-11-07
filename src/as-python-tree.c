@@ -126,7 +126,6 @@ create_attributes(GumboElement *elem) {
 static inline PyObject*
 create_element(GumboElement *elem, PyObject *new_tag) {
     PyObject *tag_name = NULL, *tag_obj = NULL, *attributes = NULL;
-    uint8_t tag_sz;
     const char *tag;
 
     if (UNLIKELY(elem->tag >= GUMBO_TAG_UNKNOWN)) {
@@ -134,9 +133,9 @@ create_element(GumboElement *elem, PyObject *new_tag) {
         tag_name = PyUnicode_FromStringAndSize(elem->original_tag.data, elem->original_tag.length);
     } else if (UNLIKELY(elem->tag_namespace == GUMBO_NAMESPACE_SVG)) {
         gumbo_tag_from_original_text(&(elem->original_tag));
-        tag = gumbo_normalize_svg_tagname(&(elem->original_tag), &tag_sz);
+        tag = gumbo_normalize_svg_tagname(&(elem->original_tag));
         if (tag) {
-            tag_name = PyUnicode_FromStringAndSize(tag, tag_sz);
+            tag_name = PyUnicode_FromStringAndSize(tag, elem->original_tag.length);
         } else {
             tag_name = PyTuple_GET_ITEM(KNOWN_TAG_NAMES, elem->tag);
             Py_INCREF(tag_name);
