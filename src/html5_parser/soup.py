@@ -11,6 +11,15 @@ universal_cdata_list_attributes = None
 empty = ()
 
 
+def init_bs4_cdata_list_attributes():
+    global cdata_list_attributes, universal_cdata_list_attributes
+    from bs4.builder import HTMLTreeBuilder
+    cdata_list_attributes = {
+        k: frozenset(v) for k, v in HTMLTreeBuilder.cdata_list_attributes.items()
+    }
+    universal_cdata_list_attributes = cdata_list_attributes['*']
+
+
 def map_list_attributes(tag_name, name, val):
     if name in universal_cdata_list_attributes:
         return val.split()
@@ -20,16 +29,10 @@ def map_list_attributes(tag_name, name, val):
 
 
 def soup_module():
-    global cdata_list_attributes, universal_cdata_list_attributes
     if soup_module.ans is None:
         try:
             import bs4
             soup_module.ans = bs4
-            from bs4.builder import HTMLTreeBuilder
-            cdata_list_attributes = {
-                k: frozenset(v) for k, v in HTMLTreeBuilder.cdata_list_attributes.items()
-            }
-            universal_cdata_list_attributes = cdata_list_attributes['*']
         except ImportError:
             import BeautifulSoup as bs3
             soup_module.ans = bs3
@@ -113,6 +116,8 @@ def init_soup():
         soup = bs.BeautifulSoup('', 'lxml')
         new_tag = bs4_new_tag(bs.Tag, soup)
         append = bs4_fast_append
+        if universal_cdata_list_attributes is None:
+            init_bs4_cdata_list_attributes()
     return bs, soup, new_tag, bs.Comment, append, bs.NavigableString
 
 
