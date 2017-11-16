@@ -86,6 +86,7 @@ class AdaptTest(TestCase):
         for soup_name, soup in soups:
             set_soup_module(soup)
             self.do_soup_test(soup_name)
+        set_soup_module(None)
 
     def do_soup_test(self, soup_name):
         root = parse(HTML, treebuilder='soup')

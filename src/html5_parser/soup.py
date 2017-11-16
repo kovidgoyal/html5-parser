@@ -98,9 +98,13 @@ VOID_ELEMENTS = frozenset(
     'area base br col embed hr img input keygen link menuitem meta param source track wbr'.split())
 
 
+def is_bs3():
+    return soup_module().__version__.startswith('3.')
+
+
 def init_soup():
     bs = soup_module()
-    if bs.__version__.startswith('3.'):
+    if is_bs3():
         soup = bs.BeautifulSoup()
         new_tag = bs3_new_tag(bs.Tag, soup)
         append = bs3_fast_append
