@@ -6,12 +6,30 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 unicode = type('')
 
+cdata_list_attributes = None
+universal_cdata_list_attributes = None
+empty = ()
+
+
+def map_list_attributes(tag_name, name, val):
+    if name in universal_cdata_list_attributes:
+        return val.split()
+    if name in cdata_list_attributes.get(tag_name, empty):
+        return val.split()
+    return val
+
 
 def soup_module():
+    global cdata_list_attributes, universal_cdata_list_attributes
     if soup_module.ans is None:
         try:
             import bs4
             soup_module.ans = bs4
+            from bs4.builder import HTMLTreeBuilder
+            cdata_list_attributes = {
+                k: frozenset(v) for k, v in HTMLTreeBuilder.cdata_list_attributes.items()
+            }
+            universal_cdata_list_attributes = cdata_list_attributes['*']
         except ImportError:
             import BeautifulSoup as bs3
             soup_module.ans = bs3
@@ -43,6 +61,7 @@ def bs4_fast_append(self, new_child):
 def bs4_new_tag(Tag, soup):
 
     def new_tag(name, attrs):
+        attrs = {k: map_list_attributes(name, k, v) for k, v in attrs.items()}
         return Tag(soup, name=name, attrs=attrs)
 
     return new_tag

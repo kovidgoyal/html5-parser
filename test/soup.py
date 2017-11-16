@@ -46,6 +46,10 @@ class SoupTest(TestCase):
         root = parse('<p><x xmlns:a="b">')
         self.ae(type('')(root), '<html><head></head><body><p><x xmlns:a="b"></x></p></body></html>')
 
+    def test_soup_list_elements(self):
+        root = parse('<a class="a b" rel="x y">')
+        self.ae(root.body.a.attrs, {'class': 'a b'.split(), 'rel': 'x y'.split()})
+
     def test_soup_leak(self):
         HTML = '<p a=1>\n<a b=2 id=3>y</a>z<x:x class=4>1</x:x>'
         parse(HTML)  # So that BS and html_parser set up any internal objects
