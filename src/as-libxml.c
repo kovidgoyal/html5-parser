@@ -12,6 +12,7 @@
 #define NEEDS_SANITIZE_NAME 1
 #include "as-libxml.h"
 #include <libxml/tree.h>
+#include <libxml/HTMLtree.h>
 #include <libxml/dict.h>
 
 // Namespace constants, indexed by GumboNamespaceEnum.
@@ -310,7 +311,7 @@ convert_node(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode* node, GumboElement
 
 static inline xmlDocPtr
 alloc_doc(Options *opts) {
-    xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
+    xmlDocPtr doc = htmlNewDocNoDtD(NULL, NULL);
     if (doc) {
         if (!doc->dict) {
             doc->dict = xmlDictCreate();
