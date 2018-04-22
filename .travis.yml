@@ -21,7 +21,8 @@ matrix:
           env: BUILDER=build.py CC=clang PYTHON=python LSAN_OPTIONS=verbosity=1:log_threads=1
           group: beta
           dist: trusty
-          sudo: false
+          # See https://github.com/travis-ci/travis-ci/issues/9033
+          sudo: required
           addons:
               apt:
                   packages:
