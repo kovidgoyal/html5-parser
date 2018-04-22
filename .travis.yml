@@ -1,6 +1,3 @@
-cache: pip
-dist: trusty
-sudo: false
 addons:
     apt:
         packages:
@@ -16,21 +13,32 @@ matrix:
           language: python
           python: 2.7
           env: BUILDER=build.py CC=gcc
+          group: beta
+          dist: trusty
+          sudo: false
         - os: linux
           language: python
           python: 2.7
           env: BUILDER=build.py CC=clang
+          group: beta
+          dist: trusty
+          sudo: false
         - os: linux
           language: python
           python: 2.7
           env: BUILDER=setup.py
+          group: beta
+          dist: trusty
+          sudo: false
         - os: linux
           language: python
           python: 3.4
           env: BUILDER=setup.py
-
+          group: beta
+          dist: trusty
+          sudo: false
         - os: osx
-          python:
+          python: 3.5
           language: generic
           env: BUILDER=setup.py
 
