@@ -15,7 +15,7 @@
 
 #define MAJOR 0
 #define MINOR 4
-#define PATCH 4
+#define PATCH 5
 
 static char *NAME =  "libxml2:xmlDoc";
 static char *DESTRUCTOR = "destructor:xmlFreeDoc";
@@ -35,14 +35,14 @@ convert_tree(GumboOutput *output, Options *opts) {
     return doc;
 }
 
-static inline libxml_doc* 
+static inline libxml_doc*
 parse_with_options(const char* buffer, size_t buffer_length, Options *opts) {
     GumboOutput *output = NULL;
     libxml_doc* doc = NULL;
     Py_BEGIN_ALLOW_THREADS;
     output = gumbo_parse_with_options(&(opts->gumbo_opts), buffer, buffer_length);
     Py_END_ALLOW_THREADS;
-    if (output == NULL) PyErr_NoMemory(); 
+    if (output == NULL) PyErr_NoMemory();
     else {
         doc = convert_tree(output, opts);
         gumbo_destroy_output(output);
@@ -50,7 +50,7 @@ parse_with_options(const char* buffer, size_t buffer_length, Options *opts) {
     return doc;
 }
 
-static void 
+static void
 free_encapsulated_doc(PyObject *capsule) {
     libxml_doc *doc = (libxml_doc*)PyCapsule_GetPointer(capsule, NAME);
     if (doc != NULL) {
@@ -108,7 +108,7 @@ parse_and_build(PyObject UNUSED *self, PyObject *args) {
     Py_BEGIN_ALLOW_THREADS;
     output = gumbo_parse_with_options(&(opts.gumbo_opts), buffer, (size_t)sz);
     Py_END_ALLOW_THREADS;
-    if (output == NULL) PyErr_NoMemory(); 
+    if (output == NULL) PyErr_NoMemory();
     GumboDocument* document = &(output->document->v.document);
 
     if (new_doctype != Py_None && document->has_doctype) {
@@ -132,7 +132,7 @@ clone_doc(PyObject UNUSED *self, PyObject *capsule) {
     return encapsulate(doc);
 }
 
-static PyMethodDef 
+static PyMethodDef
 methods[] = {
     {"parse", (PyCFunction)parse, METH_VARARGS | METH_KEYWORDS,
         "parse()\n\nParse specified bytestring which must be in the UTF-8 encoding."
@@ -154,7 +154,7 @@ methods[] = {
 
 #if PY_MAJOR_VERSION >= 3
 
-static struct PyModuleDef 
+static struct PyModuleDef
 moduledef = {
         PyModuleDef_HEAD_INIT,
         MODULE_NAME,
