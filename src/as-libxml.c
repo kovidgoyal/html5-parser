@@ -320,6 +320,7 @@ alloc_doc(Options *opts) {
             }
             opts->line_number_attr = xmlDictLookup(doc->dict, BAD_CAST opts->line_number_attr, -1);
         }
+	doc->encoding = xmlStrdup(BAD_CAST "UTF-8");
     }
     return doc;
 }
