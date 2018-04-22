@@ -49,15 +49,24 @@ matrix:
                   packages:
                       - libxml2-dev
         - os: osx
-          python: 3.5
-          language: python
+          language: generic
           env: BUILDER=setup.py
 
-install:
-    - pip install --no-binary lxml chardet lxml beautifulsoup4
-    - if [[ $TRAVIS_PYTHON_VERSION == 2.* ]]; then pip install BeautifulSoup; fi
-    - python -c "from lxml import etree; print(etree)"
-    - git clone --depth 1 "https://github.com/html5lib/html5lib-tests.git" test/html5lib-tests
+install: |
+    set -e
+    if [[ "$TRAVIS_OS_NAME" == 'osx' ]]; then
+        brew update;
+        brew upgrade python;
+        python --version
+    else
+        PLIB=$(ldd `which python` | grep libpython | cut -d ' ' -f 3)
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`dirname $PLIB`
+    fi
+    pip install --no-binary lxml chardet lxml beautifulsoup4
+    if [[ $TRAVIS_PYTHON_VERSION == 2.* ]]; then pip install BeautifulSoup; fi
+    python -c "from lxml import etree; print(etree)"
+    git clone --depth 1 "https://github.com/html5lib/html5lib-tests.git" test/html5lib-tests
+    set +e
 
 script:
     - python $BUILDER test
