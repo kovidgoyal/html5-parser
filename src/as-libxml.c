@@ -101,7 +101,7 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
                         if (UNLIKELY(!xmlNewNsPropEatName(node, NULL, (xmlChar*)pd->lang_attribute, BAD_CAST attr->value))) return false;
                     }
                     continue;
-                } 
+                }
                 break;
             case GUMBO_ATTR_NAMESPACE_XMLNS:
                 if (strncmp(aname, "xlink", 5) == 0) {
@@ -115,8 +115,8 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
                     continue;
                 } else if (strncmp(aname, "xmlns", 5) == 0) {
                     // discard since we dont support changing the default
-                    // namespace, namespace are decided by tag names alone. 
-                    continue; 
+                    // namespace, namespace are decided by tag names alone.
+                    continue;
                 }
                 break;
             default:
@@ -128,14 +128,14 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
                     continue;
                 } else if (UNLIKELY(strncmp("xmlns", aname, 5) == 0)) {
                     size_t len = strlen(aname);
-                    if (len == 5) continue;  // ignore xmlns 
+                    if (len == 5) continue;  // ignore xmlns
                     if (aname[5] == ':') {
                         if (len == 6) continue; //ignore xmlns:
                         if (pd->maybe_xhtml) {
                             xmlNewNs(node, BAD_CAST attr->value, BAD_CAST aname + 6);
-                            // We ignore failure to create the namespace as the most likely 
+                            // We ignore failure to create the namespace as the most likely
                             // cause is the prefix already exists in this context and xmlNewNs
-                            // does not allow replacing prefixes. We could in theory find the 
+                            // does not allow replacing prefixes. We could in theory find the
                             // existing namespace, but I dont care enough
                             continue;
                         } else {
@@ -265,15 +265,15 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
     }
 #undef ABORT
 end:
-    if (UNLIKELY(!ok)) { 
-        if(result) xmlFreeNode(result); 
-        result = NULL; 
+    if (UNLIKELY(!ok)) {
+        if(result) xmlFreeNode(result);
+        result = NULL;
     }
     return result;
 }
 
 
-static inline xmlNodePtr 
+static inline xmlNodePtr
 convert_node(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode* node, GumboElement **elem, Options *opts) {
     xmlNodePtr ans = NULL;
     ParseData *pd = (ParseData*)doc->_private;
@@ -320,7 +320,7 @@ alloc_doc(Options *opts) {
             }
             opts->line_number_attr = xmlDictLookup(doc->dict, BAD_CAST opts->line_number_attr, -1);
         }
-	doc->encoding = xmlStrdup(BAD_CAST "UTF-8");
+        doc->encoding = xmlStrdup(BAD_CAST "UTF-8");
     }
     return doc;
 }
@@ -336,9 +336,9 @@ add_root_comments(ParseData *pd, GumboDocument *document, GumboNode *root) {
             xmlNodePtr comment = xmlNewComment(BAD_CAST root_node->v.text.text);
             if (UNLIKELY(!comment)) { pd->errmsg = ERRMSG("Out of memory allocating comment");  return false; }
             if (UNLIKELY(!(before_root ? xmlAddPrevSibling(pd->root, comment) : xmlAddSibling(pd->root, comment)))) {
-                pd->errmsg = ERRMSG("Failed to add sibling to root node"); 
+                pd->errmsg = ERRMSG("Failed to add sibling to root node");
                 xmlFreeNode(comment);
-                return false; 
+                return false;
             }
         }
     }
@@ -377,7 +377,7 @@ convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **err
         if (UNLIKELY(!child)) ABORT;
         if (LIKELY(parent)) {
             if (UNLIKELY(!xmlAddChild(parent, child))) ABORT;
-        } else parse_data.root = child; 
+        } else parse_data.root = child;
         if (elem != NULL) {
             if (!push_children(child, elem, stack)) ABORT;
         }
@@ -405,10 +405,10 @@ end:
     return doc;
 }
 
-libxml_doc* 
+libxml_doc*
 copy_libxml_doc(libxml_doc* doc) { return xmlCopyDoc(doc, 1); }
 
-libxml_doc 
+libxml_doc
 free_libxml_doc(libxml_doc* doc) { xmlFreeDoc(doc); }
 
 int
