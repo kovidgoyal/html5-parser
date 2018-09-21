@@ -72,7 +72,12 @@ def add_python_flags(env, return_libs=False):
 
 
 def pkg_config(pkg, *args):
-    val = subprocess.check_output([PKGCONFIG, pkg] + list(args)).decode('utf-8')
+    try:
+        val = subprocess.check_output([PKGCONFIG, pkg] + list(args)).decode('utf-8')
+    except EnvironmentError as err:
+        if err.errno == errno.ENOENT:
+            raise SystemExit('pkg-config is required to build html5-parser')
+        raise
     return list(filter(None, map(str, shlex.split(val))))
 
 
