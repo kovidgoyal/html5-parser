@@ -134,7 +134,7 @@ clone_doc(PyObject UNUSED *self, PyObject *capsule) {
 
 static PyMethodDef
 methods[] = {
-    {"parse", (PyCFunction)parse, METH_VARARGS | METH_KEYWORDS,
+    {"parse", (PyCFunction)(void(*)(void))(PyCFunctionWithKeywords)(parse), METH_VARARGS | METH_KEYWORDS,
         "parse()\n\nParse specified bytestring which must be in the UTF-8 encoding."
     },
 
