@@ -63,9 +63,11 @@ def bs4_fast_append(self, new_child):
 
 def bs4_new_tag(Tag, soup):
 
+    builder = soup.builder
+
     def new_tag(name, attrs):
         attrs = {k: map_list_attributes(name, k, v) for k, v in attrs.items()}
-        return Tag(soup, name=name, attrs=attrs)
+        return Tag(soup, name=name, attrs=attrs, builder=builder)
 
     return new_tag
 
