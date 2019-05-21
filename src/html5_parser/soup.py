@@ -130,9 +130,7 @@ def parse(utf8_data, stack_size=16 * 1024, keep_doctype=False, return_root=True)
         utf8_data = utf8_data.encode('utf-8')
 
     def add_doctype(name, public_id, system_id):
-        public_id = (' PUBLIC ' + public_id + ' ') if public_id else ''
-        system_id = (' ' + system_id) if system_id else ''
-        soup.append(bs.Doctype('<!DOCTYPE {}{}{}>'.format(name, public_id, system_id)))
+        soup.append(bs.Doctype.for_name_and_ids(name, public_id or None, system_id or None))
 
     dt = add_doctype if keep_doctype and hasattr(bs, 'Doctype') else None
     root = html_parser.parse_and_build(
