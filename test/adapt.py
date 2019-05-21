@@ -92,7 +92,10 @@ class AdaptTest(TestCase):
         root = parse(HTML, treebuilder='soup')
         soup = root.parent
         if soup_name != 'BeautifulSoup':
-            self.ae(DOCTYPE, str(soup.contents[0]))
+            # In BS 4+, Doctype instances only store their contents. They get
+            # formatted as `<!DOCTYPE {}>` when the whole soup is serialized.
+            parsed_doctype = str(soup).split('\n', 1)[0]
+            self.ae(DOCTYPE, parsed_doctype)
         self.ae(root.name, 'html')
         self.ae(dict(root.attrs), {'xml:lang': 'en', 'lang': 'en'})
         self.ae(dict(root.body.contents[-1].attrs), {'xml:lang': 'de'})

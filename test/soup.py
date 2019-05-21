@@ -68,3 +68,15 @@ class SoupTest(TestCase):
 
         for num in (1, 10, 100):
             self.assertLess(do_parse(num), 2)
+    
+    def test_doctype_stays_intact(self):
+        base = '\n<html><body><p>xxx</p></body></html>'
+        for dt in (
+                'html',
+                'html PUBLIC "-//W3C//DTD HTML 4.01//EN" '
+                '"http://www.w3.org/TR/html4/strict.dtd"'
+        ):
+            dt = '<!DOCTYPE {}>'.format(dt)
+            soup = parse(dt + base, return_root=False, keep_doctype=True)
+            parsed_doctype = str(soup).split('\n', 1)[0]
+            self.ae(dt, parsed_doctype)
