@@ -14,9 +14,12 @@ empty = ()
 def init_bs4_cdata_list_attributes():
     global cdata_list_attributes, universal_cdata_list_attributes
     from bs4.builder import HTMLTreeBuilder
-    cdata_list_attributes = {
-        k: frozenset(v) for k, v in HTMLTreeBuilder.cdata_list_attributes.items()
-    }
+    try:
+        attribs = HTMLTreeBuilder.DEFAULT_CDATA_LIST_ATTRIBUTES
+    except AttributeError:
+        attribs = HTMLTreeBuilder.cdata_list_attributes
+
+    cdata_list_attributes = {k: frozenset(v) for k, v in attribs.items()}
     universal_cdata_list_attributes = cdata_list_attributes['*']
 
 
