@@ -177,3 +177,12 @@ class NamespaceTests(TestCase):
         a = p[0]
         self.ae(a.attrib, {'{1}a': 'a', '{2}a': 'b', 'n': 'm'})
         self.ae(a.tag, '{1}one')
+
+    def test_xlink(self):
+        src = '''<html xmlns:xlink="xl"><svg><image xlink:href="x"/>'''
+        root = parse(src, maybe_xhtml=True)
+        self.ae(
+            tostring(root),
+            '''<html xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="xl"><head/><body>\
+<svg xmlns="http://www.w3.org/2000/svg"><image xlink:href="x"/></svg></body></html>'''
+        )

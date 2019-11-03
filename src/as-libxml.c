@@ -50,12 +50,23 @@ push_children(xmlNodePtr parent, GumboElement *elem, Stack *stack) {
 static inline xmlNsPtr
 ensure_xml_ns(xmlDocPtr doc, ParseData *pd, xmlNodePtr node) {
     // By default libxml2 docs do not have the xml: namespace defined.
-    xmlNodePtr root = pd->root ? pd->root : node;
     if (UNLIKELY(!pd->xml)) {
+        xmlNodePtr root = pd->root ? pd->root : node;
         pd->xml = xmlSearchNs(doc, root, BAD_CAST "xml");
     }
     return pd->xml;
 }
+
+static inline xmlNsPtr
+ensure_xlink_ns(xmlDocPtr doc, ParseData *pd, xmlNodePtr node) {
+    if (UNLIKELY(!pd->xlink)) {
+        xmlNodePtr root = pd->root ? pd->root : node;
+        pd->xlink = xmlSearchNs(doc, root, BAD_CAST "xlink");
+        if (UNLIKELY(!pd->xlink)) pd->xlink = xmlNewNs(root, BAD_CAST "http://www.w3.org/1999/xlink", BAD_CAST "xlink");
+    }
+    return pd->xlink;
+}
+
 
 static inline xmlNsPtr
 find_namespace_by_prefix(xmlDocPtr doc, xmlNodePtr node, xmlNodePtr xml_parent, const char* prefix) {
@@ -75,7 +86,6 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
     char buf[50] = {0};
     ParseData *pd = (ParseData*)doc->_private;
     xmlNsPtr ns;
-    xmlNodePtr root;
     int added_lang = 0;
 
     for (unsigned int i = 0; i < elem->attributes.length; ++i) {
@@ -85,12 +95,8 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
         ns = NULL;
         switch (attr->attr_namespace) {
             case GUMBO_ATTR_NAMESPACE_XLINK:
-                root = pd->root ? pd->root : node;
-                if (UNLIKELY(!pd->xlink)) {
-                    pd->xlink = xmlNewNs(root, BAD_CAST "http://www.w3.org/1999/xlink", BAD_CAST "xlink");
-                    if(UNLIKELY(!pd->xlink)) return false;
-                }
-                ns = pd->xlink;
+                ns = ensure_xlink_ns(doc, pd, node);
+                if (UNLIKELY(!ns)) return false;
                 break;
             case GUMBO_ATTR_NAMESPACE_XML:
                 ns = ensure_xml_ns(doc, pd, node);
@@ -105,11 +111,7 @@ create_attributes(xmlDocPtr doc, xmlNodePtr node, GumboElement *elem, xmlNodePtr
                 break;
             case GUMBO_ATTR_NAMESPACE_XMLNS:
                 if (strncmp(aname, "xlink", 5) == 0) {
-                    root = pd->root ? pd->root : node;
-                    if (UNLIKELY(!pd->xlink)) {
-                        pd->xlink = xmlNewNs(root, BAD_CAST "http://www.w3.org/1999/xlink", BAD_CAST "xlink");
-                        if(UNLIKELY(!pd->xlink)) return false;
-                    }
+                    if (!ensure_xlink_ns(doc, pd, node)) return false;
                     // We ignore the value of this attribute since we dont want
                     // the xlink namespace to be redefined
                     continue;
