@@ -215,7 +215,7 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
 
     if (UNLIKELY(elem->tag >= GUMBO_TAG_UNKNOWN)) {
         gumbo_tag_from_original_text(&(elem->original_tag));
-        uint8_t tag_sz = MIN(sizeof(buf) - 1, elem->original_tag.length);
+        uint8_t tag_sz = (uint8_t)(MIN(sizeof(buf) - 1, elem->original_tag.length));
         memcpy(buf, elem->original_tag.data, tag_sz);
         tag = buf;
         if (pd->maybe_xhtml) {
@@ -223,7 +223,7 @@ create_element(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode *parent, GumboEle
             nsprefix = check_for_namespace_prefix(&temp, &tag_sz);
             tag = temp;
         }
-        tag_sz = pd->sanitize_names ? sanitize_name((char*)tag) : strlen(tag);
+        tag_sz = (uint8_t)(pd->sanitize_names ? sanitize_name((char*)tag) : strlen(tag));
         tag_name = xmlDictLookup(doc->dict, BAD_CAST tag, tag_sz);
     } else if (UNLIKELY(elem->tag_namespace == GUMBO_NAMESPACE_SVG)) {
         gumbo_tag_from_original_text(&(elem->original_tag));
