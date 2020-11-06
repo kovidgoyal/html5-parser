@@ -23,7 +23,7 @@ LXML = "https://files.pythonhosted.org/packages/c5/2f/a0d8aa3eee6d53d5723d89e1fc
 SW = os.path.abspath('sw')
 PYTHON = os.path.abspath(sys.executable)
 os.environ['SW'] = SW
-os.environ['PYTHONPATH'] = os.path.expandvars(r'%SW%\python\Lib\site-packages;%PYTHONPATH%')
+os.environ['PYTHONPATH'] = os.path.join(SW, r'python\Lib\site-packages')
 plat = 'amd64' if sys.maxsize > 2**32 else 'x86'
 
 
