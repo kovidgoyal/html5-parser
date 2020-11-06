@@ -257,6 +257,8 @@ def lxml():
             'setup.py build_ext -I {0}/include;{0}/include/libxml2 -L {0}/lib'.format(
                 SW.replace(os.sep, '/')).split()))
     run(PYTHON, 'setup.py', 'install', '--prefix', os.path.join(SW, 'python'))
+    package = glob.glob(os.path.join(SW, 'python', 'lib', 'site-packages', 'lxml-*.egg', 'lxml'))[0]
+    os.rename(package, os.path.join(SW, 'python', 'lib', 'site-packages', 'lxml'))
 
 
 def install_deps():

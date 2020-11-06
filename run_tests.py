@@ -15,7 +15,6 @@ if 'HTML5_PARSER_DLL_DIR' in os.environ:
     print('Added DLL directory', sys.save_dll_dir, 'with contents:',
           os.listdir(os.environ['HTML5_PARSER_DLL_DIR']))
     print('Current sys.path:', sys.path)
-    print('PYTHONPATH', os.environ.get('PYTHONPATH'))
 
 self_path = os.path.abspath(__file__)
 base = os.path.dirname(self_path)
