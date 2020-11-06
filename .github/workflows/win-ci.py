@@ -23,7 +23,6 @@ LXML = "https://files.pythonhosted.org/packages/c5/2f/a0d8aa3eee6d53d5723d89e1fc
 SW = os.path.abspath('sw')
 PYTHON = os.path.abspath(sys.executable)
 os.environ['SW'] = SW
-os.environ['PYTHONPATH'] = os.path.expandvars('%SW%\\python\\Lib\\site-packages;%PYTHONPATH%')
 plat = 'amd64' if sys.maxsize > 2**32 else 'x86'
 
 
@@ -256,7 +255,7 @@ def lxml():
         *(
             'setup.py build_ext -I {0}/include;{0}/include/libxml2 -L {0}/lib'.format(
                 SW.replace(os.sep, '/')).split()))
-    run(PYTHON, 'setup.py', 'install')
+    run(PYTHON, 'setup.py', 'install', '--prefix', os.path.join(SW, 'python'))
 
 
 def install_deps():
@@ -289,6 +288,7 @@ def build():
         LIBXML_INCLUDE_DIRS=r'{0}\include;{0}\include\libxml2'.format(SW),
         LIBXML_LIB_DIRS=r'{0}\lib'.format(SW),
         HTML5_PARSER_DLL_DIR=os.path.join(SW, 'bin'),
+        HTML5_PYTHONPATH=os.path.join(SW, 'python', 'Lib', 'site-packages')
     ))
     run(PYTHON, 'setup.py', 'test')
 
