@@ -33,8 +33,6 @@ def install_deps():
         deps.append('BeautifulSoup')
     run(sys.executable, '-m', 'pip', 'install', '--no-binary', 'lxml', *deps)
     run(sys.executable, '-c', 'from lxml import etree; print(etree)')
-    run('git', 'clone', '--depth', '1',
-        "https://github.com/html5lib/html5lib-tests.git", 'test/html5lib-tests')
 
 
 def main():

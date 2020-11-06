@@ -40,6 +40,10 @@ jobs:
               run:
                 python .github/workflows/ci.py install
 
+            - name: Download html5lib tests
+              run:
+                git clone --depth 1 https://github.com/html5lib/html5lib-tests.git test/html5lib-tests
+
             - name: Run tests
               run:
                 python .github/workflows/ci.py test
