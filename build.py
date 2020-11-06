@@ -25,7 +25,7 @@ freeze_dir = os.path.join(base, 'build', 'html5_parser')
 _plat = sys.platform.lower()
 isosx = 'darwin' in _plat
 iswindows = hasattr(sys, 'getwindowsversion')
-is_travis = os.environ.get('TRAVIS') == 'true'
+is_ci = os.environ.get('CI') == 'true'
 Env = namedtuple('Env', 'cc cflags ldflags linker debug cc_name cc_ver')
 PKGCONFIG = os.environ.get('PKGCONFIG_EXE', 'pkg-config')
 with open(os.path.join(base, 'src/python-wrapper.c'), 'rb') as f:
@@ -209,7 +209,7 @@ def build_obj(src, env, headers):
 
 TEST_EXE = os.path.join(build_dir, 'test')
 MEMLEAK_EXE = os.path.join(build_dir, 'mem-leak-check')
-if is_travis:
+if is_ci:
     TEST_EXE = os.path.join(os.path.dirname(os.path.abspath(sys.executable)), 'test-html5-parser')
 SRC_DIRS = 'src gumbo'.split()
 MOD_EXT = '.so'

@@ -1,0 +1,51 @@
+name: CI
+on: [push, pull_request]
+env:
+    CI: 'true'
+    LC_ALL: en_US.UTF-8
+    LANG: en_US.UTF-8
+
+jobs:
+    linux:
+        name: Linux (python=${{ matrix.pyver }} cc=${{ matrix.cc }} builder=${{ matrix.builder }})
+        runs-on: ubuntu-latest
+        env:
+            CC: ${{ matrix.cc }}
+            BUILDER: ${{ matrix.builder }}
+        strategy:
+            matrix:
+                python: [a, b, c]
+                cc: [gcc, clang]
+                include:
+                    - python: a
+                      pyver: 2.7
+                      builder: build.py
+
+                    - python: b
+                      pyver: 3.6
+                      builder: build.py
+
+                    - python: c
+                      pyver: 3.8
+                      builder: setup.py
+
+                exclude:
+                    - python: a
+                      cc: clang
+                    - python: c
+                      cc: clang
+
+        steps:
+            - name: Checkout source code
+              uses: actions/checkout@master
+              with:
+                fetch-depth: 10
+
+            - name: Set up Python ${{ matrix.pyver }}
+              uses: actions/setup-python@master
+              with:
+                python-version: ${{ matrix.pyver }}
+
+            - name: Install dependencies
+              run:
+                python .github/workflows/ci.py install
