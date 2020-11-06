@@ -1,0 +1,49 @@
+name: CI
+on: [push, pull_request]
+env:
+    CI: 'true'
+    LC_ALL: en_US.UTF-8
+    LANG: en_US.UTF-8
+
+jobs:
+    test:
+        name: Test on ${{ matrix.os }} (python=${{ matrix.pyver }} cc=${{ matrix.cc }} builder=${{ matrix.builder }})
+        runs-on: ${{ matrix.os }}
+        env:
+            CC: ${{ matrix.cc }}
+            BUILDER: ${{ matrix.builder }}
+        strategy:
+            matrix:
+                include:
+                    - { pyver: 2.7, builder: build.py, os: ubuntu-latest, cc: gcc }
+                    - { pyver: 2.7, builder: build.py, os: ubuntu-latest, cc: clang }
+                    - { pyver: 3.6, builder: build.py, os: ubuntu-latest, cc: gcc }
+                    - { pyver: 3.6, builder: build.py, os: ubuntu-latest, cc: clang }
+                    - { pyver: 3.8, builder: setup.py, os: ubuntu-latest, cc: gcc }
+
+                    - { pyver: 3.8, builder: setup.py, os: macos-latest, cc: clang }
+
+                    - { pyver: 3.8, builder: setup.py, os: windows-latest, cc: cl }
+
+        steps:
+            - name: Checkout source code
+              uses: actions/checkout@master
+              with:
+                fetch-depth: 10
+
+            - name: Set up Python ${{ matrix.pyver }}
+              uses: actions/setup-python@master
+              with:
+                python-version: ${{ matrix.pyver }}
+
+            - name: Install dependencies
+              run:
+                python .github/workflows/ci.py install
+
+            - name: Download html5lib tests
+              run:
+                git clone --depth 1 https://github.com/html5lib/html5lib-tests.git test/html5lib-tests
+
+            - name: Run tests
+              run:
+                python .github/workflows/ci.py test
