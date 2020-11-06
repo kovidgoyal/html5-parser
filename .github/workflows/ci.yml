@@ -6,34 +6,24 @@ env:
     LANG: en_US.UTF-8
 
 jobs:
-    linux:
-        name: Linux (python=${{ matrix.pyver }} cc=${{ matrix.cc }} builder=${{ matrix.builder }})
-        runs-on: ubuntu-latest
+    test:
+        name: Test on ${{ matrix.os }} (python=${{ matrix.pyver }} cc=${{ matrix.cc }} builder=${{ matrix.builder }})
+        runs-on: ${{ matrix.os }}
         env:
             CC: ${{ matrix.cc }}
             BUILDER: ${{ matrix.builder }}
         strategy:
             matrix:
-                python: [a, b, c]
-                cc: [gcc, clang]
                 include:
-                    - python: a
-                      pyver: 2.7
-                      builder: build.py
+                    - { pyver: 2.7, builder: build.py, os: ubuntu-latest, cc: gcc }
+                    - { pyver: 2.7, builder: build.py, os: ubuntu-latest, cc: clang }
+                    - { pyver: 3.6, builder: build.py, os: ubuntu-latest, cc: gcc }
+                    - { pyver: 3.6, builder: build.py, os: ubuntu-latest, cc: clang }
+                    - { pyver: 3.8, builder: setup.py, os: ubuntu-latest, cc: gcc }
 
-                    - python: b
-                      pyver: 3.6
-                      builder: build.py
+                    - { pyver: 3.8, builder: setup.py, os: macos-latest, cc: clang }
 
-                    - python: c
-                      pyver: 3.8
-                      builder: setup.py
-
-                exclude:
-                    - python: a
-                      cc: clang
-                    - python: c
-                      cc: clang
+                    - { pyver: 3.8, builder: setup.py, os: windows-latest, cc: cl }
 
         steps:
             - name: Checkout source code
@@ -49,3 +39,7 @@ jobs:
             - name: Install dependencies
               run:
                 python .github/workflows/ci.py install
+
+            - name: Run tests
+              run:
+                python .github/workflows/ci.py test

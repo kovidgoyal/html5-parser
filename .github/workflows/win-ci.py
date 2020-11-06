@@ -19,14 +19,16 @@ import time
 ZLIB = "http://zlib.net/zlib-{}.tar.xz".format("1.2.11")
 LIBXML2 = "ftp://xmlsoft.org/libxml2/libxml2-{}.tar.gz".format('2.9.4')
 LIBXSLT = "ftp://xmlsoft.org/libxml2/libxslt-{}.tar.gz".format('1.1.28')
-LXML = "https://pypi.python.org/packages/20/b3/9f245de14b7696e2d2a386c0b09032a2ff6625270761d6543827e667d8de/lxml-3.8.0.tar.gz"  # noqa
+LXML = "https://files.pythonhosted.org/packages/c5/2f/a0d8aa3eee6d53d5723d89e1fc32eee11e76801b424e30b55c7aa6302b01/lxml-4.6.1.tar.gz"  # noqa
 SW = os.path.abspath('sw')
 if 'PY' in os.environ and 'Platform' in os.environ:
     PYTHON = os.path.expandvars('C:\\Python%PY%-%Platform%\\python.exe').replace('-x86', '')
 else:
     PYTHON = sys.executable
+PYTHON = os.path.abspath(PYTHON)
 os.environ['SW'] = SW
 os.environ['PYTHONPATH'] = os.path.expandvars('%SW%\\python\\Lib\\site-packages;%PYTHONPATH%')
+plat = 'amd64' if sys.maxsize > 2**32 else 'x86'
 
 
 def printf(*a, **k):
@@ -82,6 +84,55 @@ def run(*args, env=None, cwd=None):
         raise
     if p.wait() != 0:
         raise SystemExit(p.returncode)
+
+
+def distutils_vcvars():
+    from distutils.msvc9compiler import find_vcvarsall, get_build_version
+    return find_vcvarsall(get_build_version())
+
+
+def remove_dups(variable):
+    old_list = variable.split(os.pathsep)
+    new_list = []
+    for i in old_list:
+        if i not in new_list:
+            new_list.append(i)
+    return os.pathsep.join(new_list)
+
+
+def query_process(cmd):
+    if plat == 'amd64' and 'PROGRAMFILES(x86)' not in os.environ:
+        os.environ['PROGRAMFILES(x86)'] = os.environ['PROGRAMFILES'] + ' (x86)'
+    result = {}
+    popen = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+    try:
+        stdout, stderr = popen.communicate()
+        if popen.wait() != 0:
+            raise RuntimeError(stderr.decode("mbcs"))
+
+        stdout = stdout.decode("mbcs")
+        for line in stdout.splitlines():
+            if '=' not in line:
+                continue
+            line = line.strip()
+            key, value = line.split('=', 1)
+            key = key.lower()
+            if key == 'path':
+                if value.endswith(os.pathsep):
+                    value = value[:-1]
+                value = remove_dups(value)
+            result[key] = value
+
+    finally:
+        popen.stdout.close()
+        popen.stderr.close()
+    return result
+
+
+def query_vcvarsall():
+    vcvarsall = distutils_vcvars()
+    return query_process('"%s" %s & set' % (vcvarsall, plat))
 
 
 def download_and_extract(url):
@@ -213,6 +264,8 @@ def lxml():
 
 
 def install_deps():
+    env = query_vcvarsall()
+    os.environ.update(env)
     print(PYTHON)
     for x in 'build lib bin include python/Lib/site-packages'.split():
         ensure_dir(os.path.join(SW, x))
@@ -227,25 +280,27 @@ def install_deps():
         try:
             download_and_extract(globals()[name.upper()])
             globals()[name]()
-        except:
+        except Exception:
             os.chdir(base)
             shutil.rmtree(name)
             raise
 
 
 def build():
+    env = query_vcvarsall()
+    os.environ.update(env)
     p = os.environ['PATH']
     p = os.path.join(SW, 'bin') + os.pathsep + p
-    env = dict(
+    os.environ.update(dict(
         LIBXML_INCLUDE_DIRS=r'{0}\include;{0}\include\libxml2'.format(SW),
         LIBXML_LIB_DIRS=r'{0}\lib'.format(SW),
         PATH=p
-    )
-    run(PYTHON, 'setup.py', 'test', env=env)
+    ))
+    run(PYTHON, 'setup.py', 'test')
 
 
 def main():
-    if sys.argv[-1] == 'install_deps':
+    if sys.argv[-1] == 'install':
         install_deps()
     else:
         build()
