@@ -203,7 +203,6 @@ def install_tree(src, dest_parent='include', ignore=None):
 
 def pure_python():
     run(PYTHON, '-m', 'pip', 'install', 'chardet', 'bs4', '--prefix', os.path.join(SW, 'python'))
-    run(PYTHON, '-c', 'import bs4; print(bs4)')
 
 
 def zlib():
