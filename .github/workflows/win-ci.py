@@ -21,11 +21,7 @@ LIBXML2 = "ftp://xmlsoft.org/libxml2/libxml2-{}.tar.gz".format('2.9.4')
 LIBXSLT = "ftp://xmlsoft.org/libxml2/libxslt-{}.tar.gz".format('1.1.28')
 LXML = "https://files.pythonhosted.org/packages/c5/2f/a0d8aa3eee6d53d5723d89e1fc32eee11e76801b424e30b55c7aa6302b01/lxml-4.6.1.tar.gz"  # noqa
 SW = os.path.abspath('sw')
-if 'PY' in os.environ and 'Platform' in os.environ:
-    PYTHON = os.path.expandvars('C:\\Python%PY%-%Platform%\\python.exe').replace('-x86', '')
-else:
-    PYTHON = sys.executable
-PYTHON = os.path.abspath(PYTHON)
+PYTHON = os.path.abspath(sys.executable)
 os.environ['SW'] = SW
 os.environ['PYTHONPATH'] = os.path.expandvars('%SW%\\python\\Lib\\site-packages;%PYTHONPATH%')
 plat = 'amd64' if sys.maxsize > 2**32 else 'x86'
@@ -260,7 +256,7 @@ def lxml():
         *(
             'setup.py build_ext -I {0}/include;{0}/include/libxml2 -L {0}/lib'.format(
                 SW.replace(os.sep, '/')).split()))
-    run(PYTHON, 'setup.py', 'install', '--prefix', os.path.join(SW, 'python'))
+    run(PYTHON, 'setup.py', 'install')
 
 
 def install_deps():
@@ -289,12 +285,10 @@ def install_deps():
 def build():
     env = query_vcvarsall()
     os.environ.update(env)
-    p = os.environ['PATH']
-    p = os.path.join(SW, 'bin') + os.pathsep + p
     os.environ.update(dict(
         LIBXML_INCLUDE_DIRS=r'{0}\include;{0}\include\libxml2'.format(SW),
         LIBXML_LIB_DIRS=r'{0}\lib'.format(SW),
-        PATH=p
+        HTML5_PARSER_DLL_DIR=os.path.join(SW, 'bin'),
     ))
     run(PYTHON, 'setup.py', 'test')
 
