@@ -4647,7 +4647,7 @@ GumboOutput* gumbo_parse_fragment(const GumboOptions* options,
                     // we exclude the <html> tag as it causes crashes in the as-lxml
                     // module, see https://github.com/kovidgoyal/html5-parser/issues/17
                     // I dont have the time to track down the root cause, probably something
-                    // related to resuing the same string segments for the tag name and the
+                    // related to reusing the same string segments for the tag name and the
                     // special cloning/modification that happens to HTML tags. Since HTML tags
                     // are treated specially anyway, there is no harm in excluding them.
                     TAG(HTML)})) {
