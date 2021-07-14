@@ -645,7 +645,7 @@ static GumboInsertionMode get_current_template_insertion_mode(
   if (template_insertion_modes->length == 0) {
     return GUMBO_INSERTION_MODE_INITIAL;
   }
-  return (GumboInsertionMode)
+  return (GumboInsertionMode)(uintptr_t)
       template_insertion_modes->data[(template_insertion_modes->length - 1)];
 }
 
