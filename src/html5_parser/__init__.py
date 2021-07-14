@@ -115,7 +115,7 @@ def normalize_treebuilder(x):
     return {'lxml.etree': 'lxml', 'etree': 'stdlib_etree'}.get(x, x)
 
 
-NAMESPACE_SUPPORTING_BUILDERS = frozenset('lxml stdlib_etree dom'.split())
+NAMESPACE_SUPPORTING_BUILDERS = frozenset('lxml stdlib_etree dom lxml_html'.split())
 
 
 def parse(
@@ -200,8 +200,12 @@ def parse(
         sanitize_names=sanitize_names,
         stack_size=stack_size)
 
-    ans = etree.adopt_external_document(capsule)
-    if treebuilder == 'lxml':
+    interpreter = None
+    if treebuilder == 'lxml_html':
+        from lxml.html import HTMLParser
+        interpreter = HTMLParser()
+    ans = etree.adopt_external_document(capsule, parser=interpreter)
+    if treebuilder in ('lxml', 'lxml_html'):
         return ans.getroot() if return_root else ans
     m = importlib.import_module('html5_parser.' + treebuilder)
     return m.adapt(ans, return_root=return_root)
