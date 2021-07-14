@@ -146,6 +146,7 @@ def parse(
         The type of tree to return. Note that only the lxml treebuilder is fast, as all
         other treebuilders are implemented in python, not C. Supported values are:
           * `lxml <http://lxml.de>`_  -- the default, and fastest
+          * `lxml_html <http://lxml.de>`_  -- lxml tree of lxml.html.HtmlElement, same speed as lxml
           * etree (the python stdlib :mod:`xml.etree.ElementTree`)
           * dom (the python stdlib :mod:`xml.dom.minidom`)
           * `soup <https://www.crummy.com/software/BeautifulSoup>`_ -- BeautifulSoup,
@@ -161,7 +162,8 @@ def parse(
         suitable for XHTML. In particular handles self-closed CDATA elements.
         So a ``<title/>`` or ``<style/>`` in the HTML will not completely break
         parsing. Also preserves namespaced tags and attributes even for namespaces
-        not supported by HTML 5 (this works only with the ``lxml`` treebuilder).
+        not supported by HTML 5 (this works only with the ``lxml`` and ``lxml_html``
+        treebuilder).
         Note that setting this also implicitly sets ``namespace_elements``.
 
     :param return_root: If True, return the root node of the document, otherwise
