@@ -94,3 +94,8 @@ class BasicTests(TestCase):
         self.ae(root[1][0].sourceline, 4)
         self.ae(root[1][0][0].sourceline, 4)
         self.ae(root[1][0][0].get('ln'), '4')
+
+    def test_lxml_html(self):
+        root = parse('<html><head><body><p><span>', treebuilder='lxml_html')
+        from lxml.html import HtmlElement
+        self.assertIsInstance(root, HtmlElement)
