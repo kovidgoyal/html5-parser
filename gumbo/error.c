@@ -78,8 +78,8 @@ static void print_tag_stack(
     if (i) {
       print_message(output, ", ");
     }
-    GumboTag tag = (GumboTag) error->tag_stack.data[i];
-    print_message(output, gumbo_normalized_tagname(tag));
+    uintptr_t tag = (uintptr_t) error->tag_stack.data[i];
+    print_message(output, gumbo_normalized_tagname((GumboTag)tag));
   }
   gumbo_string_buffer_append_codepoint('.', output);
 }
