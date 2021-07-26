@@ -36,11 +36,12 @@ convert_tree(GumboOutput *output, Options *opts) {
 }
 
 static inline libxml_doc*
-parse_with_options(const char* buffer, size_t buffer_length, Options *opts) {
+parse_with_options(const char* buffer, size_t buffer_length, Options *opts, int is_fragment) {
     GumboOutput *output = NULL;
     libxml_doc* doc = NULL;
     Py_BEGIN_ALLOW_THREADS;
-    output = gumbo_parse_with_options(&(opts->gumbo_opts), buffer, buffer_length);
+    GumboTag tag = 1 == is_fragment ? GUMBO_TAG_BODY : GUMBO_TAG_LAST;
+    output = gumbo_parse_fragment(&(opts->gumbo_opts), buffer, buffer_length, tag, GUMBO_NAMESPACE_HTML);
     Py_END_ALLOW_THREADS;
     if (output == NULL) PyErr_NoMemory();
     else {
@@ -75,19 +76,19 @@ parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
     Py_ssize_t sz = 0;
     Options opts = {0};
     opts.stack_size = 16 * 1024;
-    PyObject *kd = Py_True, *mx = Py_False, *ne = Py_False, *sn = Py_True;
+    PyObject *kd = Py_True, *mx = Py_False, *ne = Py_False, *sn = Py_True, *fr = Py_False;
     opts.gumbo_opts = kGumboDefaultOptions;
     opts.gumbo_opts.max_errors = 0;  // We discard errors since we are not reporting them anyway
 
-    static char *kwlist[] = {"data", "namespace_elements", "keep_doctype", "maybe_xhtml", "line_number_attr", "sanitize_names", "stack_size", NULL};
+    static char *kwlist[] = {"data", "namespace_elements", "keep_doctype", "maybe_xhtml", "line_number_attr", "sanitize_names", "stack_size", "is_fragment", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|OOOzOI", kwlist, &buffer, &sz, &ne, &kd, &mx, &(opts.line_number_attr), &sn, &(opts.stack_size))) return NULL;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|OOOzOIO", kwlist, &buffer, &sz, &ne, &kd, &mx, &(opts.line_number_attr), &sn, &(opts.stack_size), &fr)) return NULL;
     opts.namespace_elements = PyObject_IsTrue(ne);
     opts.keep_doctype = PyObject_IsTrue(kd);
     opts.sanitize_names = PyObject_IsTrue(sn);
     opts.gumbo_opts.use_xhtml_rules = PyObject_IsTrue(mx);
 
-    doc = parse_with_options(buffer, (size_t)sz, &opts);
+    doc = parse_with_options(buffer, (size_t)sz, &opts, PyObject_IsTrue(fr));
     if (!doc) return NULL;
     return encapsulate(doc);
 }
