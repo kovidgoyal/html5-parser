@@ -101,5 +101,5 @@ class BasicTests(TestCase):
         self.assertIsInstance(root, HtmlElement)
 
     def test_fragment(self):
-        root = parse('<span>a</span>', is_fragment=True)
+        root = parse('<span>a</span>', fragment_context='div')
         self.ae(root[0].tag, 'span')

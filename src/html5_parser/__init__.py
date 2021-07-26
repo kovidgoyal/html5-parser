@@ -130,7 +130,7 @@ def parse(
     line_number_attr=None,
     sanitize_names=True,
     stack_size=16 * 1024,
-    is_fragment=False,
+    fragment_context=None,
 ):
     '''
     Parse the specified :attr:`html` and return the parsed representation.
@@ -184,7 +184,8 @@ def parse(
         default is sufficient to avoid memory allocations for all but the
         largest documents.
 
-    :param is_fragment: treat HTML as fragment, not full document.
+    :param fragment_context: the tag name under which to parse the HTML when the html
+        is a fragment. Common choices are ``div`` or ``body``.
     '''
     data = as_utf8(html or b'', transport_encoding, fallback_encoding)
     treebuilder = normalize_treebuilder(treebuilder)
@@ -203,7 +204,7 @@ def parse(
         line_number_attr=line_number_attr,
         sanitize_names=sanitize_names,
         stack_size=stack_size,
-        is_fragment=is_fragment,
+        fragment_context=fragment_context,
         )
 
     interpreter = None

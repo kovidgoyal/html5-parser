@@ -4350,23 +4350,16 @@ static bool handle_in_foreign_content(GumboParser* parser, GumboToken* token) {
     /* Parse error */
     parser_add_parse_error(parser, token);
 
-    /*
-     * Fragment case: If the parser was originally created for the HTML
-     * fragment parsing algorithm, then act as described in the "any other
-     * start tag" entry below.
-     */
-    if (!is_fragment_parser(parser)) {
-      do {
+    do {
         pop_current_node(parser);
-      } while (!(is_mathml_integration_point(get_current_node(parser)) ||
-                 is_html_integration_point(get_current_node(parser)) ||
-                 get_current_node(parser)->v.element.tag_namespace ==
-                     GUMBO_NAMESPACE_HTML));
-      parser->_parser_state->_reprocess_current_token = true;
-      return false;
-    }
-
+    } while (!(is_mathml_integration_point(get_current_node(parser)) ||
+                is_html_integration_point(get_current_node(parser)) ||
+                get_current_node(parser)->v.element.tag_namespace ==
+                GUMBO_NAMESPACE_HTML));
+    parser->_parser_state->_reprocess_current_token = true;
+    return false;
     assert(token->type == GUMBO_TOKEN_START_TAG);
+
   }
 
   if (token->type == GUMBO_TOKEN_START_TAG) {
