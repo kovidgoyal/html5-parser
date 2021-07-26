@@ -4344,7 +4344,9 @@ static bool handle_in_foreign_content(GumboParser* parser, GumboToken* token) {
       (tag_is(token, kStartTag, GUMBO_TAG_FONT) &&
           (token_has_attribute(token, "color") ||
               token_has_attribute(token, "face") ||
-              token_has_attribute(token, "size")))) {
+              token_has_attribute(token, "size"))) ||
+      (tag_in(token, kEndTag, (gumbo_tagset){TAG(P), TAG(BR)}))
+    ) {
     /* Parse error */
     parser_add_parse_error(parser, token);
 
