@@ -102,4 +102,4 @@ class BasicTests(TestCase):
 
     def test_fragment(self):
         root = parse('<span>a</span>', is_fragment=True)
-        self.ae(root.tag, 'span')
+        self.ae(root[0].tag, 'span')

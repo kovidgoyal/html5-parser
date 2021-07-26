@@ -202,7 +202,9 @@ def parse(
         maybe_xhtml=maybe_xhtml,
         line_number_attr=line_number_attr,
         sanitize_names=sanitize_names,
-        stack_size=stack_size)
+        stack_size=stack_size,
+        is_fragment=is_fragment,
+        )
 
     interpreter = None
     if treebuilder == 'lxml_html':
