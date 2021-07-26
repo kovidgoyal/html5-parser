@@ -203,7 +203,8 @@ def parse(
         if ':' in fragment_context:
             ns, fragment_context = fragment_context.split(':', 1)
             fragment_namespace = {
-                'svg': html_parser.GUMBO_NAMESPACE_SVG, 'math': html_parser.GUMBO_NAMESPACE_MATHML
+                'svg': html_parser.GUMBO_NAMESPACE_SVG, 'math': html_parser.GUMBO_NAMESPACE_MATHML,
+                'html': html_parser.GUMBO_NAMESPACE_HTML
             }[ns]
 
     capsule = html_parser.parse(

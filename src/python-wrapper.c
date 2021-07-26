@@ -96,6 +96,12 @@ parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
             return NULL;
         }
     }
+    if (fragment_namespace != GUMBO_NAMESPACE_HTML) {
+        // causes infinite loops in gumbo, enable the non html fragment context tests
+        // in html5lib_adapter.py to trigger
+        PyErr_SetString(PyExc_KeyError, "Fragment parsing with non-HTML namespaces is not supported");
+        return NULL;
+    }
     doc = parse_with_options(buffer, (size_t)sz, &opts, context, fragment_namespace);
     if (!doc) return NULL;
     return encapsulate(doc);
