@@ -36,11 +36,11 @@ convert_tree(GumboOutput *output, Options *opts) {
 }
 
 static libxml_doc*
-parse_with_options(const char* buffer, size_t buffer_length, Options *opts, const GumboTag context) {
+parse_with_options(const char* buffer, size_t buffer_length, Options *opts, const GumboTag context, GumboNamespaceEnum context_namespace) {
     GumboOutput *output = NULL;
     libxml_doc* doc = NULL;
     Py_BEGIN_ALLOW_THREADS;
-    output = gumbo_parse_fragment(&(opts->gumbo_opts), buffer, buffer_length, context, GUMBO_NAMESPACE_HTML);
+    output = gumbo_parse_fragment(&(opts->gumbo_opts), buffer, buffer_length, context, context_namespace);
     Py_END_ALLOW_THREADS;
     if (output == NULL) PyErr_NoMemory();
     else {
@@ -79,10 +79,11 @@ parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
     char *fragment_context = NULL; Py_ssize_t fragment_context_sz = 0;
     opts.gumbo_opts = kGumboDefaultOptions;
     opts.gumbo_opts.max_errors = 0;  // We discard errors since we are not reporting them anyway
+    GumboNamespaceEnum fragment_namespace = GUMBO_NAMESPACE_HTML;
 
-    static char *kwlist[] = {"data", "namespace_elements", "keep_doctype", "maybe_xhtml", "line_number_attr", "sanitize_names", "stack_size", "fragment_context", NULL};
+    static char *kwlist[] = {"data", "namespace_elements", "keep_doctype", "maybe_xhtml", "line_number_attr", "sanitize_names", "stack_size", "fragment_context", "fragment_namespace", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|OOOzOIz#", kwlist, &buffer, &sz, &ne, &kd, &mx, &(opts.line_number_attr), &sn, &(opts.stack_size), &fragment_context, &fragment_context_sz)) return NULL;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|OOOzOIz#i", kwlist, &buffer, &sz, &ne, &kd, &mx, &(opts.line_number_attr), &sn, &(opts.stack_size), &fragment_context, &fragment_context_sz, &fragment_namespace)) return NULL;
     opts.namespace_elements = PyObject_IsTrue(ne);
     opts.keep_doctype = PyObject_IsTrue(kd);
     opts.sanitize_names = PyObject_IsTrue(sn);
@@ -95,7 +96,7 @@ parse(PyObject UNUSED *self, PyObject *args, PyObject *kwds) {
             return NULL;
         }
     }
-    doc = parse_with_options(buffer, (size_t)sz, &opts, context);
+    doc = parse_with_options(buffer, (size_t)sz, &opts, context, fragment_namespace);
     if (!doc) return NULL;
     return encapsulate(doc);
 }
@@ -195,6 +196,9 @@ inithtml_parser(void) {
     if (PyModule_AddIntMacro(m, MAJOR) != 0) INITERROR;
     if (PyModule_AddIntMacro(m, MINOR) != 0) INITERROR;
     if (PyModule_AddIntMacro(m, PATCH) != 0) INITERROR;
+    if (PyModule_AddIntMacro(m, GUMBO_NAMESPACE_HTML) != 0) INITERROR;
+    if (PyModule_AddIntMacro(m, GUMBO_NAMESPACE_SVG) != 0) INITERROR;
+    if (PyModule_AddIntMacro(m, GUMBO_NAMESPACE_MATHML) != 0) INITERROR;
     if (PyModule_AddIntConstant(m, "LIBXML_VERSION", get_libxml_version()) != 0) INITERROR;
     known_tag_names = PyTuple_New(GUMBO_TAG_UNKNOWN);
     if (known_tag_names == NULL) INITERROR;

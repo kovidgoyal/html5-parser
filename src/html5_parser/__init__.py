@@ -185,7 +185,9 @@ def parse(
         largest documents.
 
     :param fragment_context: the tag name under which to parse the HTML when the html
-        is a fragment. Common choices are ``div`` or ``body``.
+        is a fragment. Common choices are ``div`` or ``body``. To use SVG or MATHML tags
+        prefix the tag name with ``svg:`` or ``math:`` respectively. Note that currently
+        using a non-HTML fragment_context is not supported.
     '''
     data = as_utf8(html or b'', transport_encoding, fallback_encoding)
     treebuilder = normalize_treebuilder(treebuilder)
@@ -195,6 +197,14 @@ def parse(
             data, return_root=return_root, keep_doctype=keep_doctype, stack_size=stack_size)
     if treebuilder not in NAMESPACE_SUPPORTING_BUILDERS:
         namespace_elements = False
+    fragment_namespace = html_parser.GUMBO_NAMESPACE_HTML
+    if fragment_context:
+        fragment_context = fragment_context.lower()
+        if ':' in fragment_context:
+            ns, fragment_context = fragment_context.split(':', 1)
+            fragment_namespace = {
+                'svg': html_parser.GUMBO_NAMESPACE_SVG, 'math': html_parser.GUMBO_NAMESPACE_MATHML
+            }[ns]
 
     capsule = html_parser.parse(
         data,
@@ -205,6 +215,7 @@ def parse(
         sanitize_names=sanitize_names,
         stack_size=stack_size,
         fragment_context=fragment_context,
+        fragment_namespace=fragment_namespace,
         )
 
     interpreter = None

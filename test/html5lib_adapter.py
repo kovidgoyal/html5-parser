@@ -97,9 +97,8 @@ def serialize_construction_output(root, fragment_context):
         level += 2
         add(level, ns, name, '=', '"', val, '"')
 
-    def serialize_text(text, level):
-        level += 2
-        add(level, '"', text, '"')
+    def serialize_text(text, level=0):
+        add((level + 2) if level else 1, '"', text, '"')
 
     def serialize_comment(node, level=1):
         add(level, '<!-- ', node.text or '', ' -->')
@@ -122,6 +121,8 @@ def serialize_construction_output(root, fragment_context):
                 serialize_text(child.tail, level)
 
     if fragment_context:
+        if root.text:
+            serialize_text(root.text)
         for node in root.iterchildren():
             if isinstance(node, _Comment):
                 serialize_comment(node)
@@ -183,8 +184,12 @@ class ConstructionTests(BaseTest):
         for line in errors:
             if 'expected-doctype-name-but' in line or 'unknown-doctype' in line:
                 return 'gumbo auto-corrects malformed doctypes'
+        if fragment_context and ':' in fragment_context:
+            return 'Fragment parsing with non HTML contexts not supported'
 
     def implementation(self, fragment_context, html, expected, errors, test_name):
+        if fragment_context:
+            fragment_context = fragment_context.replace(' ', ':')
         bad = self.check_test(fragment_context, html, expected, errors, test_name)
         if bad is not None:
             raise unittest.SkipTest(bad)
