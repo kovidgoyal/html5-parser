@@ -164,7 +164,7 @@ def parse(
         So a ``<title/>`` or ``<style/>`` in the HTML will not completely break
         parsing. Also preserves namespaced tags and attributes even for namespaces
         not supported by HTML 5 (this works only with the ``lxml`` and ``lxml_html``
-        treebuilder).
+        treebuilders).
         Note that setting this also implicitly sets ``namespace_elements``.
 
     :param return_root: If True, return the root node of the document, otherwise
