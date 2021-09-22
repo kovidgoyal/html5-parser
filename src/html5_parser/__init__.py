@@ -148,6 +148,7 @@ def parse(
         other treebuilders are implemented in python, not C. Supported values are:
           * `lxml <https://lxml.de>`_  -- the default, and fastest
           * `lxml_html <https://lxml.de>`_  -- tree of lxml.html.HtmlElement, same speed as lxml
+            (new in *0.4.10*)
           * etree (the python stdlib :mod:`xml.etree.ElementTree`)
           * dom (the python stdlib :mod:`xml.dom.minidom`)
           * `soup <https://www.crummy.com/software/BeautifulSoup>`_ -- BeautifulSoup,
@@ -187,7 +188,7 @@ def parse(
     :param fragment_context: the tag name under which to parse the HTML when the html
         is a fragment. Common choices are ``div`` or ``body``. To use SVG or MATHML tags
         prefix the tag name with ``svg:`` or ``math:`` respectively. Note that currently
-        using a non-HTML fragment_context is not supported.
+        using a non-HTML fragment_context is not supported. New in *0.4.10*.
     '''
     data = as_utf8(html or b'', transport_encoding, fallback_encoding)
     treebuilder = normalize_treebuilder(treebuilder)
