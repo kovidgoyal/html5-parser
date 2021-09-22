@@ -15,7 +15,7 @@
 
 #define MAJOR 0
 #define MINOR 4
-#define PATCH 9
+#define PATCH 10
 
 static char *NAME =  "libxml2:xmlDoc";
 static char *DESTRUCTOR = "destructor:xmlFreeDoc";
