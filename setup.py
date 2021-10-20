@@ -42,36 +42,8 @@ class Test(Build):
             raise SystemExit(ret)
 
 
-CLASSIFIERS = """\
-Development Status :: 5 - Production/Stable
-Intended Audience :: Developers
-License :: OSI Approved :: Apache Software License
-Natural Language :: English
-Operating System :: OS Independent
-Programming Language :: Python
-Topic :: Text Processing
-Topic :: Text Processing :: Markup
-Topic :: Text Processing :: Markup :: HTML
-Topic :: Text Processing :: Markup :: XML
-"""
-
 setup(
-    name='html5-parser',
     version='{}.{}.{}'.format(*version),
-    author='Kovid Goyal',
-    author_email='redacted@acme.com',
-    description='Fast C based HTML 5 parsing for python',
-    license='Apache 2.0',
-    url='https://html5-parser.readthedocs.io',
-    download_url=(
-        "https://pypi.python.org/packages/source/m/html5-parser/"
-        "html5-parser-{}.{}.{}.tar.gz".format(*version)),
-    classifiers=[c for c in CLASSIFIERS.split("\n") if c],
-    platforms=['any'],
-    install_requires=['chardet', 'lxml>=3.8.0'],
-    extras_require={'soup': 'beautifulsoup4'},
-    packages=['html5_parser'],
-    package_dir={'': 'src'},
     cmdclass={'test': Test},
     ext_modules=[
         Extension(

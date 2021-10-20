@@ -41,7 +41,7 @@ def run(*cmd):
 def build_release():
     for rem in 'dist build'.split():
         os.path.exists(rem) and shutil.rmtree(rem)
-    run(sys.executable, 'setup.py', '-q', 'sdist')
+    run(sys.executable, '-m', 'build', '-s')
 
 
 def sign_release():
