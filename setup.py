@@ -14,8 +14,9 @@ base = os.path.dirname(self_path)
 sys.path.insert(0, base)
 if True:
     from build import (
-        SRC_DIRS, find_c_files, include_dirs, libraries, library_dirs, version, iswindows,
-        TEST_COMMAND, add_python_path)
+        SRC_DIRS, TEST_COMMAND, add_python_path, find_c_files, include_dirs, iswindows, libraries,
+        library_dirs, version
+    )
 del sys.path[0]
 
 src_files = tuple(chain(*map(lambda x: find_c_files(x)[0], SRC_DIRS)))
@@ -43,7 +44,6 @@ class Test(Build):
 
 
 setup(
-    version='{}.{}.{}'.format(*version),
     cmdclass={'test': Test},
     ext_modules=[
         Extension(
@@ -52,4 +52,9 @@ setup(
             libraries=libraries(),
             library_dirs=library_dirs(),
             extra_compile_args=cargs,
+            define_macros=[
+                ('MAJOR', str(version.major)),
+                ('MINOR', str(version.minor)),
+                ('PATCH', str(version.patch))
+            ],
             sources=list(map(str, src_files)))])

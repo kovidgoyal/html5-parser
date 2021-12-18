@@ -17,6 +17,10 @@ import sysconfig
 from collections import namedtuple
 from copy import deepcopy
 from itertools import chain
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 
 self_path = os.path.abspath(__file__)
 base = os.path.dirname(self_path)
@@ -28,14 +32,10 @@ iswindows = hasattr(sys, 'getwindowsversion')
 is_ci = os.environ.get('CI') == 'true'
 Env = namedtuple('Env', 'cc cflags ldflags linker debug cc_name cc_ver')
 PKGCONFIG = os.environ.get('PKGCONFIG_EXE', 'pkg-config')
-with open(os.path.join(base, 'src/python-wrapper.c'), 'rb') as f:
-    raw = f.read().decode('utf-8')
-version = tuple(
-    map(
-        int, (
-            re.search(r'^#define MAJOR (\d+)', raw, flags=re.MULTILINE).group(1), re.search(
-                r'^#define MINOR (\d+)', raw, flags=re.MULTILINE).group(1), re.search(
-                    r'^#define PATCH (\d+)', raw, flags=re.MULTILINE).group(1), )))
+cfg = configparser.ConfigParser()
+cfg.read(os.path.join(base, 'setup.cfg'))
+version = namedtuple('Version', 'major minor patch')(
+    *map(int, cfg.get('metadata', 'version').split('.')))
 
 
 def safe_makedirs(path):
@@ -158,6 +158,11 @@ def init_env(debug=False, sanitize=False, native_optimizations=False, add_python
     cflags += shlex.split(os.environ.get('CFLAGS', ''))
     ldflags += shlex.split(os.environ.get('LDFLAGS', ''))
     cflags.append('-pthread')
+    cflags.extend((
+        '-DMAJOR=' + str(version.major),
+        '-DMINOR=' + str(version.minor),
+        '-DPATCH=' + str(version.patch),
+    ))
     ans = Env(cc, cflags, ldflags, cc, debug, cc_name, ccver)
     return add_python_flags(ans) if add_python else ans
 
