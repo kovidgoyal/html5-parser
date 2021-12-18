@@ -4,10 +4,9 @@
 
 import os
 import sys
-from distutils.command.build import build as Build
 from itertools import chain
 
-from setuptools import Extension, setup
+from setuptools import Extension, setup, Command
 
 self_path = os.path.abspath(__file__)
 base = os.path.dirname(self_path)
@@ -25,17 +24,26 @@ if not iswindows:
     cargs.extend('-std=c99 -fvisibility=hidden'.split())
 
 
-class Test(Build):
+class Test(Command):
 
     description = "run unit tests after in-place build"
+    user_options = []
+    sub_commands = [
+        ('build', None),
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
 
     def run(self):
-        Build.run(self)
-        if self.dry_run:
-            self.announce('skipping "test" (dry run)')
-            return
+        for cmd_name in self.get_sub_commands():
+            self.run_command(cmd_name)
         import subprocess
-        env = add_python_path(os.environ.copy(), self.build_lib)
+        build = self.get_finalized_command('build')
+        env = add_python_path(os.environ.copy(), build.build_lib)
         print('\nrunning tests...')
         sys.stdout.flush()
         ret = subprocess.Popen([sys.executable] + TEST_COMMAND, env=env).wait()
