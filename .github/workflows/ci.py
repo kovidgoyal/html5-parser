@@ -45,7 +45,7 @@ def main():
     elif which == 'test':
         builder = os.environ['BUILDER']
         run(sys.executable, builder, 'test')
-        if builder == 'build.py':
+        if builder == 'unix_build.py':
             run(sys.executable, builder, 'leak')
     else:
         raise SystemExit('Unknown action:', which)

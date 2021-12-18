@@ -1,5 +1,5 @@
 exclude *.py
-include setup.py build.py run_tests.py gen*.py win-ci.py
+include setup.py unix_build.py run_tests.py gen*.py win-ci.py
 include LICENSE README.rst
 include gumbo/*.c gumbo/*.h gumbo/*.py gumbo/*.rl
 include src/*.c src/*.h

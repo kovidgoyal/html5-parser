@@ -15,7 +15,7 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 sys.path.insert(0, '.')
 if True:
-    from build import version
+    from unix_build import version
 del sys.path[0]
 
 VERSION = '{}.{}.{}'.format(*version)

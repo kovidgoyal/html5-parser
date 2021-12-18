@@ -12,7 +12,7 @@ self_path = os.path.abspath(__file__)
 base = os.path.dirname(self_path)
 sys.path.insert(0, base)
 if True:
-    from build import (
+    from unix_build import (
         SRC_DIRS, TEST_COMMAND, add_python_path, find_c_files, include_dirs, iswindows, libraries,
         library_dirs, version
     )

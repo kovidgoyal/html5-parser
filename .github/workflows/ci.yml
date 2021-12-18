@@ -15,10 +15,10 @@ jobs:
         strategy:
             matrix:
                 include:
-                    - { pyver: 2.7, builder: build.py, os: ubuntu-latest, cc: gcc }
-                    - { pyver: 2.7, builder: build.py, os: ubuntu-latest, cc: clang }
-                    - { pyver: 3.6, builder: build.py, os: ubuntu-latest, cc: gcc }
-                    - { pyver: 3.6, builder: build.py, os: ubuntu-latest, cc: clang }
+                    - { pyver: 2.7, builder: unix_build.py, os: ubuntu-latest, cc: gcc }
+                    - { pyver: 2.7, builder: unix_build.py, os: ubuntu-latest, cc: clang }
+                    - { pyver: 3.6, builder: unix_build.py, os: ubuntu-latest, cc: gcc }
+                    - { pyver: 3.6, builder: unix_build.py, os: ubuntu-latest, cc: clang }
                     - { pyver: 3.8, builder: setup.py, os: ubuntu-latest, cc: gcc }
 
                     - { pyver: 3.8, builder: setup.py, os: macos-latest, cc: clang }
