@@ -127,7 +127,7 @@ def init_soup():
 
 
 def parse(utf8_data, stack_size=16 * 1024, keep_doctype=False, return_root=True):
-    from . import html_parser
+    from html5_parser import html_parser
     bs, soup, new_tag, Comment, append, NavigableString = init_soup()
     if not isinstance(utf8_data, bytes):
         utf8_data = utf8_data.encode('utf-8')
