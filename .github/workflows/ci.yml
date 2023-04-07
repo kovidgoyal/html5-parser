@@ -15,15 +15,15 @@ jobs:
         strategy:
             matrix:
                 include:
-                    - { pyver: 2.7, builder: unix_build.py, os: ubuntu-latest, cc: gcc }
-                    - { pyver: 2.7, builder: unix_build.py, os: ubuntu-latest, cc: clang }
-                    - { pyver: 3.6, builder: unix_build.py, os: ubuntu-latest, cc: gcc }
-                    - { pyver: 3.6, builder: unix_build.py, os: ubuntu-latest, cc: clang }
-                    - { pyver: 3.8, builder: setup.py, os: ubuntu-latest, cc: gcc }
+                    - { pyver: "2.7", builder: unix_build.py, os: ubuntu-latest, cc: gcc }
+                    - { pyver: "2.7", builder: unix_build.py, os: ubuntu-latest, cc: clang }
+                    - { pyver: "3.8", builder: unix_build.py, os: ubuntu-latest, cc: gcc }
+                    - { pyver: "3.8", builder: unix_build.py, os: ubuntu-latest, cc: clang }
+                    - { pyver: "3.10", builder: setup.py, os: ubuntu-latest, cc: gcc }
 
-                    - { pyver: 3.8, builder: setup.py, os: macos-latest, cc: clang }
+                    - { pyver: "3.10", builder: setup.py, os: macos-latest, cc: clang }
 
-                    - { pyver: 3.8, builder: setup.py, os: windows-2019, cc: cl }
+                    - { pyver: "3.10", builder: setup.py, os: windows-2019, cc: cl }
 
         steps:
             - name: Checkout source code
