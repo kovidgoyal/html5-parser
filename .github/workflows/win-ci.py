@@ -16,7 +16,7 @@ import sys
 import tarfile
 import time
 
-ZLIB = "http://zlib.net/zlib-{}.tar.xz".format("1.2.11")
+ZLIB = "http://zlib.net/zlib-{}.tar.xz".format("1.2.13")
 LIBXML2 = "ftp://xmlsoft.org/libxml2/libxml2-{}.tar.gz".format('2.9.4')
 LIBXSLT = "ftp://xmlsoft.org/libxml2/libxslt-{}.tar.gz".format('1.1.28')
 LXML = "https://files.pythonhosted.org/packages/c5/2f/a0d8aa3eee6d53d5723d89e1fc32eee11e76801b424e30b55c7aa6302b01/lxml-4.6.1.tar.gz"  # noqa
