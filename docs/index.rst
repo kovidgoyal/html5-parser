@@ -1,7 +1,7 @@
 html5-parser
 ================
 
-|pypi| |unix_build| |windows_build|
+|pypi| |unix_build|
 
 A fast implementation of the `HTML 5 parsing spec
 <https://www.w3.org/TR/html5/syntax.html#parsing>`_ for Python. Parsing is done
@@ -11,7 +11,7 @@ transformed into an `lxml <http://lxml.de/>`__ tree, also in C, yielding parse
 times that can be **a thirtieth** of the html5lib parse times. That is a
 speedup of **30x**. This differs, for instance, from the gumbo python bindings,
 where the initial parsing is done in C but the transformation into the final
-tree is done in python. 
+tree is done in python.
 
 
 Installation
@@ -65,7 +65,7 @@ Quickstart
 To use html5-parser in your code, after installing it simply do:
 
 .. code-block:: python
-    
+
     from html5_parser import parse
     from lxml.etree import tostring
     root = parse(some_html)
@@ -83,7 +83,7 @@ XHTML
 
 html5-parser has the ability to parse XHTML documents as well. It will
 preserve namespace information even for namespaces not defined in the HTML 5
-spec. You can ask it to treat the input html as possibly XHTML by using the 
+spec. You can ask it to treat the input html as possibly XHTML by using the
 ``maybe_xhtml`` parameter to the :func:`html5_parser.parse` function. For example:
 
 .. code-block:: html
@@ -158,7 +158,7 @@ speedup of **37x**. The output from the script on my system is:
     ===============================================================================
     html5lib          |lxml              |yes               |35                |
     soup+html5lib     |BeautifulSoup     |yes               |8                 |
-    soup+lxml.html    |BeautifulSoup     |no                |2                 | 
+    soup+lxml.html    |BeautifulSoup     |no                |2                 |
 
 
 There is further potential for speedup. Currently the gumbo subsystem uses
@@ -189,7 +189,7 @@ With **html5lib**:
             <html:p>xxx<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg"><ns0:image xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="xxx"/></ns0:svg></html:p>
             <html:p>yyy</html:p>
         </html:body>
-    </html:html> 
+    </html:html>
 
 With **html5-parser**:
 
@@ -221,7 +221,7 @@ The HTML parser is based on the `gumbo parser
 <https://github.com/google/gumbo-parser>`__ which has undergone a Google
 security review and been tested on 2.5 billion pages from the Google cache. In
 addition, html5-parser passes (almost) all the tests from the html5lib test
-suite. 
+suite.
 
 Finally, html5-parser is compiled with ``-pedantic-errors -Wall -Werror`` and
 the test suite, consisting of thousands of tests, is run using the address and
@@ -232,10 +232,6 @@ major OSes and four different compilers.
     :target: https://pypi.python.org/pypi/html5-parser
     :alt: Latest version released on PyPi
 
-.. |unix_build| image:: https://api.travis-ci.org/kovidgoyal/html5-parser.svg
-    :target: http://travis-ci.org/kovidgoyal/html5-parser
-    :alt: Build status of the master branch on Unix
-
-.. |windows_build|  image:: https://ci.appveyor.com/api/projects/status/github/kovidgoyal/html5-parser?svg=true
-    :target: https://ci.appveyor.com/project/kovidgoyal/html5-parser
-    :alt: Build status of the master branch on Windows
+.. |unix_build| image:: https://github.com/kovidgoyal/html5-parser/workflows/CI/badge.svg
+    :target: https://github.com/kovidgoyal/html5-parser/actions?query=workflow%3ACI%22
+    :alt: Build status of the master branch
