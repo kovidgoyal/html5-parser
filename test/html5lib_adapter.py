@@ -89,13 +89,16 @@ def serialize_construction_output(root, fragment_context):
         add(level, '<', ns, name, '>')
         return ns + name
 
-    def serialize_attr(name, val, level):
+    def serialize_attr_name(name):
         ns = ''
         if name.startswith('{'):
             ns, name = name[1:].rpartition('}')[::2]
             ns = NAMESPACE_PREFIXES.get(ns, ns)
+        return ns + name
+
+    def serialize_attr(name, val, level):
         level += 2
-        add(level, ns, name, '=', '"', val, '"')
+        add(level, serialize_attr_name(name), '=', '"', val, '"')
 
     def serialize_text(text, level=0):
         add((level + 2) if level else 1, '"', text, '"')
@@ -105,7 +108,7 @@ def serialize_construction_output(root, fragment_context):
 
     def serialize_node(node, level=1):
         name = serialize_tag(node.tag, level)
-        for attr in sorted(node.keys()):
+        for attr in sorted(node.keys(), key=serialize_attr_name):
             serialize_attr(attr, node.get(attr), level)
         if name == 'template':
             level += 2

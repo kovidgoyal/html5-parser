@@ -185,7 +185,6 @@ static const NamespacedAttributeReplacement kForeignAttributeReplacements[] = {
     {"xlink:show", "show", GUMBO_ATTR_NAMESPACE_XLINK},
     {"xlink:title", "title", GUMBO_ATTR_NAMESPACE_XLINK},
     {"xlink:type", "type", GUMBO_ATTR_NAMESPACE_XLINK},
-    {"xml:base", "base", GUMBO_ATTR_NAMESPACE_XML},
     {"xml:lang", "lang", GUMBO_ATTR_NAMESPACE_XML},
     {"xml:space", "space", GUMBO_ATTR_NAMESPACE_XML},
     {"xmlns", "xmlns", GUMBO_ATTR_NAMESPACE_XMLNS},
