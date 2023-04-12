@@ -28,12 +28,15 @@ class Test(Command):
 
     description = "run unit tests after in-place build"
     user_options = []
+    user_options = [
+        ('test-name=', None, 'Specify the test to run.'),
+    ]
     sub_commands = [
         ('build', None),
     ]
 
     def initialize_options(self):
-        pass
+        self.test_name = ''
 
     def finalize_options(self):
         pass
@@ -46,7 +49,10 @@ class Test(Command):
         env = add_python_path(os.environ.copy(), build.build_lib)
         print('\nrunning tests...')
         sys.stdout.flush()
-        ret = subprocess.Popen([sys.executable] + TEST_COMMAND, env=env).wait()
+        cmd = [sys.executable] + TEST_COMMAND
+        if self.test_name:
+            cmd.append(self.test_name)
+        ret = subprocess.Popen(cmd, env=env).wait()
         if ret != 0:
             raise SystemExit(ret)
 
