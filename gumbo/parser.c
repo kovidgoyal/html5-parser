@@ -4303,6 +4303,12 @@ static bool handle_html_content(GumboParser* parser, GumboToken* token) {
       parser, token);
 }
 
+static bool
+current_node_is_html_or_integration_point(GumboParser *parser) {
+    GumboNode *current_node = get_current_node(parser);
+    return current_node && (is_mathml_integration_point(current_node) || is_html_integration_point(current_node) || current_node->v.element.tag_namespace == GUMBO_NAMESPACE_HTML);
+}
+
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-inforeign
 static bool handle_in_foreign_content(GumboParser* parser, GumboToken* token) {
   switch (token->type) {
@@ -4348,18 +4354,8 @@ static bool handle_in_foreign_content(GumboParser* parser, GumboToken* token) {
     ) {
     /* Parse error */
     parser_add_parse_error(parser, token);
-
-    GumboNode *current_node;
-    while ((current_node = get_current_node(parser)) && !(
-                is_mathml_integration_point(current_node) ||
-                is_html_integration_point(current_node) ||
-                current_node->v.element.tag_namespace == GUMBO_NAMESPACE_HTML
-    )) {
-        if (!pop_current_node(parser)) break;
-    }
-
-    parser->_parser_state->_reprocess_current_token = true;
-    return false;
+    while(!current_node_is_html_or_integration_point(parser) && pop_current_node(parser)) {}
+    return handle_html_content(parser, token);
   }
 
   if (token->type == GUMBO_TOKEN_START_TAG) {

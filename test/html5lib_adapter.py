@@ -131,6 +131,8 @@ def serialize_construction_output(root, fragment_context):
                 serialize_comment(node)
             else:
                 serialize_node(node)
+            if node.tail:
+                serialize_text(node.tail)
     else:
         for c in root.itersiblings(preceding=True):
             serialize_comment(c)
@@ -191,8 +193,6 @@ class ConstructionTests(BaseTest):
         for line in errors:
             if 'expected-doctype-name-but' in line or 'unknown-doctype' in line:
                 return 'gumbo auto-corrects malformed doctypes'
-        if fragment_context and ':' in fragment_context:
-            return 'Fragment parsing with non HTML contexts not supported'
 
     def implementation(self, fragment_context, html, expected, errors, test_name):
         if fragment_context:
@@ -202,10 +202,16 @@ class ConstructionTests(BaseTest):
             raise unittest.SkipTest(bad)
 
         root = parse(
-            html, namespace_elements=True, sanitize_names=False, fragment_context=fragment_context)
+            html, namespace_elements=True, sanitize_names=False,
+            fragment_context=fragment_context)
         output = serialize_construction_output(root, fragment_context=fragment_context)
+        from lxml.etree import tostring
 
-        error_msg = '\n'.join(['\n\nTest name:', test_name, '\nInput:', html, '\nExpected:', expected, '\nReceived:', output])
+        error_msg = '\n'.join([
+            '\n\nTest name:', test_name, '\nInput:', html, '\nExpected:', expected,
+            '\nReceived:', output,
+            '\nOutput tree:', tostring(root, encoding='unicode'),
+        ])
         self.ae(expected, output, error_msg + '\n')
         # TODO: Check error messages, when there's full error support.
 
