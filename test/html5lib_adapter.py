@@ -179,10 +179,6 @@ class ConstructionTests(BaseTest):
             return (
                 'gumbo and html5lib differ on <menuitem> parsing'
                 ' and I cannot be bothered to figure out who is right')
-        if test_name == 'template':
-            return (
-                'html5lib test expects <template> tags to be returned without'
-                ' the containing <html>/<head>/<body>. I have no idea why and cant be bothered to find out.')
         if 'search-element' in test_name:
             return (
                 'No idea what the <search> element is. In any case the tests only differ in'
