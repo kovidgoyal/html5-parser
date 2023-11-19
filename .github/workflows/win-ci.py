@@ -261,6 +261,7 @@ def lxml():
 
 
 def install_deps():
+    run(PYTHON, '-m', 'pip', 'install', 'setuptools')
     env = query_vcvarsall()
     os.environ.update(env)
     print(PYTHON)
