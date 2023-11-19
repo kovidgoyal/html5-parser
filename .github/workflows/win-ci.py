@@ -8,7 +8,6 @@ import errno
 import glob
 import io
 import os
-import pipes
 import shlex
 import shutil
 import subprocess
@@ -65,7 +64,7 @@ def run(*args, env=None, cwd=None):
         cmd = split(args[0])
     else:
         cmd = args
-    printf(' '.join(pipes.quote(x) for x in cmd))
+    printf(' '.join(shlex.quote(x) for x in cmd))
     sys.stdout.flush()
     if env:
         printf('Using modified env:', env)
@@ -83,7 +82,7 @@ def run(*args, env=None, cwd=None):
 
 
 def distutils_vcvars():
-    from distutils.msvc9compiler import find_vcvarsall, get_build_version
+    from setuptools._distutils.msvc9compiler import find_vcvarsall, get_build_version
     return find_vcvarsall(get_build_version())
 
 
