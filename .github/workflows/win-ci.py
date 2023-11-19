@@ -19,7 +19,7 @@ from functools import lru_cache
 ZLIB = "http://zlib.net/zlib-{}.tar.xz".format("1.3")
 LIBXML2 = "https://gitlab.gnome.org/GNOME/libxml2/-/archive/v2.12.0/libxml2-v2.12.0.tar.gz"
 LIBXSLT = "https://gitlab.gnome.org/GNOME/libxslt/-/archive/v1.1.39/libxslt-v1.1.39.tar.gz"
-LXML = "https://files.pythonhosted.org/packages/06/5a/e11cad7b79f2cf3dd2ff8f81fa8ca667e7591d3d8451768589996b65dec1/lxml-4.9.2.tar.gz"  # noqa
+LXML = "https://files.pythonhosted.org/packages/30/39/7305428d1c4f28282a4f5bdbef24e0f905d351f34cf351ceb131f5cddf78/lxml-4.9.3.tar.gz"  # noqa
 SW = os.path.abspath('sw')
 PYTHON = os.path.abspath(sys.executable)
 os.environ['SW'] = SW
@@ -370,6 +370,7 @@ def install_deps():
     env = query_vcvarsall()
     os.environ.update(env)
     print(PYTHON)
+    run(PYTHON, '-m', 'pip', 'install', 'setuptools')
     for x in 'build lib bin include python/Lib/site-packages'.split():
         ensure_dir(os.path.join(SW, x))
     os.chdir(os.path.join(SW, 'build'))
