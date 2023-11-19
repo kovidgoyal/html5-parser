@@ -8,11 +8,13 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define NEEDS_SANITIZE_NAME 1
 #include "as-libxml.h"
 #include <libxml/tree.h>
 #include <libxml/dict.h>
+#include <libxml/parser.h>
 
 // Namespace constants, indexed by GumboNamespaceEnum.
 static const char* kLegalXmlns[] = {
