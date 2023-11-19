@@ -99,8 +99,11 @@ def query_process(cmd):
     if plat == 'amd64' and 'PROGRAMFILES(x86)' not in os.environ:
         os.environ['PROGRAMFILES(x86)'] = os.environ['PROGRAMFILES'] + ' (x86)'
     result = {}
-    popen = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+    try:
+        popen = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, shell=True)
+    except FileNotFoundError as err:
+        raise SystemExit(f'Failed to execute: {cmd!r} with error: {err}')
     try:
         stdout, stderr = popen.communicate()
         if popen.wait() != 0:
@@ -127,6 +130,7 @@ def query_process(cmd):
 
 def query_vcvarsall():
     vcvarsall = distutils_vcvars()
+    print('Querying vcvars:', vcvarsall)
     return query_process('"%s" %s & set' % (vcvarsall, plat))
 
 
