@@ -174,39 +174,50 @@ def zlib():
     copy_headers('zconf.h'), copy_headers('zlib.h')
 
 
+def cmake_build(
+    make_args=(), install_args=(),
+    append_to_path=None, env=None,
+    **kw
+):
+    make = 'nmake'
+    if isinstance(make_args, str):
+        make_args = shlex.split(make_args)
+    os.makedirs('build', exist_ok=True)
+    defs = {
+        'CMAKE_BUILD_TYPE': 'RELEASE',
+        'CMAKE_SYSTEM_PREFIX_PATH': SW,
+        'CMAKE_INSTALL_PREFIX': SW,
+    }
+    cmd = ['cmake', '-G', "NMake Makefiles"]
+    for d, val in kw.items():
+        if val is None:
+            defs.pop(d, None)
+        else:
+            defs[d] = val
+    for k, v in defs.items():
+        cmd.append('-D' + k + '=' + v)
+    cmd.append('..')
+    env = env or {}
+    env['CMAKE_PREFIX_PATH'] = SW
+    run(*cmd, cwd='build', env=env)
+    make_opts = []
+    run(make, *(make_opts + list(make_args)), cwd='build', env=env)
+    mi = [make] + list(install_args) + ['install']
+    run(*mi, cwd='build')
+
+
+
 def libxml2():
-    run(
-        *(
-            'cscript.exe configure.js include={0}/include lib={0}/lib prefix={0} zlib=yes iconv=no'.
-            format(SW.replace(os.sep, '/')).split()),
-        cwd='win32')
-    run('nmake /f Makefile.msvc', cwd='win32')
-    install_tree('include/libxml', 'include/libxml2')
-    for f in walk('.'):
-        if f.endswith('.dll'):
-            install_binaries(f, 'bin')
-        elif f.endswith('.lib'):
-            install_binaries(f)
+    cmake_build(
+        LIBXML2_WITH_ICU='OFF', LIBXML2_WITH_PYTHON='OFF', LIBXML2_WITH_TESTS='OFF',
+        LIBXML2_WITH_LZMA='OFF', LIBXML2_WITH_THREADS='OFF', LIBXML2_WITH_ICONV='OFF',
+    )
 
 
 def libxslt():
-    run(
-        *(
-            'cscript.exe configure.js include={0}/include include={0}/include/libxml2 lib={0}/lib '
-            'prefix={0} zlib=yes iconv=no'.format(SW.replace(os.sep, '/')).split()),
-        cwd='win32')
-    replace_in_file('libxslt/win32config.h', '#define snprintf _snprintf', '')
-    for f in walk('.'):
-        if os.path.basename(f).startswith('Makefile'):
-            replace_in_file(f, '/OPT:NOWIN98', '', missing_ok=True)
-    run('nmake /f Makefile.msvc', cwd='win32')
-    install_tree('libxslt', 'include')
-    install_tree('libexslt', 'include')
-    for f in walk('.'):
-        if f.endswith('.dll'):
-            install_binaries(f, 'bin')
-        elif f.endswith('.lib'):
-            install_binaries(f)
+    cmake_build(
+        LIBXSLT_WITH_PYTHON='OFF', LIBXML2_INCLUDE_DIR=f'{SW}/include',
+    )
 
 
 def lxml():
