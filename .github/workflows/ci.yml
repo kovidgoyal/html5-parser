@@ -21,7 +21,7 @@ jobs:
 
                     - { pyver: "3.11", builder: setup.py, os: macos-latest, cc: clang }
 
-                    - { pyver: "3.12", builder: setup.py, os: windows-2019, cc: cl }
+                    - { pyver: "3.12", builder: setup.py, os: windows-latest, cc: cl }
 
         steps:
             - name: Checkout source code
