@@ -16,8 +16,8 @@ import tarfile
 import time
 
 ZLIB = "http://zlib.net/zlib-{}.tar.xz".format("1.3")
-LIBXML2 = "ftp://xmlsoft.org/libxml2/libxml2-{}.tar.gz".format('2.11.5')
-LIBXSLT = "ftp://xmlsoft.org/libxml2/libxslt-{}.tar.gz".format('1.1.38')
+LIBXML2 = "https://gitlab.gnome.org/GNOME/libxml2/-/archive/v2.12.0/libxml2-v2.12.0.tar.gz"
+LIBXSLT = "https://gitlab.gnome.org/GNOME/libxslt/-/archive/v1.1.39/libxslt-v1.1.39.tar.gz"
 LXML = "https://files.pythonhosted.org/packages/06/5a/e11cad7b79f2cf3dd2ff8f81fa8ca667e7591d3d8451768589996b65dec1/lxml-4.9.2.tar.gz"  # noqa
 SW = os.path.abspath('sw')
 PYTHON = os.path.abspath(sys.executable)
