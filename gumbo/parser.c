@@ -16,7 +16,7 @@
 
 #include <assert.h>
 #include <limits.h>
-#include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -3841,7 +3841,7 @@ static bool handle_in_select(GumboParser* parser, GumboToken* token) {
           }
           insert_element_from_token(parser, token);
           return true;
-        case GUMBO_TAG_OPTGROUP:
+        case GUMBO_TAG_OPTGROUP: case GUMBO_TAG_HR:
           if (node_html_tag_is(get_current_node(parser), GUMBO_TAG_OPTION)) {
             pop_current_node(parser);
           }
