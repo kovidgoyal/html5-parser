@@ -11,7 +11,7 @@ from lxml.etree import _Comment
 impl = getDOMImplementation()
 
 try:
-    dict_items = dict.iteritems
+    dict_items = dict.iteritems  # type: ignore
 except AttributeError:
     dict_items = dict.items
 

@@ -9,17 +9,31 @@ import importlib
 import sys
 from collections import namedtuple
 from locale import getpreferredencoding
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import Literal, Optional, Union, overload, reveal_type
+    from xml.dom.minidom import Document
+    from xml.etree.ElementTree import Element
+
+    from bs4 import BeautifulSoup
+    from lxml.etree import _Element as LxmlElement
+    from lxml.html import HtmlElement
+    ReturnType = Union[LxmlElement, HtmlElement, Element, Document, BeautifulSoup]
+else:
+    _Element = ReturnType = HtmlElement = Element = Document = BeautifulSoup = None
+
 
 if not hasattr(sys, 'generating_docs_via_sphinx'):
     from lxml import etree  # Must be imported before html_parser to initialize libxml
 
     try:
-        from . import html_parser
+        from . import html_parser  # type: ignore
     except ImportError:
         raise
     else:
         version = namedtuple('Version', 'major minor patch')(
-            html_parser.MAJOR, html_parser.MINOR, html_parser.PATCH)
+                html_parser.MAJOR, html_parser.MINOR, html_parser.PATCH)  # type: ignore
 
         if not hasattr(etree, 'adopt_external_document'):
             raise ImportError('Your version of lxml is too old, version 3.8.0 is minimum')
@@ -117,21 +131,168 @@ def normalize_treebuilder(x):
 
 NAMESPACE_SUPPORTING_BUILDERS = frozenset('lxml stdlib_etree dom lxml_html'.split())
 
+if TYPE_CHECKING:
+    @overload
+    def parse(
+        html: Union[bytes, str], transport_encoding:Optional[str], namespace_elements: bool, treebuilder: Literal['lxml'],
+        fallback_encoding: Optional[str] = ...,
+        keep_doctype: bool = ...,
+        maybe_xhtml: bool = ...,
+        return_root: bool = ...,
+        line_number_attr:Optional[str] = ...,
+        sanitize_names: bool = ...,
+        stack_size: int = ...,
+        fragment_context: Optional[str] = ...,
+    ) -> LxmlElement: ...
+
+    @overload
+    def parse(
+        html: Union[bytes, str], transport_encoding:Optional[str], namespace_elements: bool, treebuilder: Literal['lxml_html'],
+        fallback_encoding: Optional[str] = ...,
+        keep_doctype: bool = ...,
+        maybe_xhtml: bool = ...,
+        return_root: bool = ...,
+        line_number_attr:Optional[str] = ...,
+        sanitize_names: bool = ...,
+        stack_size: int = ...,
+        fragment_context: Optional[str] = ...,
+    ) -> HtmlElement: ...
+
+    @overload
+    def parse(
+        html: Union[bytes, str], transport_encoding:Optional[str], namespace_elements: bool, treebuilder: Literal['etree'],
+        fallback_encoding: Optional[str] = ...,
+        keep_doctype: bool = ...,
+        maybe_xhtml: bool = ...,
+        return_root: bool = ...,
+        line_number_attr:Optional[str] = ...,
+        sanitize_names: bool = ...,
+        stack_size: int = ...,
+        fragment_context: Optional[str] = ...,
+    ) -> Element: ...
+
+    @overload
+    def parse(
+        html: Union[bytes, str], transport_encoding:Optional[str], namespace_elements: bool, treebuilder: Literal['dom'],
+        fallback_encoding: Optional[str] = ...,
+        keep_doctype: bool = ...,
+        maybe_xhtml: bool = ...,
+        return_root: bool = ...,
+        line_number_attr:Optional[str] = ...,
+        sanitize_names: bool = ...,
+        stack_size: int = ...,
+        fragment_context: Optional[str] = ...,
+    ) -> Document: ...
+
+    @overload
+    def parse(
+        html: Union[bytes, str], transport_encoding:Optional[str], namespace_elements: bool, treebuilder: Literal['soup'],
+        fallback_encoding: Optional[str] = ...,
+        keep_doctype: bool = ...,
+        maybe_xhtml: bool = ...,
+        return_root: bool = ...,
+        line_number_attr:Optional[str] = ...,
+        sanitize_names: bool = ...,
+        stack_size: int = ...,
+        fragment_context: Optional[str] = ...,
+    ) -> BeautifulSoup: ...
+
+    @overload
+    def parse(  # type:ignore
+        html: Union[bytes, str],
+        transport_encoding: Optional[str] = ...,
+        namespace_elements: bool = ...,
+        treebuilder: Literal['lxml'] = ...,
+        fallback_encoding: Optional[str] = ...,
+        keep_doctype: bool = ...,
+        maybe_xhtml: bool = ...,
+        return_root: bool = ...,
+        line_number_attr:Optional[str] = ...,
+        sanitize_names: bool = ...,
+        stack_size: int = ...,
+        fragment_context: Optional[str] = ...,
+    ) -> LxmlElement: ...
+
+
+    @overload
+    def parse(
+        html: Union[bytes, str],
+        transport_encoding: Optional[str] = ...,
+        namespace_elements: bool = ...,
+        treebuilder: Literal['lxml_html'] = ...,
+        fallback_encoding: Optional[str] = ...,
+        keep_doctype: bool = ...,
+        maybe_xhtml: bool = ...,
+        return_root: bool = ...,
+        line_number_attr:Optional[str] = ...,
+        sanitize_names: bool = ...,
+        stack_size: int = ...,
+        fragment_context: Optional[str] = ...,
+    ) -> HtmlElement: ...
+
+    @overload
+    def parse(  # type: ignore
+        html: Union[bytes, str],
+        transport_encoding: Optional[str] = ...,
+        namespace_elements: bool = ...,
+        treebuilder: Literal['etree'] = ...,
+        fallback_encoding: Optional[str] = ...,
+        keep_doctype: bool = ...,
+        maybe_xhtml: bool = ...,
+        return_root: bool = ...,
+        line_number_attr:Optional[str] = ...,
+        sanitize_names: bool = ...,
+        stack_size: int = ...,
+        fragment_context: Optional[str] = ...,
+    ) -> Element: ...
+
+    @overload
+    def parse(  # type: ignore
+        html: Union[bytes, str],
+        transport_encoding: Optional[str] = ...,
+        namespace_elements: bool = ...,
+        treebuilder: Literal['dom'] = ...,
+        fallback_encoding: Optional[str] = ...,
+        keep_doctype: bool = ...,
+        maybe_xhtml: bool = ...,
+        return_root: bool = ...,
+        line_number_attr:Optional[str] = ...,
+        sanitize_names: bool = ...,
+        stack_size: int = ...,
+        fragment_context: Optional[str] = ...,
+    ) -> Document: ...
+
+    @overload
+    def parse(
+        html: Union[bytes, str],
+        transport_encoding: Optional[str] = ...,
+        namespace_elements: bool = ...,
+        treebuilder: Literal['soup'] = ...,
+        fallback_encoding: Optional[str] = ...,
+        keep_doctype: bool = ...,
+        maybe_xhtml: bool = ...,
+        return_root: bool = ...,
+        line_number_attr:Optional[str] = ...,
+        sanitize_names: bool = ...,
+        stack_size: int = ...,
+        fragment_context: Optional[str] = ...,
+    ) -> BeautifulSoup: ...
+
 
 def parse(
-    html,
-    transport_encoding=None,
-    namespace_elements=False,
-    treebuilder='lxml',
-    fallback_encoding=None,
-    keep_doctype=True,
-    maybe_xhtml=False,
-    return_root=True,
-    line_number_attr=None,
-    sanitize_names=True,
-    stack_size=16 * 1024,
-    fragment_context=None,
-):
+    html: 'Union[bytes, str]',
+    transport_encoding: 'Optional[str]' = None,
+    namespace_elements: 'bool' = False,
+    treebuilder: "Literal['lxml', 'lxml_html', 'etree', 'dom', 'soup']" = 'lxml',
+    fallback_encoding: 'Optional[str]' = None,
+    keep_doctype: 'bool' = True,
+    maybe_xhtml: 'bool' = False,
+    return_root: 'bool' = True,
+    line_number_attr: 'Optional[str]' = None,
+    sanitize_names: 'bool' = True,
+    stack_size: 'int' = 16 * 1024,
+    fragment_context: 'Optional[str]' = None,
+) -> ReturnType:
     '''
     Parse the specified :attr:`html` and return the parsed representation.
 
@@ -229,3 +390,12 @@ def parse(
         return ans.getroot() if return_root else ans
     m = importlib.import_module('html5_parser.' + treebuilder)
     return m.adapt(ans, return_root=return_root)
+
+
+if TYPE_CHECKING:
+    reveal_type(parse('a'))
+    reveal_type(parse('a', 'x', True, 'dom'))
+    reveal_type(parse('a', 'x', True, 'lxml', fragment_context='x'))
+    reveal_type(parse('a', 'x', True, fragment_context='x'))
+    reveal_type(parse('a', transport_encoding='xyz', return_root=True, fallback_encoding='moose'))
+    reveal_type(parse('a', transport_encoding='x', return_root=False, treebuilder='etree', fragment_context='y'))

@@ -37,12 +37,12 @@ def soup_module():
             import bs4
             soup_module.ans = bs4
         except ImportError:
-            import BeautifulSoup as bs3
+            import BeautifulSoup as bs3  # type:ignore
             soup_module.ans = bs3
     return soup_module.ans
 
 
-soup_module.ans = None
+soup_module.ans = None  # type: ignore
 
 
 def set_soup_module(val):
