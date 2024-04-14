@@ -16,7 +16,7 @@ import tarfile
 import time
 from functools import lru_cache
 
-ZLIB = "http://zlib.net/zlib-{}.tar.xz".format("1.3")
+ZLIB = "http://zlib.net/zlib-{}.tar.xz".format("1.3.1")
 LIBXML2 = "https://gitlab.gnome.org/GNOME/libxml2/-/archive/v2.12.0/libxml2-v2.12.0.tar.gz"
 LIBXSLT = "https://gitlab.gnome.org/GNOME/libxslt/-/archive/v1.1.39/libxslt-v1.1.39.tar.gz"
 LXML = "https://files.pythonhosted.org/packages/30/39/7305428d1c4f28282a4f5bdbef24e0f905d351f34cf351ceb131f5cddf78/lxml-4.9.3.tar.gz"  # noqa
