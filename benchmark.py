@@ -46,7 +46,8 @@ def timeit(func, number=1):
 def doit(name, func, num=20):
     print('Parsing', num, 'times with', name)
     t = timeit(func, num)
-    print(name, 'took an average of: {:,.3f} seconds to parse it'.format(t))
+    rate = len(raw) / t
+    print(name, f'took an average of: {t:,.3f} seconds to parse it @ {rate/1000:.1f} KB/s')
     return t
 
 
