@@ -1206,11 +1206,9 @@ static void reconstruct_active_formatting_elements(GumboParser* parser) {
 
 static void clear_active_formatting_elements(GumboParser* parser) {
   GumboVector* elements = &parser->_parser_state->_active_formatting_elements;
-  int num_elements_cleared = 0;
   const GumboNode* node;
   do {
     node = gumbo_vector_pop(elements);
-    ++num_elements_cleared;
   } while (node && node != &kActiveFormattingScopeMarker);
   gumbo_debug("Cleared %d elements from active formatting list.\n",
       num_elements_cleared);
