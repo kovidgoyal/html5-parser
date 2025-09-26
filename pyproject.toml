@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "html5-parser"
+version = "0.4.12"
+authors = [
+    {name = "Kovid Goyal", email = "redacted@acme.com"},
+]
+description = "Fast C based HTML 5 parsing for python"
+license = "Apache-2.0"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Topic :: Text Processing",
+    "Topic :: Text Processing :: Markup",
+    "Topic :: Text Processing :: Markup :: HTML",
+    "Topic :: Text Processing :: Markup :: XML",
+]
+dependencies = [
+    "chardet",
+    "lxml>=3.8.0",
+]
+
+[project.urls]
+Homepage = "https://html5-parser.readthedocs.io"
+
+[project.optional-dependencies]
+soup = ["beautifulsoup4"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["html5_parser"]

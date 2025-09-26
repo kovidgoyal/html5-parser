@@ -17,10 +17,7 @@ import sysconfig
 from collections import namedtuple
 from copy import deepcopy
 from itertools import chain
-try:
-    import configparser
-except ImportError:
-    import ConfigParser as configparser
+from typing import NamedTuple
 
 self_path = os.path.abspath(__file__)
 base = os.path.dirname(self_path)
@@ -32,10 +29,15 @@ iswindows = hasattr(sys, 'getwindowsversion')
 is_ci = os.environ.get('CI') == 'true'
 Env = namedtuple('Env', 'cc cflags ldflags linker debug cc_name cc_ver')
 PKGCONFIG = os.environ.get('PKGCONFIG_EXE', 'pkg-config')
-cfg = configparser.ConfigParser()
-cfg.read(os.path.join(base, 'setup.cfg'))
-version = namedtuple('Version', 'major minor patch')(
-    *map(int, cfg.get('metadata', 'version').split('.')))
+with open('pyproject.toml') as f:
+    version_str = re.search(r'^version = "(\d+)\.(\d+).(\d+)"', f.read(), flags=re.MULTILINE)
+
+class Version(NamedTuple):
+    major: int
+    minor: int
+    patch: int
+assert version_str is not None
+version = Version(*map(int, version_str.groups()))
 
 
 def safe_makedirs(path):
