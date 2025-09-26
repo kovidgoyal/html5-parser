@@ -19,7 +19,7 @@ STACK_CLASS(StackClass)
 
 static inline StackClass*
 FNAME(alloc)(size_t sz) {
-    StackClass *ans = calloc(sizeof(StackClass), 1);
+    StackClass *ans = calloc(1, sizeof(StackClass));
     if (ans) {
         ans->items = (StackItemClass*)malloc(sizeof(StackItemClass) * sz);
         if (ans->items) ans->capacity = sz;

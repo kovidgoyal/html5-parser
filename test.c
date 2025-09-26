@@ -7,13 +7,13 @@
 
 #include <Python.h>
 
-int 
+int
 main(int argc, char **argv) {
 #if PY_MAJOR_VERSION >= 3
     wchar_t *argw[1024] = {0};
     int i;
     for (i = 0; i < argc; i++) {
-        argw[i] = (wchar_t*)calloc(sizeof(wchar_t), 1024);
+        argw[i] = (wchar_t*)calloc(1024, sizeof(wchar_t));
         swprintf(argw[i], 1024, L"%hs", argv[i]);
     }
     return Py_Main(argc, argw);
