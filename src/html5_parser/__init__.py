@@ -49,7 +49,11 @@ if not hasattr(sys, 'generating_docs_via_sphinx'):
                 ' libxml2 versions: html5-parser: {} != lxml: {}'.format(
                     LIBXML_VERSION, etree.LIBXML_VERSION))
 
-BOMS = (codecs.BOM_UTF8, codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE)
+BOMS = {
+    codecs.BOM_UTF8: "utf-8",
+    codecs.BOM_UTF16_BE: "utf-16-be",
+    codecs.BOM_UTF16_LE: "utf-16-le",
+}
 
 
 def check_bom(data):
@@ -102,7 +106,7 @@ def as_utf8(bytes_or_unicode, transport_encoding=None, fallback_encoding=None):
             if bom is not None:
                 data = data[len(bom):]
                 if bom is not codecs.BOM_UTF8:
-                    data = data.decode(bom).encode('utf-8')
+                    data = data.decode(BOMS[bom]).encode('utf-8')
             else:
                 encoding = (
                     check_for_meta_charset(data) or detect_encoding(data) or fallback_encoding or

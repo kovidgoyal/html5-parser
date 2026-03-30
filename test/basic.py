@@ -49,6 +49,10 @@ class BasicTests(TestCase):
     def test_check_bom(self):
         for bom in BOMS:
             self.assertIs(bom, check_bom(bom + b'xxx'))
+        for encoding in ('utf-16', 'utf-16-le', 'utf-16-be'):
+            data = '<p>hello</p>'.encode(encoding)
+            root = parse(data)
+            self.ae(root[1][0].tag, 'p')
 
     def test_meta_charset(self):
         def t(html, expected):
