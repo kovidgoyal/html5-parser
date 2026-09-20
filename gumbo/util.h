@@ -71,6 +71,16 @@ static inline bool gumbo_isalpha(int c)
   return (c | 0x20) >= 'a' && (c | 0x20) <= 'z';
 }
 
+static inline bool gumbo_isdigit(int c)
+{
+  return c >= '0' && c <= '9';
+}
+
+static inline bool gumbo_isalnum(int c)
+{
+  return gumbo_isalpha(c) || gumbo_isdigit(c);
+}
+
 #if defined(GUMBO_DEBUG)
 // Debug wrapper for printf, to make it easier to turn off debugging info when
 // required.

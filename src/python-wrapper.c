@@ -103,13 +103,13 @@ parse_and_build(PyObject UNUSED *self, PyObject *args) {
     const char *buffer = NULL;
     Py_ssize_t sz = 0;
     GumboOutput *output = NULL;
-    PyObject *new_tag, *new_comment, *ans, *new_doctype, *append, *new_string, *ret;
+    PyObject *new_tag, *new_comment, *ans, *new_doctype, *append, *new_string, *new_pi, *ret;
     Options opts = {0};
     opts.stack_size = 16 * 1024;
     opts.gumbo_opts = kGumboDefaultOptions;
     opts.gumbo_opts.max_errors = 0;  // We discard errors since we are not reporting them anyway
 
-    if (!PyArg_ParseTuple(args, "s#OOOOO|I", &buffer, &sz, &new_tag, &new_comment, &new_string, &append, &new_doctype, &(opts.stack_size))) return NULL;
+    if (!PyArg_ParseTuple(args, "s#OOOOOO|I", &buffer, &sz, &new_tag, &new_comment, &new_pi, &new_string, &append, &new_doctype, &(opts.stack_size))) return NULL;
     Py_BEGIN_ALLOW_THREADS;
     output = gumbo_parse_with_options(&(opts.gumbo_opts), buffer, (size_t)sz);
     Py_END_ALLOW_THREADS;
@@ -121,7 +121,7 @@ parse_and_build(PyObject UNUSED *self, PyObject *args) {
         if (ret == NULL) { gumbo_destroy_output(output); return NULL; }
         Py_CLEAR(ret);
     }
-    ans = as_python_tree(output, &opts, new_tag, new_comment, new_string, append);
+    ans = as_python_tree(output, &opts, new_tag, new_comment, new_pi, new_string, append);
     gumbo_destroy_output(output);
     return ans;
 }

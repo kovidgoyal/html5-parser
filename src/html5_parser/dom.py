@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from xml.dom.minidom import getDOMImplementation
 
-from lxml.etree import _Comment
+from lxml.etree import _Comment, _ProcessingInstruction
 
 impl = getDOMImplementation()
 
@@ -71,6 +71,8 @@ def adapt(source_tree, return_root=True, **kw):
         for child in src.iterchildren():
             if isinstance(child, _Comment):
                 dchild = dest_tree.createComment((child.text or '').replace('--', '—'))
+            elif isinstance(child, _ProcessingInstruction):
+                dchild = dest_tree.createProcessingInstruction(child.target, child.text or '')
             else:
                 dchild = dest_tree.createElementNS(*elem_name_parts(child))
                 stack.append((child, dchild))

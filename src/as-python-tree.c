@@ -154,7 +154,7 @@ create_element(GumboElement *elem, PyObject *new_tag) {
 }
 
 static inline PyObject* 
-convert_node(GumboNode* node, GumboElement **elem, PyObject *new_tag, PyObject *new_comment, PyObject *new_string) {
+convert_node(GumboNode* node, GumboElement **elem, PyObject *new_tag, PyObject *new_comment, PyObject *new_pi, PyObject *new_string) {
     PyObject *ans = NULL, *temp;
     *elem = NULL;
 
@@ -178,6 +178,15 @@ convert_node(GumboNode* node, GumboElement **elem, PyObject *new_tag, PyObject *
         case GUMBO_NODE_COMMENT:
             STRING_LIKE(new_comment);
             break;
+        case GUMBO_NODE_PROCESSING_INSTRUCTION:
+            // Processing instructions are represented as a single string of
+            // the form "target data", which is how BeautifulSoup models them.
+            temp = PyUnicode_FromFormat("%s %s", node->v.processing_instruction.target,
+                    node->v.processing_instruction.data);
+            if (UNLIKELY(temp == NULL)) break;
+            ans = PyObject_CallFunctionObjArgs(new_pi, temp, NULL);
+            Py_DECREF(temp);
+            break;
         default:
             PyErr_SetString(PyExc_TypeError, "unknown gumbo node type");
             break;
@@ -188,7 +197,7 @@ convert_node(GumboNode* node, GumboElement **elem, PyObject *new_tag, PyObject *
 
 
 PyObject*
-as_python_tree(GumboOutput *gumbo_output, Options *opts, PyObject *new_tag, PyObject *new_comment, PyObject *new_string, PyObject *append) {
+as_python_tree(GumboOutput *gumbo_output, Options *opts, PyObject *new_tag, PyObject *new_comment, PyObject *new_pi, PyObject *new_string, PyObject *append) {
 #define ABORT { ok = false; goto end; }
     bool ok = true;
     GumboNode *gumbo;
@@ -200,7 +209,7 @@ as_python_tree(GumboOutput *gumbo_output, Options *opts, PyObject *new_tag, PyOb
     Stack_push(stack, gumbo_output->root, NULL);
     while(stack->length > 0) {
         Stack_pop(stack, &gumbo, &parent);
-        child = convert_node(gumbo, &elem, new_tag, new_comment, new_string);
+        child = convert_node(gumbo, &elem, new_tag, new_comment, new_pi, new_string);
         if (UNLIKELY(!child)) ABORT;
         if (LIKELY(parent)) {
             ret = PyObject_CallFunctionObjArgs(append, parent, child, NULL);

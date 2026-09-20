@@ -196,6 +196,13 @@ typedef struct GumboInternalTokenizerState {
   // allocate the strings in the doctype token, then copy it over on emit.
   GumboTokenDocType _doc_type_state;
 
+  // The target of the processing instruction currently being tokenized, or
+  // NULL if we are not inside one.  The temporary buffer accumulates the
+  // target first and then the data, so the target has to be moved into a
+  // freshly allocated string of its own as soon as it is complete.  Ownership
+  // is transferred to the processing instruction token when it is emitted.
+  const char* _pi_target;
+
   // The UTF8Iterator over the tokenizer input.
   Utf8Iterator _input;
 } GumboTokenizerState;
@@ -306,6 +313,13 @@ static void tokenizer_add_parse_error(
       break;
     case GUMBO_LEX_CDATA:
       error->v.tokenizer.state = GUMBO_ERR_TOKENIZER_CDATA;
+      break;
+    case GUMBO_LEX_PROCESSING_INSTRUCTION_OPEN:
+    case GUMBO_LEX_PROCESSING_INSTRUCTION_TARGET:
+    case GUMBO_LEX_AFTER_PROCESSING_INSTRUCTION_TARGET:
+    case GUMBO_LEX_PROCESSING_INSTRUCTION_DATA:
+    case GUMBO_LEX_PROCESSING_INSTRUCTION_QUESTIONABLE:
+      error->v.tokenizer.state = GUMBO_ERR_TOKENIZER_PROCESSING_INSTRUCTION;
       break;
   }
 }
@@ -601,6 +615,38 @@ static StateResult emit_comment(GumboParser* parser, GumboToken* output) {
   return RETURN_SUCCESS;
 }
 
+// https://html.spec.whatwg.org/multipage/parsing.html#convert-the-temporary-buffer-to-a-comment
+// The bogus comment state accumulates the comment's data in the temporary
+// buffer, so all this has to do is prepend the "?" that opened what turned out
+// not to be a well-formed processing instruction.
+static void convert_temporary_buffer_to_comment(GumboParser* parser) {
+  GumboTokenizerState* tokenizer = parser->_tokenizer_state;
+  GumboStringBuffer* buffer = &tokenizer->_temporary_buffer;
+  GumboStringBuffer prefixed;
+  GumboStringPiece rest = {buffer->data, buffer->length};
+
+  gumbo_string_buffer_init(&prefixed);
+  gumbo_string_buffer_append_codepoint('?', &prefixed);
+  gumbo_string_buffer_append_string(&rest, &prefixed);
+  gumbo_string_buffer_destroy(buffer);
+  *buffer = prefixed;
+}
+
+// Emits the processing instruction token whose target was recorded in
+// _pi_target and whose data has been accumulated in the temporary buffer.
+// Always returns RETURN_SUCCESS.
+static StateResult emit_processing_instruction(
+    GumboParser* parser, GumboToken* output) {
+  GumboTokenizerState* tokenizer = parser->_tokenizer_state;
+  assert(tokenizer->_pi_target);
+  output->type = GUMBO_TOKEN_PROCESSING_INSTRUCTION;
+  output->v.processing_instruction.target = tokenizer->_pi_target;
+  tokenizer->_pi_target = NULL;
+  finish_temporary_buffer(parser, &output->v.processing_instruction.data);
+  finish_token(parser, output);
+  return RETURN_SUCCESS;
+}
+
 // Checks to see we should be flushing accumulated characters in the temporary
 // buffer, and fills the output token with the next output character if so.
 // Returns true if a character has been emitted and the tokenizer should
@@ -846,6 +892,7 @@ void gumbo_tokenizer_state_init(
   tokenizer->_buffered_emit_char = kGumboNoChar;
   gumbo_string_buffer_init(&tokenizer->_temporary_buffer);
   tokenizer->_temporary_buffer_emit = NULL;
+  tokenizer->_pi_target = NULL;
 
   mark_tag_state_as_empty(&tokenizer->_tag_state);
 
@@ -862,6 +909,8 @@ void gumbo_tokenizer_state_destroy(GumboParser* parser) {
   assert(tokenizer->_doc_type_state.public_identifier == NULL);
   assert(tokenizer->_doc_type_state.system_identifier == NULL);
   gumbo_string_buffer_destroy(&tokenizer->_temporary_buffer);
+  gumbo_free((void*) tokenizer->_pi_target);
+  tokenizer->_pi_target = NULL;
   gumbo_string_buffer_destroy(&tokenizer->_script_data_buffer);
   gumbo_free(tokenizer);
 }
@@ -1011,10 +1060,9 @@ static StateResult handle_tag_open_state(GumboParser* parser,
       append_char_to_temporary_buffer(parser, '/');
       return NEXT_CHAR;
     case '?':
-      gumbo_tokenizer_set_state(parser, GUMBO_LEX_BOGUS_COMMENT);
+      gumbo_tokenizer_set_state(
+          parser, GUMBO_LEX_PROCESSING_INSTRUCTION_OPEN);
       clear_temporary_buffer(parser);
-      append_char_to_temporary_buffer(parser, '?');
-      tokenizer_add_parse_error(parser, GUMBO_ERR_TAG_STARTS_WITH_QUESTION);
       return NEXT_CHAR;
     default:
       if (gumbo_isalpha(c)) {
@@ -2802,6 +2850,145 @@ static StateResult handle_cdata_state(GumboParser* parser,
   }
 }
 
+// https://html.spec.whatwg.org/multipage/parsing.html#processing-instruction-open-state
+static StateResult handle_processing_instruction_open_state(
+    GumboParser* parser, GumboTokenizerState* tokenizer, int c,
+    GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(output);
+  if (gumbo_isalpha(c) || c == '_') {
+    gumbo_tokenizer_set_state(
+        parser, GUMBO_LEX_PROCESSING_INSTRUCTION_TARGET);
+    tokenizer->_reconsume_current_input = true;
+    return NEXT_CHAR;
+  }
+  if (c == -1) {
+    tokenizer_add_parse_error(parser, GUMBO_ERR_PROCESSING_INSTRUCTION_EOF);
+    return emit_eof(parser, output);
+  }
+  tokenizer_add_parse_error(
+      parser, GUMBO_ERR_PROCESSING_INSTRUCTION_TARGET_INVALID_START);
+  convert_temporary_buffer_to_comment(parser);
+  gumbo_tokenizer_set_state(parser, GUMBO_LEX_BOGUS_COMMENT);
+  tokenizer->_reconsume_current_input = true;
+  return NEXT_CHAR;
+}
+
+// Returns true if the accumulated processing instruction target is one of the
+// targets that are reserved for XML and hence disallowed in HTML.
+static bool is_disallowed_pi_target(const char* target) {
+  return !strcasecmp(target, "xml") || !strcasecmp(target, "xml-stylesheet");
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#processing-instruction-target-state
+static StateResult handle_processing_instruction_target_state(
+    GumboParser* parser, GumboTokenizerState* tokenizer, int c,
+    GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(output);
+  switch (c) {
+    case '\t':
+    case '\n':
+    case '\f':
+    case ' ':
+    case '?':
+    case '>': {
+      char* target = gumbo_string_buffer_to_string(
+          &tokenizer->_temporary_buffer);
+      if (is_disallowed_pi_target(target)) {
+        gumbo_free(target);
+        tokenizer_add_parse_error(
+            parser, GUMBO_ERR_PROCESSING_INSTRUCTION_TARGET_DISALLOWED);
+        convert_temporary_buffer_to_comment(parser);
+        gumbo_tokenizer_set_state(parser, GUMBO_LEX_BOGUS_COMMENT);
+        tokenizer->_reconsume_current_input = true;
+        return NEXT_CHAR;
+      }
+      assert(!tokenizer->_pi_target);
+      tokenizer->_pi_target = target;
+      // Reuse the temporary buffer to accumulate the data.  This deliberately
+      // does not go through clear_temporary_buffer(), which would also re-mark
+      // the input iterator as though a new token were starting here.
+      gumbo_string_buffer_clear(&tokenizer->_temporary_buffer);
+      gumbo_tokenizer_set_state(
+          parser, GUMBO_LEX_AFTER_PROCESSING_INSTRUCTION_TARGET);
+      tokenizer->_reconsume_current_input = true;
+      return NEXT_CHAR;
+    }
+    case -1:
+      tokenizer_add_parse_error(parser, GUMBO_ERR_PROCESSING_INSTRUCTION_EOF);
+      return emit_eof(parser, output);
+    default:
+      if (gumbo_isalnum(c) || c == '-' || c == '_') {
+        append_char_to_temporary_buffer(parser, c);
+        return NEXT_CHAR;
+      }
+      tokenizer_add_parse_error(
+          parser, GUMBO_ERR_PROCESSING_INSTRUCTION_TARGET_INVALID);
+      convert_temporary_buffer_to_comment(parser);
+      gumbo_tokenizer_set_state(parser, GUMBO_LEX_BOGUS_COMMENT);
+      tokenizer->_reconsume_current_input = true;
+      return NEXT_CHAR;
+  }
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#after-processing-instruction-target-state
+static StateResult handle_after_processing_instruction_target_state(
+    GumboParser* parser, GumboTokenizerState* tokenizer, int c,
+    GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(output);
+  switch (c) {
+    case '\t':
+    case '\n':
+    case '\f':
+    case ' ':
+      return NEXT_CHAR;
+    default:
+      gumbo_tokenizer_set_state(parser, GUMBO_LEX_PROCESSING_INSTRUCTION_DATA);
+      tokenizer->_reconsume_current_input = true;
+      return NEXT_CHAR;
+  }
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#processing-instruction-data-state
+static StateResult handle_processing_instruction_data_state(
+    GumboParser* parser, GumboTokenizerState* tokenizer, int c,
+    GumboToken* output) {
+  AVOID_UNUSED_VARIABLE_WARNING(tokenizer);
+  switch (c) {
+    case '?':
+      gumbo_tokenizer_set_state(
+          parser, GUMBO_LEX_PROCESSING_INSTRUCTION_QUESTIONABLE);
+      return NEXT_CHAR;
+    case '>':
+      gumbo_tokenizer_set_state(parser, GUMBO_LEX_DATA);
+      return emit_processing_instruction(parser, output);
+    case -1:
+      tokenizer_add_parse_error(parser, GUMBO_ERR_PROCESSING_INSTRUCTION_EOF);
+      return emit_eof(parser, output);
+    default:
+      append_char_to_temporary_buffer(parser, c);
+      return NEXT_CHAR;
+  }
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#processing-instruction-questionable-state
+static StateResult handle_processing_instruction_questionable_state(
+    GumboParser* parser, GumboTokenizerState* tokenizer, int c,
+    GumboToken* output) {
+  switch (c) {
+    case '>':
+      gumbo_tokenizer_set_state(parser, GUMBO_LEX_DATA);
+      return emit_processing_instruction(parser, output);
+    case -1:
+      tokenizer_add_parse_error(parser, GUMBO_ERR_PROCESSING_INSTRUCTION_EOF);
+      return emit_eof(parser, output);
+    default:
+      append_char_to_temporary_buffer(parser, '?');
+      gumbo_tokenizer_set_state(parser, GUMBO_LEX_PROCESSING_INSTRUCTION_DATA);
+      tokenizer->_reconsume_current_input = true;
+      return NEXT_CHAR;
+  }
+}
+
 typedef StateResult (*GumboLexerStateFunction)(
     GumboParser*, GumboTokenizerState*, int, GumboToken*);
 
@@ -2845,7 +3032,11 @@ static GumboLexerStateFunction dispatch_table[] = {handle_data_state,
     handle_doctype_system_id_double_quoted_state,
     handle_doctype_system_id_single_quoted_state,
     handle_after_doctype_system_id_state, handle_bogus_doctype_state,
-    handle_cdata_state};
+    handle_cdata_state, handle_processing_instruction_open_state,
+    handle_processing_instruction_target_state,
+    handle_after_processing_instruction_target_state,
+    handle_processing_instruction_data_state,
+    handle_processing_instruction_questionable_state};
 
 bool gumbo_lex(GumboParser* parser, GumboToken* output) {
   // Because of the spec requirements that...
@@ -2925,6 +3116,10 @@ void gumbo_token_destroy(GumboToken* token) {
       return;
     case GUMBO_TOKEN_COMMENT:
       gumbo_free((void*) token->v.text);
+      return;
+    case GUMBO_TOKEN_PROCESSING_INSTRUCTION:
+      gumbo_free((void*) token->v.processing_instruction.target);
+      gumbo_free((void*) token->v.processing_instruction.data);
       return;
     default:
       return;

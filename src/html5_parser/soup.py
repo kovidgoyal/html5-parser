@@ -123,12 +123,15 @@ def init_soup():
         append = bs4_fast_append
         if universal_cdata_list_attributes is None:
             init_bs4_cdata_list_attributes()
-    return bs, soup, new_tag, bs.Comment, append, bs.NavigableString
+    # BeautifulSoup 3 spells this differently and older versions may not have
+    # it at all, in which case processing instructions become comments.
+    pi = getattr(bs, 'ProcessingInstruction', bs.Comment)
+    return bs, soup, new_tag, bs.Comment, pi, append, bs.NavigableString
 
 
 def parse(utf8_data, stack_size=16 * 1024, keep_doctype=False, return_root=True):
     from html5_parser import html_parser
-    bs, soup, new_tag, Comment, append, NavigableString = init_soup()
+    bs, soup, new_tag, Comment, ProcessingInstruction, append, NavigableString = init_soup()
     if not isinstance(utf8_data, bytes):
         utf8_data = utf8_data.encode('utf-8')
 
@@ -137,6 +140,7 @@ def parse(utf8_data, stack_size=16 * 1024, keep_doctype=False, return_root=True)
 
     dt = add_doctype if keep_doctype and hasattr(bs, 'Doctype') else None
     root = html_parser.parse_and_build(
-        utf8_data, new_tag, Comment, NavigableString, append, dt, stack_size)
+        utf8_data, new_tag, Comment, ProcessingInstruction, NavigableString, append, dt,
+        stack_size)
     soup.append(root)
     return root if return_root else soup

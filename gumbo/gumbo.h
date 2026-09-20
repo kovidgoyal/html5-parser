@@ -310,7 +310,9 @@ typedef enum {
    * the spec suggests.  Recursing on GUMBO_NODE_ELEMENT will do the right thing
    * here, while clients that want to include template contents should also
    * check for GUMBO_NODE_TEMPLATE.  v will be a GumboElement.  */
-  GUMBO_NODE_TEMPLATE
+  GUMBO_NODE_TEMPLATE,
+  /** Processing instruction node.  v will be a GumboProcessingInstruction. */
+  GUMBO_NODE_PROCESSING_INSTRUCTION
 } GumboNodeType;
 
 /**
@@ -469,6 +471,31 @@ typedef struct {
 } GumboText;
 
 /**
+ * The struct used to represent processing instruction nodes, e.g.
+ * <?target data?>.
+ */
+typedef struct {
+  /** The target of the processing instruction, null-terminated. */
+  const char* target;
+
+  /**
+   * The data of the processing instruction, null-terminated.  This is
+   * everything after the whitespace that follows the target, and does not
+   * include the closing delimiter.
+   */
+  const char* data;
+
+  /**
+   * The original text of this node, as a pointer into the original buffer.
+   * This includes the <? and > delimiters.
+   */
+  GumboStringPiece original_text;
+
+  /** The starting position of this node. */
+  GumboSourcePosition start_pos;
+} GumboProcessingInstruction;
+
+/**
  * The struct used to represent all HTML elements.  This contains information
  * about the tag, attributes, and child nodes.
  */
@@ -539,6 +566,8 @@ struct GumboInternalNode {
     GumboDocument document;      // For GUMBO_NODE_DOCUMENT.
     GumboElement element;        // For GUMBO_NODE_ELEMENT.
     GumboText text;              // For everything else.
+    // For GUMBO_NODE_PROCESSING_INSTRUCTION.
+    GumboProcessingInstruction processing_instruction;
   } v;
 };
 

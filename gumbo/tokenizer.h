@@ -53,6 +53,13 @@ typedef struct GumboInternalTokenStartTag {
   bool is_self_closing;
 } GumboTokenStartTag;
 
+// Struct containing all information pertaining to processing instruction
+// tokens, e.g. <?target data?>.
+typedef struct GumboInternalTokenProcessingInstruction {
+  const char* target;
+  const char* data;
+} GumboTokenProcessingInstruction;
+
 // A data structure representing a single token in the input stream.  This
 // contains an enum for the type, the source position, a GumboStringPiece
 // pointing to the original text, and then a union for any parsed data.
@@ -66,6 +73,7 @@ typedef struct GumboInternalToken {
     GumboTokenStartTag start_tag;
     GumboTag end_tag;
     const char* text;    // For comments.
+    GumboTokenProcessingInstruction processing_instruction;
     int character;      // For character, whitespace, null, and EOF tokens.
   } v;
 } GumboToken;

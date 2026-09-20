@@ -45,6 +45,13 @@ jobs:
               run:
                 git clone --depth 1 https://github.com/html5lib/html5lib-tests.git test/html5lib-tests
 
+            - name: Download web-platform-tests tree construction tests
+              run: |
+                git clone --filter=blob:none --no-checkout --depth 1 https://github.com/web-platform-tests/wpt.git test/wpt
+                git -C test/wpt sparse-checkout init --cone
+                git -C test/wpt sparse-checkout set html/syntax/parsing/resources
+                git -C test/wpt checkout
+
             - name: Run tests
               run:
                 python .github/workflows/ci.py test

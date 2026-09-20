@@ -6,12 +6,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import sys
 
-from lxml.etree import _Comment
+from lxml.etree import _Comment, _ProcessingInstruction
 
 if sys.version_info.major < 3:
-    from xml.etree.cElementTree import Element, SubElement, ElementTree, Comment, register_namespace
+    from xml.etree.cElementTree import (
+        Element, SubElement, ElementTree, Comment, ProcessingInstruction, register_namespace)
 else:
-    from xml.etree.ElementTree import Element, SubElement, ElementTree, Comment, register_namespace
+    from xml.etree.ElementTree import (
+        Element, SubElement, ElementTree, Comment, ProcessingInstruction, register_namespace)
 
 
 register_namespace('svg', "http://www.w3.org/2000/svg")
@@ -35,6 +37,10 @@ def adapt(src_tree, return_root=True, **kw):
         for src_child in src.iterchildren():
             if isinstance(src_child, _Comment):
                 dest_child = Comment(src_child.text)
+                dest_child.tail = src_child.tail
+                dest.append(dest_child)
+            elif isinstance(src_child, _ProcessingInstruction):
+                dest_child = ProcessingInstruction(src_child.target, src_child.text)
                 dest_child.tail = src_child.tail
                 dest.append(dest_child)
             else:

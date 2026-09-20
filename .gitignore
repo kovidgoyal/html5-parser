@@ -5,4 +5,5 @@ dist
 docs/_build
 test/large.html
 test/html5lib-tests
+test/wpt
 __pycache__

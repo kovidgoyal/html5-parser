@@ -296,6 +296,10 @@ convert_node(xmlDocPtr doc, xmlNodePtr xml_parent, GumboNode* node, GumboElement
         case GUMBO_NODE_COMMENT:
             ans = xmlNewComment(BAD_CAST node->v.text.text);
             break;
+        case GUMBO_NODE_PROCESSING_INSTRUCTION:
+            ans = xmlNewDocPI(doc, BAD_CAST node->v.processing_instruction.target,
+                    BAD_CAST node->v.processing_instruction.data);
+            break;
         case GUMBO_NODE_CDATA:
             {
                 // TODO: probably would be faster to use some calculation on
@@ -329,21 +333,27 @@ alloc_doc(Options *opts) {
     return doc;
 }
 
+// Comments and processing instructions can occur outside the root element, in
+// which case they have to be added as siblings of it.
 static inline bool
-add_root_comments(ParseData *pd, GumboDocument *document, GumboNode *root) {
+add_root_comments(ParseData *pd, xmlDocPtr doc, GumboDocument *document, GumboNode *root) {
     GumboVector *root_nodes = &(document->children);
     bool before_root = true;
     for (unsigned int i = 0; i < root_nodes->length; i++) {
         GumboNode *root_node = (GumboNode*)root_nodes->data[i];
         if (root_node == root) { before_root = false; continue; }
+        xmlNodePtr sibling = NULL;
         if (root_node->type == GUMBO_NODE_COMMENT) {
-            xmlNodePtr comment = xmlNewComment(BAD_CAST root_node->v.text.text);
-            if (UNLIKELY(!comment)) { pd->errmsg = ERRMSG("Out of memory allocating comment");  return false; }
-            if (UNLIKELY(!(before_root ? xmlAddPrevSibling(pd->root, comment) : xmlAddSibling(pd->root, comment)))) {
-                pd->errmsg = ERRMSG("Failed to add sibling to root node");
-                xmlFreeNode(comment);
-                return false;
-            }
+            sibling = xmlNewComment(BAD_CAST root_node->v.text.text);
+        } else if (root_node->type == GUMBO_NODE_PROCESSING_INSTRUCTION) {
+            sibling = xmlNewDocPI(doc, BAD_CAST root_node->v.processing_instruction.target,
+                    BAD_CAST root_node->v.processing_instruction.data);
+        } else continue;
+        if (UNLIKELY(!sibling)) { pd->errmsg = ERRMSG("Out of memory allocating node");  return false; }
+        if (UNLIKELY(!(before_root ? xmlAddPrevSibling(pd->root, sibling) : xmlAddSibling(pd->root, sibling)))) {
+            pd->errmsg = ERRMSG("Failed to add sibling to root node");
+            xmlFreeNode(sibling);
+            return false;
         }
     }
     return true;
@@ -399,7 +409,7 @@ convert_gumbo_tree_to_libxml_tree(GumboOutput *output, Options *opts, char **err
 
     xmlDocSetRootElement(doc, parse_data.root);
     // Add any comments that are outside the root element
-    if (!add_root_comments(&parse_data, document, root)) ABORT;
+    if (!add_root_comments(&parse_data, doc, document, root)) ABORT;
 #undef ABORT
 end:
     if (doc) doc->_private = NULL;

@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <libxml/xmlmemory.h>
+#include <libxml/parser.h>
 #include "src/as-libxml.h"
 
 static inline libxml_doc*
