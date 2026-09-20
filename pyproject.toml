@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "html5-parser"
-version = "0.4.12"
+version = "0.5.0"
 authors = [
     {name = "Kovid Goyal", email = "redacted@acme.com"},
 ]
