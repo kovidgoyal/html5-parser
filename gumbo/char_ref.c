@@ -23117,7 +23117,9 @@ _again:
       matched = utf8iterator_maybe_consume_match(input, start, len, true);
       assert(matched);
       return true;
-    } else if (is_in_attribute && (is_attr_ok(*te))) {
+    // te == pe means the reference runs to the end of the input, so there is
+    // no next character to disqualify it.
+    } else if (is_in_attribute && te < pe && is_attr_ok(*te)) {
       output->first = kGumboNoChar;
       output->second = kGumboNoChar;
       utf8iterator_reset(input);

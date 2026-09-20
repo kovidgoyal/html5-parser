@@ -1609,7 +1609,11 @@ static void adjust_svg_attributes(GumboToken* token) {
   const GumboVector* attributes = &token->v.start_tag.attributes;
   for (unsigned int i = 0, n = attributes->length; i < n; i++) {
     GumboAttribute* attr = (GumboAttribute*) attributes->data[i];
-    const StringReplacement* replacement = gumbo_get_svg_attr_replacement(attr->name, attr->original_name.length);
+    // The lookup is over the normalized name, so it must be given that name's
+    // length; original_name is the raw source text and can be a different size
+    // (a NUL byte in the source becomes a three byte U+FFFD here, for example).
+    const StringReplacement* replacement =
+        gumbo_get_svg_attr_replacement(attr->name, strlen(attr->name));
     if (!replacement) {
       continue;
     }

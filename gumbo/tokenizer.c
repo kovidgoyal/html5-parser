@@ -1688,7 +1688,7 @@ static StateResult handle_before_attr_name_state(GumboParser* parser,
     case '\0':
       tokenizer_add_parse_error(parser, GUMBO_ERR_UTF8_NULL);
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_ATTR_NAME);
-      append_char_to_temporary_buffer(parser, 0xfffd);
+      append_char_to_tag_buffer(parser, kUtf8ReplacementChar, true);
       return NEXT_CHAR;
     case -1:
       tokenizer_add_parse_error(parser, GUMBO_ERR_ATTR_NAME_EOF);
@@ -1774,7 +1774,7 @@ static StateResult handle_after_attr_name_state(GumboParser* parser,
     case '\0':
       tokenizer_add_parse_error(parser, GUMBO_ERR_UTF8_NULL);
       gumbo_tokenizer_set_state(parser, GUMBO_LEX_ATTR_NAME);
-      append_char_to_temporary_buffer(parser, 0xfffd);
+      append_char_to_tag_buffer(parser, kUtf8ReplacementChar, true);
       return NEXT_CHAR;
     case -1:
       tokenizer_add_parse_error(parser, GUMBO_ERR_ATTR_NAME_EOF);
