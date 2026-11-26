@@ -13,6 +13,7 @@ jobs:
             CC: ${{ matrix.cc }}
             BUILDER: ${{ matrix.builder }}
         strategy:
+            fail-fast: false
             matrix:
                 include:
                     - { pyver: "3.11", builder: unix_build.py, os: ubuntu-latest, cc: gcc }
