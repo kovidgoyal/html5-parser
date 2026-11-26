@@ -27,7 +27,9 @@ def gnome_url(name, version):
     )
 
 
-ZLIB = "https://zlib.net/zlib-{}.tar.xz".format("1.3.2")
+# Use the fossils archive as zlib.net removes tarballs from its top level
+# directory as soon as a newer release is made.
+ZLIB = "https://zlib.net/fossils/zlib-{}.tar.gz".format("1.4")
 LIBXML2 = gnome_url("libxml2", "2.15.4")
 LIBXSLT = gnome_url("libxslt", "1.1.45")
 LXML = "https://pypi.io/packages/source/l/lxml/lxml-{}.tar.gz".format("6.1.3")
