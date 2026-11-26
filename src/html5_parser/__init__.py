@@ -311,6 +311,7 @@ def parse(
     :param treebuilder:
         The type of tree to return. Note that only the lxml treebuilder is fast, as all
         other treebuilders are implemented in python, not C. Supported values are:
+
           * `lxml <https://lxml.de>`_  -- the default, and fastest
           * `lxml_html <https://lxml.de>`_  -- tree of lxml.html.HtmlElement, same speed as lxml
             (new in *0.4.10*)
