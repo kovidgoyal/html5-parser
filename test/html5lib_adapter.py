@@ -47,7 +47,9 @@ class TestData(object):
         for line in self.lines:
             heading = self.is_section_heading(line)
             if heading:
-                if data and heading == 'data':
+                # A new test starts with #data, optionally preceded by a
+                # #description section (used in newer web-platform-tests files)
+                if 'data' in data and heading in ('data', 'description'):
                     data[key] = data[key][:-1]
                     yield self.normalize(data)
                     data = {}
